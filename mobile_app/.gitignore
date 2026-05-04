@@ -7,3 +7,56 @@ build/
 .flutter-plugins
 .flutter-plugins-dependencies
 .packages
+.metadata
+
+# IDEs
+.idea/
+*.iml
+.vscode/
+
+# Mac/Windows/Linux system files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Android
+android/.gradle/
+android/local.properties
+android/key.properties
+**/android/app/debug
+**/android/app/profile
+**/android/app/release
+
+# iOS
+**/ios/Flutter/App.framework
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/ephemeral/
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/Runner/GeneratedPluginRegistrant.*
+**/ios/Runner/GeneratedPluginRegistrant.swift
+
+# macOS
+**/macos/Flutter/GeneratedPluginRegistrant.swift
+**/macos/Flutter/ephemeral/
+**/macos/Flutter/flutter_export_environment.sh
+**/macos/Runner/GeneratedPluginRegistrant.swift
+
+# Web
+**/web/.dart_tool/
+**/web/build/
+
+# Windows
+**/windows/flutter/ephemeral/
+
+# Linux
+**/linux/flutter/ephemeral/
+
+# Coverage
+coverage/
+
+# Flutter build artifacts
+**/flutter_export_environment.sh
+**/.flutter-plugins-dependencies
+**/.flutter-plugins
