@@ -1,4 +1,5 @@
 import "package:flutter/material.dart";
+import 'features/auth/presentation/get_started_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -11,11 +12,11 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: "Mobile App",
-      home: const Scaffold(
-        body: Center(
-          child: Text("Hello"),
-        ),
+      theme: ThemeData(
+        useMaterial3: true,
+        primarySwatch: Colors.blue,
       ),
+      home: const GetStartedPage(),
     );
   }
 }
