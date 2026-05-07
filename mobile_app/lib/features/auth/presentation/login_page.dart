@@ -294,26 +294,26 @@ class _LoginPageState extends State<LoginPage> {
 
                     // Sign Up Link
                     Center(
-                      child: RichText(
-                        text: TextSpan(
-                          text: "Don't have an account? ",
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            "Don't have an account? ",
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                 color: Colors.grey.shade600,
                               ),
-                          children: [
-                            TextSpan(
-                              text: 'Sign Up',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(
+                          ),
+                          GestureDetector(
+                            onTap: () => Navigator.of(context).pushNamed('/sign-up'),
+                            child: Text(
+                              'Sign Up',
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                     color: Colors.blue.shade500,
                                     fontWeight: FontWeight.w700,
                                   ),
-                              recognizer: null, // Add tap handler if needed
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                     SizedBox(height: 24),

@@ -1,5 +1,7 @@
 import "package:flutter/material.dart";
 import 'features/auth/presentation/get_started_page.dart';
+import 'features/auth/presentation/sign_up.dart';
+
 
 void main() {
   runApp(const MyApp());
@@ -17,6 +19,9 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
       ),
       home: const GetStartedPage(),
+      routes: {
+        '/sign-up': (context) => const SignupScreen(),
+      },
     );
   }
 }
