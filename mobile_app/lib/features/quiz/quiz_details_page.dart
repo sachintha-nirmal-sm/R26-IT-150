@@ -27,7 +27,7 @@ class QuizDetailScreen extends StatelessWidget {
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF0056D2)),
+          icon: const Icon(Icons.arrow_back, color: Color(0xFF2196F3)),
           onPressed: () => Navigator.of(context).maybePop(),
         ),
         title: const Text(
@@ -64,7 +64,7 @@ class QuizDetailScreen extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     radius: 35,
-                    backgroundColor: const Color(0xFF007AFF),
+                    backgroundColor: const Color(0xFF2196F3),
                     child: const Icon(Icons.science, color: Colors.white, size: 35),
                   ),
                   const SizedBox(height: 16),
@@ -137,8 +137,8 @@ class QuizDetailScreen extends StatelessWidget {
             child: const Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text('Attempt Now', style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
-                SizedBox(width: 10),
+                Text('Attempt Now', style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold)),
+                SizedBox(width: 8),
                 Icon(Icons.arrow_forward, color: Colors.white),
               ],
             ),
@@ -165,7 +165,7 @@ class QuizDetailScreen extends StatelessWidget {
               color: const Color(0xFFE8F1FF),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, color: const Color(0xFF0056D2)),
+            child: Icon(icon, color: const Color(0xFF2196F3)),
           ),
           const SizedBox(width: 16),
           Column(

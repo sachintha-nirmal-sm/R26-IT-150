@@ -215,7 +215,7 @@ class _QuizScreenPageState extends State<QuizScreenPage> {
           backgroundColor: Colors.white,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.close, color: Color(0xFF0056D2)),
+            icon: const Icon(Icons.close, color: Color(0xFF2196F3)),
             onPressed: () {
               showDialog(
                 context: context,
@@ -279,7 +279,7 @@ class _QuizScreenPageState extends State<QuizScreenPage> {
                         Icon(
                           Icons.timer_outlined,
                           size: 18,
-                          color: _secondsRemaining < 60 ? Colors.red : const Color(0xFF0056D2),
+                          color: _secondsRemaining < 60 ? Colors.red : const Color(0xFF2196F3),
                         ),
                         const SizedBox(width: 8),
                         Text(
@@ -414,7 +414,7 @@ class _QuizScreenPageState extends State<QuizScreenPage> {
                 color: isSelected ? const Color(0xFFEEF2FF) : Colors.white,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: isSelected ? const Color(0xFF0056D2) : Colors.grey.shade300,
+                  color: isSelected ? const Color(0xFF2196F3) : Colors.grey.shade300,
                   width: isSelected ? 2 : 1,
                 ),
               ),
@@ -422,7 +422,7 @@ class _QuizScreenPageState extends State<QuizScreenPage> {
                 children: [
                   Icon(
                     isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
-                    color: isSelected ? const Color(0xFF0056D2) : Colors.grey,
+                    color: isSelected ? const Color(0xFF2196F3) : Colors.grey,
                   ),
                   const SizedBox(width: 15),
                   Text(options[oIndex], style: const TextStyle(fontSize: 16)),
@@ -463,7 +463,7 @@ class _QuizScreenPageState extends State<QuizScreenPage> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFF0056D2)),
+              borderSide: const BorderSide(color: Color(0xFF2196F3)),
             ),
           ),
           maxLines: 3,

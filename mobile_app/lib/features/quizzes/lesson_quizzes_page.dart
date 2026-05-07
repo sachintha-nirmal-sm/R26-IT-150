@@ -38,7 +38,7 @@ class _LessonQuizzesPageState extends State<LessonQuizzesPage> {
         elevation: 0,
         leading: IconButton(
           onPressed: () => Navigator.of(context).maybePop(),
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF0056D2)),
+          icon: const Icon(Icons.arrow_back, color: Color(0xFF2196F3)),
         ),
         title: Text(
           'Quizzes - ${widget.lessonTitle}',
@@ -58,7 +58,7 @@ class _LessonQuizzesPageState extends State<LessonQuizzesPage> {
               child: Icon(
                 Icons.person_outline,
                 size: 20,
-                color: Colors.blue.shade800,
+                color: const Color.fromARGB(255, 90, 162, 245),
               ),
             ),
           ),
@@ -154,7 +154,7 @@ class _LessonQuizzesPageState extends State<LessonQuizzesPage> {
             Text(
               value,
               style: const TextStyle(
-                color: Color(0xFF0056D2),
+                color: Color(0xFF2196F3),
                 fontWeight: FontWeight.bold,
                 fontSize: 20,
               ),
@@ -200,7 +200,7 @@ class _LessonQuizzesPageState extends State<LessonQuizzesPage> {
           color: isLocked ? const Color(0xFFFBFBFF) : Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? const Color(0xFF0056D2) : Colors.grey.shade200,
+            color: isSelected ? const Color(0xFF2196F3) : Colors.grey.shade200,
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -211,7 +211,7 @@ class _LessonQuizzesPageState extends State<LessonQuizzesPage> {
                 Container(
                   width: 5,
                   decoration: const BoxDecoration(
-                    color: Color(0xFF0056D2),
+                    color: Color(0xFF2196F3),
                     borderRadius: BorderRadius.only(
                       topLeft: Radius.circular(12),
                       bottomLeft: Radius.circular(12),
@@ -235,7 +235,7 @@ class _LessonQuizzesPageState extends State<LessonQuizzesPage> {
                               : isExam
                                   ? Icons.workspace_premium_outlined
                                   : Icons.assignment_outlined,
-                          color: const Color(0xFF0056D2),
+                          color: const Color(0xFF2196F3),
                         ),
                       ),
                       const SizedBox(width: 15),
@@ -248,7 +248,7 @@ class _LessonQuizzesPageState extends State<LessonQuizzesPage> {
                               style: TextStyle(
                                 color: isLocked
                                     ? Colors.grey
-                                    : const Color(0xFF0056D2),
+                                    : const Color(0xFF2196F3),
                                 fontWeight: FontWeight.bold,
                                 fontSize: 12,
                               ),
