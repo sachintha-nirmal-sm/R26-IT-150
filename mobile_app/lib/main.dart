@@ -1,10 +1,11 @@
-import "package:flutter/material.dart";
+import 'package:flutter/material.dart';
+
 import 'features/LessonList/lesson_list_page.dart';
 import 'features/auth/presentation/get_started_page.dart';
+import 'features/auth/presentation/login_page.dart';
 import 'features/auth/presentation/sign_up.dart';
-import 'package:flutter/material.dart';
-import 'package:mobile_app/features/dashboard/physics_lab_home_page.dart';
-import 'package:mobile_app/features/lessons/force_linear_motion_page.dart';
+import 'features/dashboard/physics_lab_home_page.dart';
+import 'features/lessons/force_linear_motion_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -16,15 +17,6 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: "Mobile App",
-      theme: ThemeData(
-        useMaterial3: true,
-        primarySwatch: Colors.blue,
-      ),
-      home: const GetStartedPage(),
-      routes: {
-        '/sign-up': (context) => const SignupScreen(),
-        '/lessons': (context) => const PhysicsLessonsScreen(),
       title: 'Physics Lab',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
@@ -40,9 +32,15 @@ class MyApp extends StatelessWidget {
           iconTheme: IconThemeData(color: Color(0xFF1A1A2E)),
         ),
       ),
-      initialRoute: '/',
+      home: const GetStartedPage(),
+      initialRoute: '/home',
       routes: {
-        '/': (context) => const PhysicsLabHomePage(),
+        '/get-started': (context) => const GetStartedPage(),
+        '/login': (context) => const LoginPage(),
+        '/home': (context) => const PhysicsLabHomePage(),
+        '/sign-up': (context) => const SignupScreen(),
+        '/lessons': (context) => const PhysicsLessonsScreen(),
+        '/lesson-list': (context) => const PhysicsLessonsScreen(),
         '/force-motion': (context) => const ForceLinearMotionPage(),
       },
     );

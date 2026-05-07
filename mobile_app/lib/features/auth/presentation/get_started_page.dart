@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'login_page.dart';
 
 class GetStartedPage extends StatelessWidget {
   const GetStartedPage({Key? key}) : super(key: key);
@@ -168,11 +167,7 @@ class GetStartedPage extends StatelessWidget {
                   width: double.infinity,
                   child: ElevatedButton.icon(
                     onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const LoginPage(),
-                        ),
-                      );
+                      Navigator.of(context).pushNamed('/login');
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue.shade500,
@@ -217,7 +212,7 @@ class GetStartedPage extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: color.withValues(alpha: 0.15),
+        color: color.withOpacity(0.15),
       ),
       padding: const EdgeInsets.all(8),
       child: Icon(
