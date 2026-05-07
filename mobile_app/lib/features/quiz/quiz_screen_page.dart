@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'quiz_result_screen.dart';
+import 'quiz_failure_screen.dart';
 
 class QuizScreenPage extends StatefulWidget {
   const QuizScreenPage({
@@ -52,6 +53,7 @@ class _QuizScreenPageState extends State<QuizScreenPage> {
         'type': 'mcq',
         'question': 'A block of mass 5 kg rests on a frictionless inclined plane angled at 30° to the horizontal. What is the magnitude of the normal force exerted on the block? (Assume g = 9.8 m/s²)',
         'options': ['24.5 N', '42.4 N', '49.0 N', '84.8 N'],
+        'correctOption': 1,
         'hasImage': true,
         'imageUrl': 'https://i.ytimg.com/vi/v7ffr0_WRxc/hq720.jpg?sqp=-oaymwEhCK4FEIIDSFryq4qpAxMIARUAAAAAGAElAADIQj0AgKJD&rs=AOn4CLBZE08gx81q7xDN-UyClS2El_nVeA',
       },
@@ -59,51 +61,60 @@ class _QuizScreenPageState extends State<QuizScreenPage> {
         'type': 'mcq',
         'question': 'What is the SI unit of force?',
         'options': ['Newton', 'Pascal', 'Joule', 'Watt'],
+        'correctOption': 0,
         'hasImage': false,
       },
       {
         'type': 'mcq',
         'question': 'Which of Newton\'s Laws states that F = ma?',
         'options': ['First Law', 'Second Law', 'Third Law', 'Law of Gravitation'],
+        'correctOption': 1,
         'hasImage': false,
       },
       {
         'type': 'mcq',
         'question': 'What is the magnitude of acceleration due to gravity?',
         'options': ['8.8 m/s²', '9.8 m/s²', '10.8 m/s²', '11.8 m/s²'],
+        'correctOption': 1,
         'hasImage': false,
       },
       {
         'type': 'mcq',
         'question': 'Friction acts in which direction?',
         'options': ['Same as motion', 'Opposite to motion', 'Perpendicular to motion', 'Random direction'],
+        'correctOption': 1,
         'hasImage': false,
       },
       {
         'type': 'mcq',
         'question': 'What does Newton\'s Third Law state?',
         'options': ['Every action has equal and\n opposite reaction', 'F=ma', 'Objects at rest stay at rest', 'None of the above'],
+        'correctOption': 0,
         'hasImage': false,
       },
       {
         'type': 'fillblank',
         'question': 'The force of gravity on an object is called its ___________.',
         'answerLength': 6,
+        'correctAnswer': 'weight',
       },
       {
         'type': 'fillblank',
         'question': 'A ___________ force is a push or pull on an object.',
         'answerLength': 5,
+        'correctAnswer': 'force',
       },
       {
         'type': 'fillblank',
         'question': 'The tendency of an object to resist changes in motion is called ___________.',
         'answerLength': 7,
+        'correctAnswer': 'inertia',
       },
       {
         'type': 'fillblank',
         'question': 'When two objects rub against each other, ___________ is produced.',
-        'answerLength': 7,
+        'answerLength': 8,
+        'correctAnswer': 'friction',
       },
     ];
   }
@@ -161,19 +172,50 @@ class _QuizScreenPageState extends State<QuizScreenPage> {
               Navigator.pop(context); // Close the dialog
               
               final timeTaken = _formatTime(widget.timeLimit - _secondsRemaining);
-              // Using a mock score for demonstration
-              int correctAnswers = 8;
               
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => QuizResultScreen(
-                    totalQuestions: widget.totalQuestions,
-                    correctAnswers: correctAnswers,
-                    timeTaken: timeTaken,
+              int correctAnswers = 0;
+              for (int i = 0; i < quizQuestions.length; i++) {
+                var q = quizQuestions[i];
+                if (q['type'] == 'mcq') {
+                  if (selectedMcqOptions[i] == q['correctOption']) {
+                    correctAnswers++;
+                  }
+                } else if (q['type'] == 'fillblank') {
+                  int fillIndex = i - 6;
+                  if (fillIndex >= 0 && fillIndex < spaceFillAnswers.length) {
+                    String userAnswer = spaceFillAnswers[fillIndex].text.trim().toLowerCase();
+                    if (userAnswer == q['correctAnswer'].toString().toLowerCase()) {
+                      correctAnswers++;
+                    }
+                  }
+                }
+              }
+              
+              double scorePercentage = (correctAnswers / widget.totalQuestions) * 100;
+              
+              if (scorePercentage < 45) {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => QuizFailureScreen(
+                      totalQuestions: widget.totalQuestions,
+                      incorrectAnswers: widget.totalQuestions - correctAnswers,
+                      timeTaken: timeTaken,
+                    ),
                   ),
-                ),
-              );
+                );
+              } else {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => QuizResultScreen(
+                      totalQuestions: widget.totalQuestions,
+                      correctAnswers: correctAnswers,
+                      timeTaken: timeTaken,
+                    ),
+                  ),
+                );
+              }
             },
             child: const Text('Submit'),
           ),
