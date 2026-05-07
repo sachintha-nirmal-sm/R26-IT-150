@@ -52,19 +52,19 @@ class GetStartedPage extends StatelessWidget {
                           ),
                       textAlign: TextAlign.left,
                     ),
-                    SizedBox(height: 24),
+                    SizedBox(height: 7),
 
                     // Subtitle
                     Text(
                       'Perform virtual experiments, test your knowledge, and improve with personalized AI guidance',
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            fontSize: 1,
+                            fontSize: 18,
                             color: Colors.grey.shade700,
                             height: 1.5,
                           ),
                       textAlign: TextAlign.left,
                     ),
-                    SizedBox(height: 40),
+                    SizedBox(height:5),
                   ],
                 ),
               ),
@@ -108,7 +108,7 @@ class GetStartedPage extends StatelessWidget {
                             ),
                           ],
                         ),
-                        SizedBox(height: 20),
+                        SizedBox(height: 5),
 
                         // Central illustration area - Display image
                         Container(
@@ -135,7 +135,7 @@ class GetStartedPage extends StatelessWidget {
                             ),
                           ),
                         ),
-                        SizedBox(height: 20),
+                        SizedBox(height: 5),
 
                         // Decorative icons row 2
                         Row(
@@ -154,7 +154,7 @@ class GetStartedPage extends StatelessWidget {
                             ),
                           ],
                         ),
-                        SizedBox(height: 30),
+                        SizedBox(height: 5),
                       ],
                     ),
                   ),
@@ -163,7 +163,7 @@ class GetStartedPage extends StatelessWidget {
 
               // Get Started Button
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 30),
+                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 10),
                 child: SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
