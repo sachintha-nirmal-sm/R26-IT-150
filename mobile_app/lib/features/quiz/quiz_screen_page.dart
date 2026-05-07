@@ -52,6 +52,7 @@ class _QuizScreenPageState extends State<QuizScreenPage> {
         'question': 'A block of mass 5 kg rests on a frictionless inclined plane angled at 30° to the horizontal. What is the magnitude of the normal force exerted on the block? (Assume g = 9.8 m/s²)',
         'options': ['24.5 N', '42.4 N', '49.0 N', '84.8 N'],
         'hasImage': true,
+        'imageUrl': 'https://i.ytimg.com/vi/v7ffr0_WRxc/hq720.jpg?sqp=-oaymwEhCK4FEIIDSFryq4qpAxMIARUAAAAAGAElAADIQj0AgKJD&rs=AOn4CLBZE08gx81q7xDN-UyClS2El_nVeA',
       },
       {
         'type': 'mcq',
@@ -80,7 +81,7 @@ class _QuizScreenPageState extends State<QuizScreenPage> {
       {
         'type': 'mcq',
         'question': 'What does Newton\'s Third Law state?',
-        'options': ['Every action has equal and opposite reaction', 'F=ma', 'Objects at rest stay at rest', 'None of the above'],
+        'options': ['Every action has equal and\n opposite reaction', 'F=ma', 'Objects at rest stay at rest', 'None of the above'],
         'hasImage': false,
       },
       {
@@ -365,11 +366,12 @@ class _QuizScreenPageState extends State<QuizScreenPage> {
     final String questionText = question['question'];
     final List<String> options = question['options'];
     final bool hasImage = question['hasImage'] ?? false;
+    final String imageUrl = question['imageUrl'] ?? '';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (hasImage)
+        if (hasImage && imageUrl.isNotEmpty)
           Container(
             margin: const EdgeInsets.only(bottom: 20),
             padding: const EdgeInsets.all(10),
@@ -380,22 +382,55 @@ class _QuizScreenPageState extends State<QuizScreenPage> {
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: Image.network(
-                'https://via.placeholder.com/400x200.png?text=Physics+Diagram',
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    height: 200,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade200,
-                      borderRadius: BorderRadius.circular(12),
+              child: imageUrl.startsWith('assets/')
+                  ? Image.asset(
+                      imageUrl,
+                      fit: BoxFit.contain,
+                      height: 200,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          height: 200,
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade200,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.image_not_supported, size: 50),
+                                SizedBox(height: 8),
+                                Text('Image not found'),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    )
+                  : Image.network(
+                      imageUrl,
+                      fit: BoxFit.contain,
+                      height: 200,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          height: 200,
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade200,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.image_not_supported, size: 50),
+                                SizedBox(height: 8),
+                                Text('Failed to load image'),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
                     ),
-                    child: const Center(
-                      child: Icon(Icons.image_not_supported, size: 50),
-                    ),
-                  );
-                },
-              ),
             ),
           ),
         Text(
