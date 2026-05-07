@@ -116,7 +116,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 height: 55,
                 child: ElevatedButton(
                   onPressed: () {
-                    Navigator.of(context).pushReplacementNamed('/lessons');
+                    Navigator.of(context).pushReplacementNamed('/home');
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _primaryBlue,

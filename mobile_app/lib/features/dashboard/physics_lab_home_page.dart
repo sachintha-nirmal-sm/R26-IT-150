@@ -213,12 +213,7 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
       height: 52,
       child: ElevatedButton.icon(
         onPressed: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Continuing from Linear Motion...'),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+          Navigator.of(context).pushNamed('/lesson-list');
         },
         icon: const Icon(Icons.play_arrow, size: 20, color: Colors.white),
         label: const Text(
