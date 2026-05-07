@@ -187,7 +187,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
   Widget _buildDropdownField() {
     return DropdownButtonFormField<String>(
-      initialValue: _selectedGrade,
+      value: _selectedGrade,
       isExpanded: true,
       focusColor: Colors.transparent,
       dropdownColor: Colors.white,
