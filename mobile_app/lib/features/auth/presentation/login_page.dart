@@ -202,11 +202,7 @@ class _LoginPageState extends State<LoginPage> {
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Signing in...'),
-                            ),
-                          );
+                          Navigator.of(context).pushReplacementNamed('/lessons');
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.blue.shade500,

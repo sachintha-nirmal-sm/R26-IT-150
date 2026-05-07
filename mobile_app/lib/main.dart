@@ -1,4 +1,5 @@
 import "package:flutter/material.dart";
+import 'features/LessonList/lesson_list_page.dart';
 import 'features/auth/presentation/get_started_page.dart';
 import 'features/auth/presentation/sign_up.dart';
 
@@ -21,6 +22,7 @@ class MyApp extends StatelessWidget {
       home: const GetStartedPage(),
       routes: {
         '/sign-up': (context) => const SignupScreen(),
+        '/lessons': (context) => const PhysicsLessonsScreen(),
       },
     );
   }
