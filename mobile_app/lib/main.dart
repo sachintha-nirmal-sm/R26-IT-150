@@ -1,3 +1,7 @@
+import "package:flutter/material.dart";
+import 'features/LessonList/lesson_list_page.dart';
+import 'features/auth/presentation/get_started_page.dart';
+import 'features/auth/presentation/sign_up.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile_app/features/dashboard/physics_lab_home_page.dart';
 import 'package:mobile_app/features/lessons/force_linear_motion_page.dart';
@@ -12,6 +16,15 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      title: "Mobile App",
+      theme: ThemeData(
+        useMaterial3: true,
+        primarySwatch: Colors.blue,
+      ),
+      home: const GetStartedPage(),
+      routes: {
+        '/sign-up': (context) => const SignupScreen(),
+        '/lessons': (context) => const PhysicsLessonsScreen(),
       title: 'Physics Lab',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
