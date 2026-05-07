@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'quiz_result_screen.dart';
 
 class QuizScreenPage extends StatefulWidget {
   const QuizScreenPage({
@@ -157,10 +158,21 @@ class _QuizScreenPageState extends State<QuizScreenPage> {
           ),
           ElevatedButton(
             onPressed: () {
-              Navigator.pop(context);
-              // TODO: Process submission and show results
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Quiz submitted successfully!')),
+              Navigator.pop(context); // Close the dialog
+              
+              final timeTaken = _formatTime(widget.timeLimit - _secondsRemaining);
+              // Using a mock score for demonstration
+              int correctAnswers = 8;
+              
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => QuizResultScreen(
+                    totalQuestions: widget.totalQuestions,
+                    correctAnswers: correctAnswers,
+                    timeTaken: timeTaken,
+                  ),
+                ),
               );
             },
             child: const Text('Submit'),
