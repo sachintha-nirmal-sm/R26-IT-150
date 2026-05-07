@@ -134,7 +134,10 @@ class _PhysicsLessonsScreenState extends State<PhysicsLessonsScreen> {
     final isSelected = title == _selectedLessonTitle;
 
     return GestureDetector(
-      onTap: () => setState(() => _selectedLessonTitle = title),
+      onTap: () {
+        setState(() => _selectedLessonTitle = title);
+        Navigator.of(context).pushNamed('/force-motion');
+      },
       child: Container(
         margin: const EdgeInsets.only(bottom: 15),
         decoration: BoxDecoration(
