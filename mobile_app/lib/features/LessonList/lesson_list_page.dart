@@ -9,6 +9,7 @@ class PhysicsLessonsScreen extends StatefulWidget {
 
 class _PhysicsLessonsScreenState extends State<PhysicsLessonsScreen> {
   int _currentIndex = 1;
+  String _selectedLessonTitle = 'Linear Motion';
 
   @override
   Widget build(BuildContext context) {
@@ -76,17 +77,17 @@ class _PhysicsLessonsScreenState extends State<PhysicsLessonsScreen> {
                   _buildLessonCard(
                     title: "Forces and Newton's Laws",
                     subtitle: 'Start Lesson',
-                    icon: Icons.play_arrow,
+                    icon: Icons.fitness_center,
                   ),
                   _buildLessonCard(
                     title: 'Work, Energy, and Power',
                     subtitle: 'Start Lesson',
-                    icon: Icons.play_arrow,
+                    icon: Icons.bolt,
                   ),
                   _buildLessonCard(
                     title: 'Waves and Sound',
                     subtitle: 'Start Lesson',
-                    icon: Icons.play_arrow,
+                    icon: Icons.graphic_eq,
                   ),
                 ],
               ),
@@ -130,82 +131,86 @@ class _PhysicsLessonsScreenState extends State<PhysicsLessonsScreen> {
     bool isInProgress = false,
     double progress = 0.0,
   }) {
-    final isSelected = isInProgress;
+    final isSelected = title == _selectedLessonTitle;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 15),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isSelected ? Colors.blue : Colors.grey.shade200,
-          width: isSelected ? 2 : 1,
+    return GestureDetector(
+      onTap: () => setState(() => _selectedLessonTitle = title),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 15),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? Colors.blue : Colors.grey.shade200,
+            width: isSelected ? 2 : 1,
+          ),
         ),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Column(
-          children: [
-            ListTile(
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 8,
-              ),
-              leading: Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE8F1FF),
-                  borderRadius: BorderRadius.circular(50),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Column(
+            children: [
+              ListTile(
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
                 ),
-                child: Icon(icon, color: const Color(0xFF0056D2)),
-              ),
-              title: Text(
-                title,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                ),
-              ),
-              subtitle: Row(
-                children: [
-                  if (isCompleted)
-                    const Icon(Icons.circle, size: 8, color: Colors.blue),
-                  if (isInProgress)
-                    const Icon(
-                      Icons.play_circle_outline,
-                      size: 14,
-                      color: Colors.blue,
-                    ),
-                  const SizedBox(width: 5),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      color:
-                          isInProgress || isCompleted ? Colors.blue : Colors.grey,
-                      fontWeight: isInProgress || isCompleted
-                          ? FontWeight.bold
-                          : FontWeight.normal,
-                    ),
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE8F1FF),
+                    borderRadius: BorderRadius.circular(50),
                   ),
-                ],
-              ),
-              trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-            ),
-            if (isInProgress)
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Container(
-                  height: 4,
-                  width: double.infinity,
-                  color: Colors.grey.shade200,
-                  child: FractionallySizedBox(
-                    alignment: Alignment.bottomLeft,
-                    widthFactor: progress,
-                    child: Container(color: Colors.blue),
+                  child: Icon(icon, color: const Color(0xFF0056D2)),
+                ),
+                title: Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
                   ),
                 ),
+                subtitle: Row(
+                  children: [
+                    if (isCompleted)
+                      const Icon(Icons.circle, size: 8, color: Colors.blue),
+                    if (isInProgress)
+                      const Icon(
+                        Icons.play_circle_outline,
+                        size: 14,
+                        color: Colors.blue,
+                      ),
+                    const SizedBox(width: 5),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        color: isInProgress || isCompleted
+                            ? Colors.blue
+                            : Colors.grey,
+                        fontWeight: isInProgress || isCompleted
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                      ),
+                    ),
+                  ],
+                ),
+                trailing: const Icon(Icons.chevron_right, color: Colors.grey),
               ),
-          ],
+              if (isInProgress)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Container(
+                    height: 4,
+                    width: double.infinity,
+                    color: Colors.grey.shade200,
+                    child: FractionallySizedBox(
+                      alignment: Alignment.bottomLeft,
+                      widthFactor: progress,
+                      child: Container(color: Colors.blue),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );

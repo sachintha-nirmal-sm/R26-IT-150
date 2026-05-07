@@ -42,7 +42,7 @@ class _LoginPageState extends State<LoginPage> {
                   child: Image.asset(
                     'assets/images/login_image.webp',
                     width: 300,
-                    height: 250,
+                    height: 220,
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
                       return Container(
@@ -71,13 +71,13 @@ class _LoginPageState extends State<LoginPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    SizedBox(height: 24),
+                    SizedBox(height: 5),
 
                     // Heading
                     Text(
                       "Let's sign you in",
                       style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            fontSize: 24,
+                            fontSize: 28,
                             fontWeight: FontWeight.bold,
                             color: Colors.grey.shade800,
                           ),
