@@ -1,4 +1,5 @@
 import "package:flutter/material.dart";
+import 'features/experiments/experiments.dart';
 
 void main() {
   runApp(const MyApp());
@@ -10,12 +11,15 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: "Mobile App",
-      home: const Scaffold(
-        body: Center(
-          child: Text("Hello"),
+      title: "Physics Lab - Experiment Results",
+      theme: ThemeData(
+        useMaterial3: true,
+        fontFamily: 'Poppins',
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF2F80ED),
         ),
       ),
+      home: const ExperimentResultsScreen(),
     );
   }
 }
