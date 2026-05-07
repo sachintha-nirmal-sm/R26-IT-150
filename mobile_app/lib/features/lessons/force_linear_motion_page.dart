@@ -8,6 +8,8 @@ class ForceLinearMotionPage extends StatefulWidget {
 }
 
 class _ForceLinearMotionPageState extends State<ForceLinearMotionPage> {
+  static const Color _primaryBlue = Color(0xFF2196F3);
+
   int _selectedIndex = 1; // "Lessons" tab selected by default
 
   void _onItemTapped(int index) {
@@ -77,7 +79,7 @@ class _ForceLinearMotionPageState extends State<ForceLinearMotionPage> {
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: [
-                      _buildChip(context, "Quizzes", Icons.quiz_outlined, Colors.blue),
+                      _buildChip(context, "Quizzes", Icons.quiz_outlined, _primaryBlue),
                       const SizedBox(width: 12),
                       _buildChip(context, "Games", Icons.sports_esports_outlined, Colors.orange),
                       const SizedBox(width: 12),
@@ -138,7 +140,7 @@ class _ForceLinearMotionPageState extends State<ForceLinearMotionPage> {
           type: BottomNavigationBarType.fixed,
           currentIndex: _selectedIndex,
           onTap: _onItemTapped,
-          selectedItemColor: Colors.blueAccent,
+          selectedItemColor: _primaryBlue,
           unselectedItemColor: const Color(0xFF94A3B8),
           backgroundColor: Colors.white,
           elevation: 0,
@@ -171,19 +173,19 @@ class _ForceLinearMotionPageState extends State<ForceLinearMotionPage> {
     );
   }
 
-  Widget _buildChip(BuildContext context, String label, IconData icon, MaterialColor color) {
+  Widget _buildChip(BuildContext context, String label, IconData icon, Color color) {
     return ActionChip(
-      avatar: Icon(icon, color: color.shade700, size: 20),
+      avatar: Icon(icon, color: color, size: 20),
       label: Text(
         label,
         style: TextStyle(
-          color: color.shade800, 
+          color: color,
           fontWeight: FontWeight.w600,
           fontSize: 14,
         ),
       ),
-      backgroundColor: color.shade50,
-      side: BorderSide(color: color.shade200, width: 1),
+      backgroundColor: color.withOpacity(0.10),
+      side: BorderSide(color: color.withOpacity(0.25), width: 1),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       onPressed: () {
@@ -246,7 +248,7 @@ class _ForceLinearMotionPageState extends State<ForceLinearMotionPage> {
                     child: ElevatedButton(
                       onPressed: () => _showSnackBar(context, "Starting: $title"),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2563EB), // primary blue
+                        backgroundColor: _primaryBlue,
                         foregroundColor: Colors.white,
                         elevation: 0,
                         shape: RoundedRectangleBorder(

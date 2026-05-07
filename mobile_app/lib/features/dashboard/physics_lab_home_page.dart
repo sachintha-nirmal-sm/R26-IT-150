@@ -15,7 +15,7 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
 
   // ── colour tokens ────────────────────────────────────────────────────────────
   static const Color _bg = Color(0xFFF4F6FB);
-  static const Color _primaryBlue = Color(0xFF1A3CBA);
+  static const Color _primaryBlue = Color(0xFF2196F3);
   static const Color _bodyText = Color(0xFF1A1A2E);
   static const Color _subtitleText = Color(0xFF6B7280);
   static const Color _searchBg = Color(0xFFEEEFF4);
@@ -345,9 +345,9 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
           begin: Alignment.topRight,
           end: Alignment.bottomLeft,
           colors: [
-            Color(0xFF4A6FD4),
-            Color(0xFF1A3CBA),
-            Color(0xFF0F2580),
+            Color(0xFF64B5F6),
+            Color(0xFF2196F3),
+            Color(0xFF1976D2),
           ],
         ),
         boxShadow: const [

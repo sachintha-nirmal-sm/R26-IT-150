@@ -33,7 +33,7 @@ class MyApp extends StatelessWidget {
         ),
       ),
       home: const GetStartedPage(),
-      initialRoute: '/home',
+      initialRoute: '/force-motion',
       routes: {
         '/get-started': (context) => const GetStartedPage(),
         '/login': (context) => const LoginPage(),
