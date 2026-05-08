@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'analysis_results_page.dart';
 
 class DynamicAssessmentPage extends StatefulWidget {
   const DynamicAssessmentPage({super.key});
@@ -102,37 +103,17 @@ class _DynamicAssessmentPageState extends State<DynamicAssessmentPage> {
 
   // Analysis Logic to identify weak areas
   void _analyzePerformance() {
-    List<String> weakAreas = [];
-    if (userAnswers[0] != correctAnswers[0]) weakAreas.add("Mathematical Application (F=ma)");
-    if (userAnswers[1] != correctAnswers[1]) weakAreas.add("Frictional Forces & Real-world motion");
-    if (userAnswers[2] != correctAnswers[2]) weakAreas.add("Conceptual understanding of Inertia/Mass");
+    bool formulaCorrect = userAnswers[0] == correctAnswers[0];
+    bool scenarioCorrect = userAnswers[1] == correctAnswers[1];
+    bool conceptualCorrect = userAnswers[2] == correctAnswers[2];
 
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(25))),
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(25.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text("Knowledge Analysis", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 15),
-            if (weakAreas.isEmpty)
-              const Text("Excellent! You have a strong grasp of basics.")
-            else ...[
-              const Text("You should focus on these areas:"),
-              const SizedBox(height: 10),
-              ...weakAreas.map((area) => ListTile(
-                leading: const Icon(Icons.warning_amber_rounded, color: Colors.orange),
-                title: Text(area),
-              )),
-            ],
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Got it"),
-            )
-          ],
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AnalysisResultsPage(
+          formulaCorrect: formulaCorrect,
+          scenarioCorrect: scenarioCorrect,
+          conceptualCorrect: conceptualCorrect,
         ),
       ),
     );
