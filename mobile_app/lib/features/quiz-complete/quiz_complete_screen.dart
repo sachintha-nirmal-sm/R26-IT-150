@@ -1,5 +1,7 @@
 import "package:flutter/material.dart";
 
+import "../Step-by-Step Solution/step_by_step_solution_screen.dart";
+
 class QuizCompleteScreen extends StatelessWidget {
   const QuizCompleteScreen({super.key});
 
@@ -192,7 +194,13 @@ class _CheckAnswerButton extends StatelessWidget {
       width: double.infinity,
       height: 60,
       child: ElevatedButton(
-        onPressed: () {},
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => const StepByStepSolutionScreen(),
+            ),
+          );
+        },
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.blue,
           elevation: 4,
