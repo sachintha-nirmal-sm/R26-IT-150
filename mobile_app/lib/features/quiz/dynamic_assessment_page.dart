@@ -28,10 +28,11 @@ class _DynamicAssessmentPageState extends State<DynamicAssessmentPage> {
         title: const Text('Physics Lab', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
         actions: [
           Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.only(right: 16.0),
             child: CircleAvatar(
-              backgroundColor: const Color(0xFF2196F3),
-              child: const Text("SP", style: TextStyle(color: Colors.white, fontSize: 12)),
+              radius: 18,
+              backgroundColor: const Color(0xFFCCCCCC),
+              child: const Icon(Icons.person, color: Colors.white, size: 22),
             ),
           )
         ],

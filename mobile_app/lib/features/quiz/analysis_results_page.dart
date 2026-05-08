@@ -33,10 +33,14 @@ class AnalysisResultsPage extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text('Analysis Results', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-        actions: const [
+        actions: [
           Padding(
-            padding: EdgeInsets.only(right: 16.0),
-            child: CircleAvatar(backgroundImage: NetworkImage('https://via.placeholder.com/150')),
+            padding: const EdgeInsets.only(right: 16.0),
+            child: CircleAvatar(
+              radius: 18,
+              backgroundColor: const Color(0xFFCCCCCC),
+              child: const Icon(Icons.person, color: Colors.white, size: 22),
+            ),
           )
         ],
       ),
@@ -138,6 +142,8 @@ class AnalysisResultsPage extends StatelessWidget {
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: 1,
+        selectedItemColor: Colors.blue,
+        unselectedItemColor: Colors.grey,
         type: BottomNavigationBarType.fixed,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Home'),

@@ -34,6 +34,16 @@ class QuizFailureScreen extends StatelessWidget {
           style: TextStyle(color: Color(0xFF1A1C1E), fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: CircleAvatar(
+              radius: 18,
+              backgroundColor: const Color(0xFFCCCCCC),
+              child: const Icon(Icons.person, color: Colors.white, size: 22),
+            ),
+          )
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),
