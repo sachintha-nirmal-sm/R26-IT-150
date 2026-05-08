@@ -1,14 +1,46 @@
 import 'package:flutter/material.dart';
 
 class LessonsDashboard extends StatefulWidget {
-  const LessonsDashboard({super.key});
+  final String lessonTitle;
+  final String grade;
+  final String? lessonDescription;
+
+  const LessonsDashboard({
+    super.key,
+    this.lessonTitle = 'Linear Motion',
+    this.grade = 'Grade 9 Physics',
+    this.lessonDescription,
+  });
 
   @override
   State<LessonsDashboard> createState() => _LessonsDashboardState();
 }
 
 class _LessonsDashboardState extends State<LessonsDashboard> {
+  static const Color _primaryBlue = Color(0xFF2196F3);
+  static const Color _navInactive = Color(0xFFB0BEC5);
+  
   int _selectedIndex = 1; // Lessons tab selected by default
+
+  late String _currentLessonDescription;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentLessonDescription = widget.lessonDescription ??
+        _getDescriptionForLesson(widget.lessonTitle);
+  }
+
+  String _getDescriptionForLesson(String title) {
+    final descriptions = {
+      'Introduction to Physics': 'Learn the basics of physics and explore fundamental principles that govern the universe.',
+      'Linear Motion': 'Master the fundamental concepts of push, pull, and the laws governing motion.',
+      "Forces and Newton's Laws": 'Understand the three laws of motion and how forces affect objects.',
+      'Work, Energy, and Power': 'Discover the concepts of work, energy transformation, and power in physical systems.',
+      'Waves and Sound': 'Explore the properties of waves and how sound travels through different media.',
+    };
+    return descriptions[title] ?? 'Master the fundamental concepts of this lesson.';
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -25,10 +57,10 @@ class _LessonsDashboardState extends State<LessonsDashboard> {
           icon: const Icon(Icons.arrow_back, color:  const Color(0xFF2196F3)),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Force',
-          style: TextStyle(
-            color:  const Color(0xFF2196F3),
+        title: Text(
+          widget.grade,
+          style: const TextStyle(
+            color: Color.fromARGB(255, 0, 0, 0),
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -65,18 +97,20 @@ class _LessonsDashboardState extends State<LessonsDashboard> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Linear Motion',
-                      style: TextStyle(
+                
+                    const SizedBox(height: 8),
+                    Text(
+                      widget.lessonTitle,
+                      style: const TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
-                        color: const Color(0xFF2196F3),
+                        color: Color.fromARGB(255, 0, 0, 0),
                       ),
                     ),
                     const SizedBox(height: 12),
-                    const Text(
-                      'Master the fundamental concepts of push, pull, and the laws governing motion.',
-                      style: TextStyle(
+                    Text(
+                      _currentLessonDescription,
+                      style: const TextStyle(
                         fontSize: 14,
                         color: Colors.grey,
                         height: 1.5,
@@ -163,40 +197,42 @@ class _LessonsDashboardState extends State<LessonsDashboard> {
                   ),
                 ),
               ),
-              const SizedBox(height: 32),
-
-              // Continue Learning Section
-              const Text(
-                'Continue Learning',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFF2196F3),
-                ),
-              ),
-              const SizedBox(height: 16),
-              _buildLessonTile(
-                title: 'Forces and newton laws',
-                icon: Icons.play_circle_outline,
-              ),
-              const SizedBox(height: 12),
-              _buildLessonTile(
-                title: 'Work, Energy, and Power',
-                icon: Icons.play_circle_outline,
-              ),
-              const SizedBox(height: 40),
             ],
           ),
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
+      bottomNavigationBar: _buildBottomNav(),
+    );
+  }
+
+  Widget _buildBottomNav() {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 8,
+            offset: Offset(0, -2),
+          ),
+        ],
+      ),
+      child: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
-        selectedItemColor: const Color(0xFF2196F3),
-        unselectedItemColor: Colors.grey,
-        backgroundColor: Colors.white,
-        elevation: 8,
+        selectedItemColor: _primaryBlue,
+        unselectedItemColor: _navInactive,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        selectedLabelStyle: const TextStyle(
+          fontWeight: FontWeight.w700,
+          fontSize: 12,
+        ),
+        unselectedLabelStyle: const TextStyle(
+          fontWeight: FontWeight.w500,
+          fontSize: 12,
+        ),
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home_outlined),
@@ -204,8 +240,8 @@ class _LessonsDashboardState extends State<LessonsDashboard> {
             label: 'Home',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.play_circle_outline),
-            activeIcon: Icon(Icons.play_circle),
+            icon: Icon(Icons.menu_book_outlined),
+            activeIcon: Icon(Icons.menu_book),
             label: 'Lessons',
           ),
           BottomNavigationBarItem(
@@ -261,37 +297,6 @@ class _LessonsDashboardState extends State<LessonsDashboard> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildLessonTile({
-    required String title,
-    required IconData icon,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE0E0E0)),
-      ),
-      child: ListTile(
-        leading: Icon(
-          icon,
-          color: const Color(0xFF2196F3),
-        ),
-        title: Text(
-          title,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Colors.black,
-          ),
-        ),
-        trailing: const Icon(
-          Icons.chevron_right,
-          color: Colors.grey,
-        ),
       ),
     );
   }
