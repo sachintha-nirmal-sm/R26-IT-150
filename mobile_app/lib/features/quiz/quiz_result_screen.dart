@@ -37,13 +37,13 @@ class QuizResultScreen extends StatelessWidget {
           style: TextStyle(color: Color(0xFF1A1C1E), fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
-        actions: const [
+        actions: [
           Padding(
-            padding: EdgeInsets.only(right: 16.0),
+            padding: const EdgeInsets.only(right: 16.0),
             child: CircleAvatar(
               radius: 18,
-              backgroundColor: Color(0xFFE8F1FF),
-              child: Icon(Icons.person, size: 20, color: Color(0xFF0056D2)),
+              backgroundColor: const Color(0xFFCCCCCC),
+              child: const Icon(Icons.person, color: Colors.white, size: 22),
             ),
           )
         ],

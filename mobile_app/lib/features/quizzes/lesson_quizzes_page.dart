@@ -55,11 +55,11 @@ class _LessonQuizzesPageState extends State<LessonQuizzesPage> {
             padding: const EdgeInsets.only(right: 16),
             child: CircleAvatar(
               radius: 18,
-              backgroundColor: const Color(0xFFE8F1FF),
-              child: Icon(
-                Icons.person_outline,
-                size: 20,
-                color: const Color.fromARGB(255, 90, 162, 245),
+              backgroundColor: const Color(0xFFCCCCCC),
+              child: const Icon(
+                Icons.person,
+                color: Colors.white,
+                size: 22,
               ),
             ),
           ),
