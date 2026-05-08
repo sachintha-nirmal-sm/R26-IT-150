@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 
-void main() => runApp(const MaterialApp(home: ProfileScreen()));
-
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  int _selectedIndex = 3;
 
   @override
   Widget build(BuildContext context) {
@@ -12,7 +17,10 @@ class ProfileScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        leading: const Icon(Icons.arrow_back, color: Color(0xFF0056D2)),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Color(0xFF0056D2)),
+          onPressed: () => Navigator.pop(context),
+        ),
         title: const Text(
           'Profile',
           style: TextStyle(color: Color(0xFF1A1C1E), fontWeight: FontWeight.bold),
@@ -129,10 +137,27 @@ class ProfileScreen extends StatelessWidget {
         ),
       ),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 3,
+        currentIndex: _selectedIndex,
         type: BottomNavigationBarType.fixed,
         selectedItemColor: Colors.blue,
         unselectedItemColor: Colors.grey,
+        onTap: (index) {
+          setState(() => _selectedIndex = index);
+          switch (index) {
+            case 0:
+              Navigator.pushNamed(context, '/home');
+              break;
+            case 1:
+              Navigator.pushNamed(context, '/lesson-list');
+              break;
+            case 2:
+              Navigator.pushNamed(context, '/deep-learn');
+              break;
+            case 3:
+              // Already on profile
+              break;
+          }
+        },
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.menu_book), label: 'Lessons'),
