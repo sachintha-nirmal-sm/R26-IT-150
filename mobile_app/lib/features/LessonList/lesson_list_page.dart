@@ -28,7 +28,7 @@ class _PhysicsLessonsScreenState extends State<PhysicsLessonsScreen> {
         elevation: 0,
         leading: IconButton(
           onPressed: () => Navigator.of(context).maybePop(),
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF0056D2)),
+          icon: const Icon(Icons.arrow_back, color: Color(0xFF2196F3)),
         ),
         title: const Text(
           'Physics Lab',
@@ -212,7 +212,7 @@ class _PhysicsLessonsScreenState extends State<PhysicsLessonsScreen> {
                     color: const Color(0xFFE8F1FF),
                     borderRadius: BorderRadius.circular(50),
                   ),
-                  child: Icon(icon, color: const Color(0xFF0056D2)),
+                  child: Icon(icon, color: const Color(0xFF2196F3)),
                 ),
                 title: Text(
                   title,

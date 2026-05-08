@@ -165,11 +165,13 @@ class _QuizScreenPageState extends State<QuizScreenPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
+            
             child: const Text('Cancel'),
           ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context); // Close the dialog
+              
               
               final timeTaken = _formatTime(widget.timeLimit - _secondsRemaining);
               
@@ -287,7 +289,7 @@ class _QuizScreenPageState extends State<QuizScreenPage> {
                         Navigator.pop(context);
                         Navigator.pop(context);
                       },
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.red,foregroundColor: Colors.white),
                       child: const Text('Exit'),
                     ),
                   ],
@@ -405,6 +407,7 @@ class _QuizScreenPageState extends State<QuizScreenPage> {
                       label: const Text('Next'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF2196F3),
+                        foregroundColor: Colors.white,
                       ),
                     )
                   else
@@ -412,6 +415,7 @@ class _QuizScreenPageState extends State<QuizScreenPage> {
                       onPressed: _submitQuiz,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF2196F3),
+                        foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
                       ),
                       child: const Text('Submit Quiz'),

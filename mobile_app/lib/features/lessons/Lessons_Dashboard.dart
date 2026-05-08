@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../LessonList/lesson_list_page.dart';
+import '../quizzes/lesson_quizzes_page.dart';
 
 class LessonsDashboard extends StatefulWidget {
   final String lessonTitle;
@@ -55,7 +57,12 @@ class _LessonsDashboardState extends State<LessonsDashboard> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color:  const Color(0xFF2196F3)),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const PhysicsLessonsScreen(),
+            ),
+          ),
         ),
         title: Text(
           widget.grade,
@@ -72,10 +79,10 @@ class _LessonsDashboardState extends State<LessonsDashboard> {
             padding: const EdgeInsets.only(right: 16.0),
             child: CircleAvatar(
               radius: 20,
-              backgroundColor: const Color(0xFFE8F1FB),
+              backgroundColor: const Color.fromARGB(255, 190, 190, 191),
               child: const Icon(
                 Icons.person,
-                color:  const Color(0xFF2196F3),
+                color:  Color.fromARGB(255, 246, 250, 253),
               ),
             ),
           ),
@@ -129,12 +136,23 @@ class _LessonsDashboardState extends State<LessonsDashboard> {
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 children: [
-                  _buildGridCard(
-                    icon: Icons.quiz_outlined,
-                    label: 'Quizzes',
-                    iconColor: const Color(0xFF2196F3),
-                    bgColor: const Color.fromARGB(255, 210, 235, 255),
-                  ),
+                  GestureDetector(
+  onTap: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const LessonQuizzesPage(),
+      ),
+    );
+  },
+
+  child: _buildGridCard(
+    icon: Icons.quiz_outlined,
+    label: 'Quizzes',
+    iconColor: const Color(0xFF2196F3),
+    bgColor: const Color.fromARGB(255, 210, 235, 255),
+  ),
+),
                   _buildGridCard(
                     icon: Icons.sports_esports_outlined,
                     label: 'Games',
