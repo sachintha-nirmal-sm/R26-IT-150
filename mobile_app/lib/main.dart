@@ -8,6 +8,8 @@ import 'features/dashboard/physics_lab_home_page.dart';
 import 'features/lessons/force_linear_motion_page.dart';
 import 'features/quizzes/lesson_quizzes_page.dart';
 import 'features/lessons/lessons_dashboard.dart';
+import 'features/DeepLearn/deep_learn_screen.dart';
+import 'features/pro/profile_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -35,7 +37,7 @@ class MyApp extends StatelessWidget {
         ),
       ),
       home: const GetStartedPage(),
-      initialRoute: '/get-started',
+      initialRoute: '/profile',
       routes: {
         '/get-started': (context) => const GetStartedPage(),
         '/login': (context) => const LoginPage(),
@@ -45,6 +47,8 @@ class MyApp extends StatelessWidget {
         '/force-motion': (context) => const ForceLinearMotionPage(),
         '/lesson-quizzes': (context) => const LessonQuizzesPage(),
         '/lessonDBoard': (context) => const LessonsDashboard(),
+        '/deep-learn': (context) => const DeepLearningScreen(),
+        '/profile': (context) => const ProfileScreen(),
       },
     );
   }

@@ -23,6 +23,9 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
 
   void _onNavTap(int index) {
     setState(() => _selectedIndex = index);
+    if (index == 3) {
+      Navigator.pushNamed(context, '/profile');
+    }
   }
 
   @override
@@ -99,10 +102,13 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
       actions: [
         Padding(
           padding: const EdgeInsets.only(right: 16),
-          child: CircleAvatar(
-            radius: 18,
-            backgroundColor: const Color(0xFFCCCCCC),
-            child: const Icon(Icons.person, color: Colors.white, size: 22),
+          child: GestureDetector(
+            onTap: () => Navigator.pushNamed(context, '/profile'),
+            child: const CircleAvatar(
+              radius: 18,
+              backgroundColor: Color(0xFFCCCCCC),
+              child: Icon(Icons.person, color: Colors.white, size: 22),
+            ),
           ),
         ),
       ],
