@@ -4,6 +4,12 @@ Thumbs.db
 *.log
 *.tmp
 *.swp
+desktop.ini
+
+# IDEs
+.idea/
+*.iml
+.vscode/
 
 # Python
 __pycache__/
@@ -23,6 +29,8 @@ build/
 .flutter-plugins
 .flutter-plugins-dependencies
 .packages
+.metadata
+coverage/
 
 # Firebase
 .firebase/
