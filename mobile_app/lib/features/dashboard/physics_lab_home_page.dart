@@ -31,27 +31,45 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
       backgroundColor: _bg,
       appBar: _buildAppBar(),
       body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _greetingCard(),
-              const SizedBox(height: 16),
-              _searchBar(),
-              const SizedBox(height: 16),
-              _progressCard(),
-              const SizedBox(height: 16),
-              _continueButton(context),
-              const SizedBox(height: 24),
-              _recommendedLabel(),
-              const SizedBox(height: 12),
-              _recommendedRow(),
-              const SizedBox(height: 16),
-              _virtualLabsBanner(),
-            ],
-          ),
+        child: Stack(
+          children: [
+            SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 50),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _greetingCard(),
+                  const SizedBox(height: 16),
+                  _searchBar(),
+                  const SizedBox(height: 16),
+                  _progressCard(),
+                  const SizedBox(height: 16),
+                  _continueButton(context),
+                  const SizedBox(height: 24),
+                  _recommendedLabel(),
+                  const SizedBox(height: 12),
+                  _recommendedRow(),
+                  const SizedBox(height: 16),
+                  _virtualLabsBanner(),
+                ],
+              ),
+            ),
+            Positioned(
+              right: 0,
+              bottom: 0,
+              child: IgnorePointer(
+                child: SizedBox(
+                  width: 100,
+                  height: 100,
+                  child: Image.asset(
+                    'assets/animations/Chatbot.gif',
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
       bottomNavigationBar: _buildBottomNav(),
@@ -364,7 +382,7 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
               height: 120,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.07),
+                color: Colors.white.withValues(alpha: 0.07),
               ),
             ),
           ),
@@ -376,7 +394,7 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
               height: 70,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.07),
+                color: Colors.white.withValues(alpha: 0.07),
               ),
             ),
           ),

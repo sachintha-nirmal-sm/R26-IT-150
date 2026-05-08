@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../lessons/Lessons_Dashboard.dart';
 
 class PhysicsLessonsScreen extends StatefulWidget {
   const PhysicsLessonsScreen({super.key});
@@ -8,8 +9,15 @@ class PhysicsLessonsScreen extends StatefulWidget {
 }
 
 class _PhysicsLessonsScreenState extends State<PhysicsLessonsScreen> {
+  static const Color _primaryBlue = Color(0xFF2196F3);
+  static const Color _navInactive = Color(0xFFB0BEC5);
+  
   int _currentIndex = 1;
   String _selectedLessonTitle = 'Linear Motion';
+
+  void _onNavTap(int index) {
+    setState(() => _currentIndex = index);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -95,27 +103,57 @@ class _PhysicsLessonsScreenState extends State<PhysicsLessonsScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
+      bottomNavigationBar: _buildBottomNav(),
+    );
+  }
+
+  Widget _buildBottomNav() {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 8,
+            offset: Offset(0, -2),
+          ),
+        ],
+      ),
+      child: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
-        selectedItemColor: Colors.blue,
-        unselectedItemColor: Colors.grey,
-        onTap: (index) => setState(() => _currentIndex = index),
+        currentIndex: _currentIndex,
+        onTap: _onNavTap,
+        selectedItemColor: _primaryBlue,
+        unselectedItemColor: _navInactive,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        selectedLabelStyle: const TextStyle(
+          fontWeight: FontWeight.w700,
+          fontSize: 12,
+        ),
+        unselectedLabelStyle: const TextStyle(
+          fontWeight: FontWeight.w500,
+          fontSize: 12,
+        ),
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home_outlined),
+            activeIcon: Icon(Icons.home),
             label: 'Home',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.menu_book),
+            icon: Icon(Icons.menu_book_outlined),
+            activeIcon: Icon(Icons.menu_book),
             label: 'Lessons',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.biotech_outlined),
+            icon: Icon(Icons.science_outlined),
+            activeIcon: Icon(Icons.science),
             label: 'Labs',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_outline),
+            activeIcon: Icon(Icons.person),
             label: 'Profile',
           ),
         ],
@@ -137,6 +175,17 @@ class _PhysicsLessonsScreenState extends State<PhysicsLessonsScreen> {
       onTap: () {
         setState(() => _selectedLessonTitle = title);
         Navigator.of(context).pushNamed('/force-motion');
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => LessonsDashboard(
+              lessonTitle: title,
+              grade: 'Grade 9 Physics',
+            ),
+          ),
+        );
+
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 15),
