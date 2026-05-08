@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../quizzes/lesson_quizzes_page.dart';
+import 'dynamic_assessment_page.dart';
 
 class QuizFailureScreen extends StatelessWidget {
   final int totalQuestions;
@@ -105,9 +106,9 @@ class QuizFailureScreen extends StatelessWidget {
           width: double.infinity,
           height: 60,
           child: ElevatedButton(
-            onPressed: () => Navigator.of(context).pushReplacement(
+            onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (context) => const LessonQuizzesPage(),
+                builder: (context) => const DynamicAssessmentPage(),
               ),
             ),
             style: ElevatedButton.styleFrom(
