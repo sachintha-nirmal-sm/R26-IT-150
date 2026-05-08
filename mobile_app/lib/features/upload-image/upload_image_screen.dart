@@ -1,7 +1,74 @@
-import "package:flutter/material.dart";
+import "dart:io";
 
-class UploadImageScreen extends StatelessWidget {
+import "package:flutter/material.dart";
+import "package:image_picker/image_picker.dart";
+import "package:permission_handler/permission_handler.dart";
+
+class UploadImageScreen extends StatefulWidget {
   const UploadImageScreen({super.key});
+
+  @override
+  State<UploadImageScreen> createState() => _UploadImageScreenState();
+}
+
+class _UploadImageScreenState extends State<UploadImageScreen> {
+  final ImagePicker _picker = ImagePicker();
+
+  Future<bool> _requestCameraPermission() async {
+    final status = await Permission.camera.request();
+    return status.isGranted;
+  }
+
+  Future<bool> _requestGalleryPermission() async {
+    if (Platform.isIOS) {
+      final status = await Permission.photos.request();
+      return status.isGranted;
+    }
+
+    if (Platform.isAndroid) {
+      final photosStatus = await Permission.photos.request();
+      if (photosStatus.isGranted) {
+        return true;
+      }
+
+      final storageStatus = await Permission.storage.request();
+      return storageStatus.isGranted;
+    }
+
+    return true;
+  }
+
+  Future<void> _openCamera() async {
+    final granted = await _requestCameraPermission();
+    if (!granted) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Camera permission is required.")),
+      );
+      return;
+    }
+
+    await _picker.pickImage(source: ImageSource.camera);
+  }
+
+  Future<void> _openGallery() async {
+    final granted = await _requestGalleryPermission();
+    if (!granted) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Gallery permission is required.")),
+      );
+      return;
+    }
+
+    await _picker.pickImage(source: ImageSource.gallery);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +102,7 @@ class UploadImageScreen extends StatelessWidget {
         ],
       ),
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -82,6 +149,7 @@ class UploadImageScreen extends StatelessWidget {
                   icon: Icons.camera_alt_outlined,
                   title: "Capture Photo",
                   subtitle: "Take a new photo of your solution",
+                  onTap: _openCamera,
                 ),
               ),
               const SizedBox(height: 36),
@@ -90,8 +158,10 @@ class UploadImageScreen extends StatelessWidget {
                   icon: Icons.folder_outlined,
                   title: "Upload Image",
                   subtitle: "Browse your device for existing files",
+                  onTap: _openGallery,
                 ),
               ),
+              const SizedBox(height: 30),
             ],
           ),
         ),
@@ -105,53 +175,62 @@ class _UploadOptionCard extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.subtitle,
+    required this.onTap,
   });
 
   final IconData icon;
   final String title;
   final String subtitle;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 300,
-      height: 250,
-      decoration: BoxDecoration(
-        color: Colors.white,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: const Color(0xFFD6D9E0)),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          CircleAvatar(
-            radius: 42,
-            backgroundColor: const Color(0xFFE5EBF5),
-            child: Icon(
-              icon,
-              size: 42,
-              color: const Color(0xFF2F80ED),
-            ),
+        child: Ink(
+          width: 300,
+          height: 250,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(color: const Color(0xFFD6D9E0)),
           ),
-          const SizedBox(height: 24),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF2F80ED),
-            ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircleAvatar(
+                radius: 42,
+                backgroundColor: const Color(0xFFE5EBF5),
+                child: Icon(
+                  icon,
+                  size: 42,
+                  color: const Color(0xFF2F80ED),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF2F80ED),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                subtitle,
+                style: const TextStyle(
+                  fontSize: 15,
+                  color: Colors.black54,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
           ),
-          const SizedBox(height: 10),
-          Text(
-            subtitle,
-            style: const TextStyle(
-              fontSize: 15,
-              color: Colors.black54,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
+        ),
       ),
     );
   }

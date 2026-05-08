@@ -1,5 +1,7 @@
 import "package:flutter/material.dart";
 
+import "../upload-image/upload_image_screen.dart";
+
 class StepByStepSolutionScreen extends StatelessWidget {
   const StepByStepSolutionScreen({super.key});
 
@@ -78,7 +80,14 @@ class StepByStepSolutionScreen extends StatelessWidget {
                         width: double.infinity,
                         height: 60,
                         child: ElevatedButton(
-                          onPressed: () {},
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const UploadImageScreen(),
+                                ),
+                              );
+                            },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.blue,
                             elevation: 5,
