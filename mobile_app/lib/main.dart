@@ -6,6 +6,7 @@ import 'features/auth/presentation/login_page.dart';
 import 'features/auth/presentation/sign_up.dart';
 import 'features/dashboard/physics_lab_home_page.dart';
 import 'features/lessons/force_linear_motion_page.dart';
+import 'features/quizzes/lesson_quizzes_page.dart';
 import 'features/lessons/lessons_dashboard.dart';
 
 void main() {
@@ -42,6 +43,7 @@ class MyApp extends StatelessWidget {
         '/sign-up': (context) => const SignupScreen(),
         '/lesson-list': (context) => const PhysicsLessonsScreen(),
         '/force-motion': (context) => const ForceLinearMotionPage(),
+        '/lesson-quizzes': (context) => const LessonQuizzesPage(),
         '/lessonDBoard': (context) => const LessonsDashboard(),
       },
     );

@@ -32,7 +32,8 @@ class _ForceLinearMotionPageState extends State<ForceLinearMotionPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA), // Clean, light neutral background
+      backgroundColor:
+          const Color(0xFFF8F9FA), // Clean, light neutral background
       appBar: AppBar(
         title: const Text(
           "Force",
@@ -79,13 +80,17 @@ class _ForceLinearMotionPageState extends State<ForceLinearMotionPage> {
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: [
-                      _buildChip(context, "Quizzes", Icons.quiz_outlined, _primaryBlue),
+                      _buildChip(context, "Quizzes", Icons.quiz_outlined,
+                          _primaryBlue),
                       const SizedBox(width: 12),
-                      _buildChip(context, "Games", Icons.sports_esports_outlined, Colors.orange),
+                      _buildChip(context, "Games",
+                          Icons.sports_esports_outlined, Colors.orange),
                       const SizedBox(width: 12),
-                      _buildChip(context, "Practicals", Icons.science_outlined, Colors.green),
+                      _buildChip(context, "Practicals", Icons.science_outlined,
+                          Colors.green),
                       const SizedBox(width: 12),
-                      _buildChip(context, "Learning Materials", Icons.menu_book_outlined, Colors.purple),
+                      _buildChip(context, "Learning Materials",
+                          Icons.menu_book_outlined, Colors.purple),
                     ],
                   ),
                 ),
@@ -101,7 +106,7 @@ class _ForceLinearMotionPageState extends State<ForceLinearMotionPage> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                
+
                 // Lesson Cards
                 _buildLessonCard(
                   context,
@@ -144,27 +149,44 @@ class _ForceLinearMotionPageState extends State<ForceLinearMotionPage> {
           unselectedItemColor: const Color(0xFF94A3B8),
           backgroundColor: Colors.white,
           elevation: 0,
-          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
-          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
+          selectedLabelStyle:
+              const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+          unselectedLabelStyle:
+              const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
           items: const [
             BottomNavigationBarItem(
-              icon: Padding(padding: EdgeInsets.only(bottom: 4), child: Icon(Icons.home_outlined)),
-              activeIcon: Padding(padding: EdgeInsets.only(bottom: 4), child: Icon(Icons.home)),
+              icon: Padding(
+                  padding: EdgeInsets.only(bottom: 4),
+                  child: Icon(Icons.home_outlined)),
+              activeIcon: Padding(
+                  padding: EdgeInsets.only(bottom: 4), child: Icon(Icons.home)),
               label: "Home",
             ),
             BottomNavigationBarItem(
-              icon: Padding(padding: EdgeInsets.only(bottom: 4), child: Icon(Icons.play_circle_outline)),
-              activeIcon: Padding(padding: EdgeInsets.only(bottom: 4), child: Icon(Icons.play_circle_fill)),
+              icon: Padding(
+                  padding: EdgeInsets.only(bottom: 4),
+                  child: Icon(Icons.play_circle_outline)),
+              activeIcon: Padding(
+                  padding: EdgeInsets.only(bottom: 4),
+                  child: Icon(Icons.play_circle_fill)),
               label: "Lessons",
             ),
             BottomNavigationBarItem(
-              icon: Padding(padding: EdgeInsets.only(bottom: 4), child: Icon(Icons.science_outlined)),
-              activeIcon: Padding(padding: EdgeInsets.only(bottom: 4), child: Icon(Icons.science)),
+              icon: Padding(
+                  padding: EdgeInsets.only(bottom: 4),
+                  child: Icon(Icons.science_outlined)),
+              activeIcon: Padding(
+                  padding: EdgeInsets.only(bottom: 4),
+                  child: Icon(Icons.science)),
               label: "Labs",
             ),
             BottomNavigationBarItem(
-              icon: Padding(padding: EdgeInsets.only(bottom: 4), child: Icon(Icons.person_outline)),
-              activeIcon: Padding(padding: EdgeInsets.only(bottom: 4), child: Icon(Icons.person)),
+              icon: Padding(
+                  padding: EdgeInsets.only(bottom: 4),
+                  child: Icon(Icons.person_outline)),
+              activeIcon: Padding(
+                  padding: EdgeInsets.only(bottom: 4),
+                  child: Icon(Icons.person)),
               label: "Profile",
             ),
           ],
@@ -173,7 +195,8 @@ class _ForceLinearMotionPageState extends State<ForceLinearMotionPage> {
     );
   }
 
-  Widget _buildChip(BuildContext context, String label, IconData icon, Color color) {
+  Widget _buildChip(
+      BuildContext context, String label, IconData icon, Color color) {
     return ActionChip(
       avatar: Icon(icon, color: color, size: 20),
       label: Text(
@@ -189,6 +212,11 @@ class _ForceLinearMotionPageState extends State<ForceLinearMotionPage> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       onPressed: () {
+        if (label == 'Quizzes') {
+          Navigator.of(context).pushNamed('/lesson-quizzes');
+          return;
+        }
+
         _showSnackBar(context, "Navigating to $label...");
       },
     );
@@ -246,7 +274,8 @@ class _ForceLinearMotionPageState extends State<ForceLinearMotionPage> {
                   SizedBox(
                     height: 36,
                     child: ElevatedButton(
-                      onPressed: () => _showSnackBar(context, "Starting: $title"),
+                      onPressed: () =>
+                          _showSnackBar(context, "Starting: $title"),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _primaryBlue,
                         foregroundColor: Colors.white,
@@ -259,7 +288,7 @@ class _ForceLinearMotionPageState extends State<ForceLinearMotionPage> {
                       child: Text(
                         buttonText,
                         style: const TextStyle(
-                          fontSize: 13, 
+                          fontSize: 13,
                           fontWeight: FontWeight.w600,
                           letterSpacing: 0.3,
                         ),
