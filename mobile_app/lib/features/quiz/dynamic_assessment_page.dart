@@ -225,15 +225,8 @@ class _DynamicAssessmentPageState extends State<DynamicAssessmentPage> {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
         image: const DecorationImage(
-          image: NetworkImage('https://via.placeholder.com/400x200'),
+          image: AssetImage('assets/images/dynamic quize.png'),
           fit: BoxFit.cover,
-        ),
-      ),
-      child: Center(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-          decoration: BoxDecoration(color: Colors.white.withOpacity(0.9), borderRadius: BorderRadius.circular(25)),
-          child: const Text("Interactive Diagram", style: TextStyle(color: Color(0xFF2196F3), fontWeight: FontWeight.bold)),
         ),
       ),
     );
