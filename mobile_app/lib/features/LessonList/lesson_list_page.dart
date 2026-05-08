@@ -41,8 +41,8 @@ class _PhysicsLessonsScreenState extends State<PhysicsLessonsScreen> {
           Padding(
             padding: const EdgeInsets.only(right: 16),
             child: CircleAvatar(
-              backgroundColor: const Color(0xFFE8F1FF),
-              child: Icon(Icons.person_outline, color: Colors.blue.shade800),
+              backgroundColor: const Color(0xFFCCCCCC),
+              child: const Icon(Icons.person, color: Colors.white, size: 22),
             ),
           ),
         ],
@@ -174,6 +174,8 @@ class _PhysicsLessonsScreenState extends State<PhysicsLessonsScreen> {
     return GestureDetector(
       onTap: () {
         setState(() => _selectedLessonTitle = title);
+        Navigator.of(context).pushNamed('/force-motion');
+
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -183,6 +185,7 @@ class _PhysicsLessonsScreenState extends State<PhysicsLessonsScreen> {
             ),
           ),
         );
+
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 15),
