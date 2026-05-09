@@ -102,13 +102,13 @@ class _ExperimentResultsScreenState extends State<ExperimentResultsScreen> {
         ),
       ),
       centerTitle: true,
-      actions: [
+      actions: const [
         Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(16),
           child: Center(
             child: Text(
               '00:45',
-              style: const TextStyle(
+              style: TextStyle(
                 color: Color(0xFF2F80ED),
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
@@ -137,7 +137,7 @@ class _ExperimentResultsScreenState extends State<ExperimentResultsScreen> {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF2F80ED).withOpacity(0.4),
+                  color: const Color(0xFF2F80ED).withValues(alpha: 0.4),
                   blurRadius: 24,
                   offset: const Offset(0, 8),
                 ),
@@ -187,7 +187,7 @@ class _ExperimentResultsScreenState extends State<ExperimentResultsScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 12,
             offset: const Offset(0, 2),
           ),
@@ -228,7 +228,7 @@ class _ExperimentResultsScreenState extends State<ExperimentResultsScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 12,
             offset: const Offset(0, 2),
           ),
@@ -266,11 +266,11 @@ class _ExperimentResultsScreenState extends State<ExperimentResultsScreen> {
                   children: [
                     ClipRRect(
                       borderRadius: BorderRadius.circular(8),
-                      child: LinearProgressIndicator(
+                      child: const LinearProgressIndicator(
                         value: 0.87,
                         minHeight: 8,
-                        backgroundColor: const Color(0xFFE0E5EC),
-                        valueColor: const AlwaysStoppedAnimation<Color>(
+                        backgroundColor: Color(0xFFE0E5EC),
+                        valueColor: AlwaysStoppedAnimation<Color>(
                           Color(0xFF2F80ED),
                         ),
                       ),
@@ -338,7 +338,7 @@ class _ExperimentResultsScreenState extends State<ExperimentResultsScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 1),
           ),
@@ -351,7 +351,7 @@ class _ExperimentResultsScreenState extends State<ExperimentResultsScreen> {
             height: 48,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: (detail['color'] as Color).withOpacity(0.1),
+              color: (detail['color'] as Color).withValues(alpha: 0.1),
             ),
             child: Icon(
               detail['icon'],
@@ -388,7 +388,7 @@ class _ExperimentResultsScreenState extends State<ExperimentResultsScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: (detail['color'] as Color).withOpacity(0.1),
+              color: (detail['color'] as Color).withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
@@ -418,7 +418,7 @@ class _ExperimentResultsScreenState extends State<ExperimentResultsScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF2F80ED).withOpacity(0.2),
+            color: const Color(0xFF2F80ED).withValues(alpha: 0.2),
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -434,7 +434,7 @@ class _ExperimentResultsScreenState extends State<ExperimentResultsScreen> {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(
-                color: Colors.white.withOpacity(0.1),
+                color: Colors.white.withValues(alpha: 0.1),
                 width: 1,
               ),
             ),
@@ -445,7 +445,7 @@ class _ExperimentResultsScreenState extends State<ExperimentResultsScreen> {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(
-                color: Colors.white.withOpacity(0.15),
+                color: Colors.white.withValues(alpha: 0.15),
                 width: 1,
               ),
             ),
@@ -455,13 +455,13 @@ class _ExperimentResultsScreenState extends State<ExperimentResultsScreen> {
             height: 50,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Colors.white.withOpacity(0.1),
+              color: Colors.white.withValues(alpha: 0.1),
             ),
           ),
           // Center icon
           Icon(
             Icons.analytics,
-            color: Colors.white.withOpacity(0.8),
+            color: Colors.white.withValues(alpha: 0.8),
             size: 48,
           ),
         ],
