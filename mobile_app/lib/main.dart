@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import 'features/experiments/experiments.dart';
 import 'features/LessonList/lesson_list_page.dart';
 import 'features/auth/presentation/get_started_page.dart';
 import 'features/auth/presentation/login_page.dart';
@@ -25,6 +25,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
+        fontFamily: 'Poppins',
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF1A3CBA),
           brightness: Brightness.light,
@@ -36,6 +37,7 @@ class MyApp extends StatelessWidget {
           iconTheme: IconThemeData(color: Color(0xFF1A1A2E)),
         ),
       ),
+
       home: const GetStartedPage(),
       initialRoute: '/get-started',
       routes: {
@@ -49,6 +51,10 @@ class MyApp extends StatelessWidget {
         '/lessonDBoard': (context) => const LessonsDashboard(),
         '/deep-learn': (context) => const DeepLearningScreen(),
         '/profile': (context) => const ProfileScreen(),
+        '/experiment-results':    (context) => const ExperimentResultsScreen(),
+        '/experiment-execution':  (context) => const ExperimentExecutionScreen(),
+        '/experiment-in-progress':(context) => const ExperimentInProgressScreen(),
+        '/practice-experience':   (context) => const PracticeExperienceScreen(),
       },
     );
   }
