@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'lesson_progress.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -121,8 +122,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
             // Progress Items
             
-            _buildListItem(Icons.more_horiz, "Linear motion", "Inprogress .60%", Colors.blue),
-            _buildListItem(Icons.more_horiz, "Vectors & Scalars", "In Progress • 40%", Colors.blue),
+            _buildListItem(Icons.more_horiz, "Linear motion", "Inprogress .60%", Colors.blue, onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const NewtonModuleScreen(lessonName: "Linear motion")),
+              );
+            }),
+            _buildListItem(Icons.more_horiz, "Vectors & Scalars", "In Progress • 40%", Colors.blue, onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const NewtonModuleScreen(lessonName: "Vectors & Scalars")),
+              );
+            }),
 
             const SizedBox(height: 30),
             Row(
@@ -138,8 +149,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 15),
 
             // Improvement Items
-            _buildListItem(Icons.priority_high, "Newton's Second Law", "Difficulty applying formula in..", Colors.red, isAlert: true),
-            _buildListItem(Icons.priority_high, "Frictional Forces", "Confusion between static and kinetic", Colors.red, isAlert: true),
+            _buildListItem(Icons.priority_high, "Newton's Second Law", "Difficulty applying formula in..", Colors.red, isAlert: true, onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const NewtonModuleScreen(lessonName: "Newton's Second Law")),
+              );
+            }),
+            _buildListItem(Icons.priority_high, "Frictional Forces", "Confusion between static and kinetic", Colors.red, isAlert: true, onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const NewtonModuleScreen(lessonName: "Frictional Forces")),
+              );
+            }),
           ],
         ),
       ),
@@ -175,7 +196,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildListItem(IconData icon, String title, String subtitle, Color color, {bool isAlert = false}) {
+  Widget _buildListItem(IconData icon, String title, String subtitle, Color color, {bool isAlert = false, VoidCallback? onTap}) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -184,6 +205,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         border: Border.all(color: Colors.grey.shade200),
       ),
       child: ListTile(
+        onTap: onTap,
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
