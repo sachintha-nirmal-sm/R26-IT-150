@@ -165,7 +165,7 @@ class _ExperimentInProgressScreenState extends State<ExperimentInProgressScreen>
             ),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF2F80ED).withOpacity(0.3),
+                color: const Color(0xFF2F80ED).withValues(alpha: 0.3),
                 blurRadius: 12,
                 offset: const Offset(0, 4),
               ),
@@ -205,7 +205,7 @@ class _ExperimentInProgressScreenState extends State<ExperimentInProgressScreen>
         child: Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            color: Colors.black.withOpacity(0.3),
+            color: Colors.black.withValues(alpha: 0.3),
           ),
           child: Center(
             child: Container(
@@ -213,10 +213,10 @@ class _ExperimentInProgressScreenState extends State<ExperimentInProgressScreen>
               height: 64,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.9),
+                color: Colors.white.withValues(alpha: 0.9),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
+                    color: Colors.black.withValues(alpha: 0.2),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
@@ -280,8 +280,7 @@ class _ExperimentInProgressScreenState extends State<ExperimentInProgressScreen>
                         width: 80,
                         height: 80,
                         child: CircularProgressIndicator(
-                          value:
-                              _elapsedSeconds / _totalDurationSeconds,
+                          value: _elapsedSeconds / _totalDurationSeconds,
                           strokeWidth: 4,
                           valueColor: const AlwaysStoppedAnimation<Color>(
                             Color(0xFF2F80ED),
@@ -325,24 +324,24 @@ class _ExperimentInProgressScreenState extends State<ExperimentInProgressScreen>
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF2F80ED).withOpacity(0.3),
+            color: const Color(0xFF2F80ED).withValues(alpha: 0.3),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: Row(
+      child: const Row(
         children: [
-          const Icon(
+          Icon(
             Icons.science,
             color: Colors.white,
             size: 24,
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
+              children: [
                 Text(
                   'Velocity Sensor Active',
                   style: TextStyle(
@@ -418,7 +417,7 @@ class _ExperimentInProgressScreenState extends State<ExperimentInProgressScreen>
           _timer.cancel();
           int finalMinutes = _elapsedSeconds ~/ 60;
           int finalSeconds = _elapsedSeconds % 60;
-          
+
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -451,9 +450,9 @@ class _ExperimentInProgressScreenState extends State<ExperimentInProgressScreen>
       ),
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-        child: ExpansionTile(
+        child: const ExpansionTile(
           title: Row(
-            children: const [
+            children: [
               Icon(
                 Icons.info_outline,
                 color: Color(0xFF2F80ED),
@@ -473,10 +472,10 @@ class _ExperimentInProgressScreenState extends State<ExperimentInProgressScreen>
           ),
           children: [
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
+                children: [
                   Text(
                     '1. Ensure the sensor is calibrated before starting',
                     style: TextStyle(
