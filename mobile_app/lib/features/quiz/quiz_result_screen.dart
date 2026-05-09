@@ -5,12 +5,14 @@ class QuizResultScreen extends StatelessWidget {
   final int totalQuestions;
   final int correctAnswers;
   final String timeTaken;
+  final int quizNumber;
 
   const QuizResultScreen({
     super.key,
     required this.totalQuestions,
     required this.correctAnswers,
     required this.timeTaken,
+    this.quizNumber = 1,
   });
 
   @override
@@ -171,11 +173,17 @@ class QuizResultScreen extends StatelessWidget {
               width: double.infinity,
               height: 60,
               child: ElevatedButton(
-                onPressed: () => Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(
-                    builder: (context) => const LessonQuizzesPage(),
-                  ),
-                ),
+                onPressed: () {
+                  // Mark this quiz as completed
+                  Set<int> completedQuizzes = {quizNumber};
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(
+                      builder: (context) => LessonQuizzesPage(
+                        completedQuizzes: completedQuizzes,
+                      ),
+                    ),
+                  );
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF2196F3),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),

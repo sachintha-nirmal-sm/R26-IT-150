@@ -36,10 +36,13 @@ class AnalysisResultsPage extends StatelessWidget {
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
-            child: CircleAvatar(
-              radius: 18,
-              backgroundColor: const Color(0xFFCCCCCC),
-              child: const Icon(Icons.person, color: Colors.white, size: 22),
+            child: GestureDetector(
+              onTap: () => Navigator.pushNamed(context, '/profile'),
+              child: const CircleAvatar(
+                radius: 18,
+                backgroundColor: Color(0xFFCCCCCC),
+                child: Icon(Icons.person, color: Colors.white, size: 22),
+              ),
             ),
           )
         ],
@@ -122,7 +125,9 @@ class AnalysisResultsPage extends StatelessWidget {
               width: double.infinity,
               height: 60,
               child: ElevatedButton(
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.pushNamed(context, '/deep-learn');
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF2196F3),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
@@ -145,10 +150,15 @@ class AnalysisResultsPage extends StatelessWidget {
         selectedItemColor: Colors.blue,
         unselectedItemColor: Colors.grey,
         type: BottomNavigationBarType.fixed,
+        onTap: (index) {
+          if (index == 3) {
+            Navigator.pushNamed(context, '/profile');
+          }
+        },
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.menu_book), label: 'Lessons'),
-          BottomNavigationBarItem(icon: Icon(Icons.biotech_outlined), label: 'Labs'),
+          BottomNavigationBarItem(icon: Icon(Icons.book_outlined), label: 'Lessons'),
+          BottomNavigationBarItem(icon: Icon(Icons.science_outlined), label: 'Labs'),
           BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Profile'),
         ],
       ),
