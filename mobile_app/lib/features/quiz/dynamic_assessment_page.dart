@@ -29,10 +29,13 @@ class _DynamicAssessmentPageState extends State<DynamicAssessmentPage> {
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
-            child: CircleAvatar(
-              radius: 18,
-              backgroundColor: const Color(0xFFCCCCCC),
-              child: const Icon(Icons.person, color: Colors.white, size: 22),
+            child: GestureDetector(
+              onTap: () => Navigator.pushNamed(context, '/profile'),
+              child: const CircleAvatar(
+                radius: 18,
+                backgroundColor: const Color(0xFFCCCCCC),
+                child: Icon(Icons.person, color: Colors.white, size: 22),
+              ),
             ),
           )
         ],
@@ -92,6 +95,22 @@ class _DynamicAssessmentPageState extends State<DynamicAssessmentPage> {
         selectedItemColor: Colors.blue,
         unselectedItemColor: Colors.grey,
         type: BottomNavigationBarType.fixed,
+        onTap: (index) {
+          switch (index) {
+            case 0:
+              Navigator.pushNamed(context, '/home');
+              break;
+            case 1:
+              Navigator.pushNamed(context, '/lesson-list');
+              break;
+            case 2:
+              Navigator.pushNamed(context, '/deep-learn');
+              break;
+            case 3:
+              Navigator.pushNamed(context, '/profile');
+              break;
+          }
+        },
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.menu_book), label: 'Lessons'),
