@@ -102,7 +102,7 @@ class _ExperimentExecutionScreenState extends State<ExperimentExecutionScreen> {
             ),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF2F80ED).withOpacity(0.3),
+                color: const Color(0xFF2F80ED).withValues(alpha: 0.3),
                 blurRadius: 12,
                 offset: const Offset(0, 4),
               ),
@@ -140,7 +140,7 @@ class _ExperimentExecutionScreenState extends State<ExperimentExecutionScreen> {
               color: Colors.white,
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF2F80ED).withOpacity(0.2),
+                  color: const Color(0xFF2F80ED).withValues(alpha: 0.2),
                   blurRadius: 16,
                   offset: const Offset(0, 4),
                 ),
@@ -176,7 +176,7 @@ class _ExperimentExecutionScreenState extends State<ExperimentExecutionScreen> {
               borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF2F80ED).withOpacity(0.3),
+                  color: const Color(0xFF2F80ED).withValues(alpha: 0.3),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
@@ -227,7 +227,7 @@ class _ExperimentExecutionScreenState extends State<ExperimentExecutionScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 12,
             offset: const Offset(0, 2),
           ),
