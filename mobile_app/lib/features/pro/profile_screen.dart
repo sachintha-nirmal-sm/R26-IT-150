@@ -58,8 +58,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     child: const CircleAvatar(
                       radius: 35,
-                      backgroundColor: Color(0xFFE8F1FF),
-                      backgroundImage: NetworkImage('https://i.pravatar.cc/150?u=alex'),
+                      backgroundColor: Color(0xFFCCCCCC),
+                      child: Icon(
+                        Icons.person,
+                        color: Colors.white,
+                        size: 35,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 20),
@@ -85,7 +89,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                           child: const Text(
                             'Grade 9',
-                            style: TextStyle(color: Color(0xFF0056D2), fontSize: 12, fontWeight: FontWeight.bold),
+                            style: TextStyle(color: Color(0xFF2196F3), fontSize: 12, fontWeight: FontWeight.bold),
                           ),
                         ),
                       ],
@@ -100,11 +104,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             // Lesson Stats Cards
             Row(
               children: [
-                Expanded(child: _buildStatCard('Completed', '1', Icons.check_circle, Colors.green)),
+                Expanded(child: _buildStatCard('Completed', '1', Icons.check_circle, Colors.blue)),
                 const SizedBox(width: 12),
-                Expanded(child: _buildStatCard('In Progress', '2', Icons.play_circle_filled, Colors.orange)),
+                Expanded(child: _buildStatCard('In Progress', '2', Icons.play_circle_filled, Colors.blue)),
                 const SizedBox(width: 12),
-                Expanded(child: _buildStatCard('Incomplete', '3', Icons.pause_circle_filled, Colors.red)),
+                Expanded(child: _buildStatCard('Incomplete', '3', Icons.pause_circle_filled, Colors.blue)),
               ],
             ),
 
