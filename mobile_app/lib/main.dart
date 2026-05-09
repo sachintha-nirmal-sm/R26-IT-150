@@ -37,7 +37,7 @@ class MyApp extends StatelessWidget {
         ),
       ),
       home: const GetStartedPage(),
-      initialRoute: '/profile',
+      initialRoute: '/get-started',
       routes: {
         '/get-started': (context) => const GetStartedPage(),
         '/login': (context) => const LoginPage(),

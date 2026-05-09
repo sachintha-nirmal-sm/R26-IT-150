@@ -18,7 +18,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF0056D2)),
+          icon: const Icon(Icons.arrow_back, color: Color(0xFF2196F3)),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
@@ -32,36 +32,63 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // User Info Card (No Profile Pic)
+            // User Info Card with Profile Pic on Left (No Picker)
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(15),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: Colors.grey.shade200),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.03),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-              child: Column(
+              child: Row(
                 children: [
-                  const Text(
-                    'Alex Johnson',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 5),
-                  const Text(
-                    'alex.j@example.edu',
-                    style: TextStyle(color: Colors.grey, fontSize: 16),
-                  ),
-                  const SizedBox(height: 12),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    padding: const EdgeInsets.all(3),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFE8F1FF),
-                      borderRadius: BorderRadius.circular(20),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: const Color(0xFF2196F3).withOpacity(0.2), width: 2),
                     ),
-                    child: const Text(
-                      'Grade 9',
-                      style: TextStyle(color: Color(0xFF0056D2), fontWeight: FontWeight.bold),
+                    child: const CircleAvatar(
+                      radius: 35,
+                      backgroundColor: Color(0xFFE8F1FF),
+                      backgroundImage: NetworkImage('https://i.pravatar.cc/150?u=alex'),
+                    ),
+                  ),
+                  const SizedBox(width: 20),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          'Alex Johnson',
+                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                        ),
+                        const Text(
+                          'alex.j@example.edu',
+                          style: TextStyle(color: Colors.grey, fontSize: 14),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE8F1FF),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Text(
+                            'Grade 9',
+                            style: TextStyle(color: Color(0xFF0056D2), fontSize: 12, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -70,39 +97,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
             
             const SizedBox(height: 20),
 
-            // Completed Lessons Banner
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 30),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF2196F3), Color(0xFF1976D2)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.blue.withOpacity(0.3),
-                    blurRadius: 10,
-                    offset: const Offset(0, 5),
-                  )
-                ],
-              ),
-              child: const Column(
-                children: [
-                  Icon(Icons.school, color: Colors.white, size: 40),
-                  SizedBox(height: 10),
-                  Text(
-                    '2',
-                    style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold),
-                  ),
-                  Text(
-                    'Completed Lessons',
-                    style: TextStyle(color: Colors.white, fontSize: 16),
-                  ),
-                ],
-              ),
+            // Lesson Stats Cards
+            Row(
+              children: [
+                Expanded(child: _buildStatCard('Completed', '1', Icons.check_circle, Colors.green)),
+                const SizedBox(width: 12),
+                Expanded(child: _buildStatCard('In Progress', '2', Icons.play_circle_filled, Colors.orange)),
+                const SizedBox(width: 12),
+                Expanded(child: _buildStatCard('Incomplete', '3', Icons.pause_circle_filled, Colors.red)),
+              ],
             ),
 
             const SizedBox(height: 30),
@@ -113,9 +116,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 15),
 
             // Progress Items
-            _buildListItem(Icons.check_circle, "Newton's First Law", "Completed", Colors.blue),
-            _buildListItem(Icons.check_circle, "Linear motion", "Inprogress .60%", Colors.blue),
-            _buildListItem(Icons.more_horiz, "Vectors & Scalars", "In Progress • 40%", Colors.orange),
+            
+            _buildListItem(Icons.more_horiz, "Linear motion", "Inprogress .60%", Colors.blue),
+            _buildListItem(Icons.more_horiz, "Vectors & Scalars", "In Progress • 40%", Colors.blue),
 
             const SizedBox(height: 30),
             Row(
@@ -188,6 +191,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         subtitle: Text(subtitle, style: const TextStyle(color: Colors.grey)),
         trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+      ),
+    );
+  }
+
+  Widget _buildStatCard(String label, String count, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 24),
+          const SizedBox(height: 8),
+          Text(
+            count,
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.grey.shade600, fontSize: 11, fontWeight: FontWeight.w500),
+          ),
+        ],
       ),
     );
   }
