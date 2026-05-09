@@ -252,10 +252,10 @@ class _PracticeExperienceScreenState extends State<PracticeExperienceScreen> {
               size: 24,
             ),
             const SizedBox(width: 12),
-            Expanded(
+            const Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
+                children: [
                   Text(
                     'Practice Attempts',
                     style: TextStyle(
@@ -311,7 +311,7 @@ class _PracticeExperienceScreenState extends State<PracticeExperienceScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -320,7 +320,7 @@ class _PracticeExperienceScreenState extends State<PracticeExperienceScreen> {
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          color: Colors.black.withOpacity(0.4),
+          color: Colors.black.withValues(alpha: 0.4),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -330,10 +330,10 @@ class _PracticeExperienceScreenState extends State<PracticeExperienceScreen> {
               height: 64,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.9),
+                color: Colors.white.withValues(alpha: 0.9),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
+                    color: Colors.black.withValues(alpha: 0.2),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
@@ -350,7 +350,7 @@ class _PracticeExperienceScreenState extends State<PracticeExperienceScreen> {
               'Practice simulation will appear here',
               style: TextStyle(
                 fontSize: 13,
-                color: Colors.white.withOpacity(0.8),
+                color: Colors.white.withValues(alpha: 0.8),
                 fontFamily: 'Poppins',
               ),
             ),
@@ -419,7 +419,7 @@ class _PracticeExperienceScreenState extends State<PracticeExperienceScreen> {
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF2F80ED).withOpacity(0.1),
+              color: const Color(0xFF2F80ED).withValues(alpha: 0.1),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -427,9 +427,9 @@ class _PracticeExperienceScreenState extends State<PracticeExperienceScreen> {
         ),
         child: Column(
           children: [
-            Row(
+            const Row(
               mainAxisSize: MainAxisSize.min,
-              children: const [
+              children: [
                 Icon(
                   Icons.schedule,
                   color: Color(0xFF2F80ED),
