@@ -1,5 +1,13 @@
 import 'package:flutter/material.dart';
 import 'features/experiments/experiments.dart';
+import 'features/LessonList/lesson_list_page.dart';
+import 'features/auth/presentation/get_started_page.dart';
+import 'features/auth/presentation/login_page.dart';
+import 'features/auth/presentation/sign_up.dart';
+import 'features/dashboard/physics_lab_home_page.dart';
+import 'features/lessons/force_linear_motion_page.dart';
+import 'features/quizzes/lesson_quizzes_page.dart';
+import 'features/lessons/lessons_dashboard.dart';
 
 void main() {
   runApp(const MyApp());
@@ -28,19 +36,21 @@ class MyApp extends StatelessWidget {
         ),
       ),
 
-      // ── Initial screen (change when auth is integrated) ──────────────────
-      home: const ExperimentResultsScreen(),
-      initialRoute: '/experiment-execution',
-
-
-
-      // ── Named Routes ────────────────────────────────────────────────────────
+      home: const GetStartedPage(),
+      initialRoute: '/get-started',
       routes: {
+        '/get-started': (context) => const GetStartedPage(),
+        '/login': (context) => const LoginPage(),
+        '/home': (context) => const PhysicsLabHomePage(),
+        '/sign-up': (context) => const SignupScreen(),
+        '/lesson-list': (context) => const PhysicsLessonsScreen(),
+        '/force-motion': (context) => const ForceLinearMotionPage(),
+        '/lesson-quizzes': (context) => const LessonQuizzesPage(),
+        '/lessonDBoard': (context) => const LessonsDashboard(),
         '/experiment-results':    (context) => const ExperimentResultsScreen(),
         '/experiment-execution':  (context) => const ExperimentExecutionScreen(),
         '/experiment-in-progress':(context) => const ExperimentInProgressScreen(),
         '/practice-experience':   (context) => const PracticeExperienceScreen(),
-
       },
     );
   }
