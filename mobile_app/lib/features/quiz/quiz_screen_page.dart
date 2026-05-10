@@ -9,11 +9,13 @@ class QuizScreenPage extends StatefulWidget {
     this.quizTitle = 'Force 1.1',
     this.totalQuestions = 10,
     this.timeLimit = 600, // 10 minutes in seconds
+    this.quizNumber = 1,
   });
 
   final String quizTitle;
   final int totalQuestions;
   final int timeLimit;
+  final int quizNumber;
 
   @override
   State<QuizScreenPage> createState() => _QuizScreenPageState();
@@ -195,7 +197,7 @@ class _QuizScreenPageState extends State<QuizScreenPage> {
               
               double scorePercentage = (correctAnswers / widget.totalQuestions) * 100;
               
-              if (scorePercentage < 45) {
+              if (scorePercentage < 50) {
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
@@ -214,6 +216,7 @@ class _QuizScreenPageState extends State<QuizScreenPage> {
                       totalQuestions: widget.totalQuestions,
                       correctAnswers: correctAnswers,
                       timeTaken: timeTaken,
+                      quizNumber: widget.quizNumber,
                     ),
                   ),
                 );

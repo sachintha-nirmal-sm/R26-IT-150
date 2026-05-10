@@ -16,6 +16,20 @@ class _ForceLinearMotionPageState extends State<ForceLinearMotionPage> {
     setState(() {
       _selectedIndex = index;
     });
+    switch (index) {
+      case 0:
+        Navigator.pushNamed(context, '/home');
+        break;
+      case 1:
+        Navigator.pushNamed(context, '/lesson-list');
+        break;
+      case 2:
+        Navigator.pushNamed(context, '/deep-learn');
+        break;
+      case 3:
+        Navigator.pushNamed(context, '/profile');
+        break;
+    }
   }
 
   void _showSnackBar(BuildContext context, String message) {
@@ -46,6 +60,19 @@ class _ForceLinearMotionPageState extends State<ForceLinearMotionPage> {
         elevation: 0,
         centerTitle: true,
         iconTheme: const IconThemeData(color: Color(0xFF1E293B)),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: GestureDetector(
+              onTap: () => Navigator.pushNamed(context, '/profile'),
+              child: const CircleAvatar(
+                radius: 18,
+                backgroundColor: Color(0xFFCCCCCC),
+                child: Icon(Icons.person, color: Colors.white, size: 22),
+              ),
+            ),
+          )
+        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
