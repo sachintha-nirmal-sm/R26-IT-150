@@ -34,3 +34,7 @@ coverage/
 
 # Firebase
 .firebase/
+
+# Android Gradle
+android/.gradle/
+mobile_app/android/.gradle/

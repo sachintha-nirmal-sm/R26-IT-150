@@ -51,7 +51,12 @@ class _UploadImageScreenState extends State<UploadImageScreen> {
       return;
     }
 
-    await _picker.pickImage(source: ImageSource.camera);
+    final image = await _picker.pickImage(source: ImageSource.camera);
+    if (!mounted || image == null) {
+      return;
+    }
+
+    Navigator.pushNamed(context, "/image-preview");
   }
 
   Future<void> _openGallery() async {
@@ -67,7 +72,12 @@ class _UploadImageScreenState extends State<UploadImageScreen> {
       return;
     }
 
-    await _picker.pickImage(source: ImageSource.gallery);
+    final image = await _picker.pickImage(source: ImageSource.gallery);
+    if (!mounted || image == null) {
+      return;
+    }
+
+    Navigator.pushNamed(context, "/image-preview");
   }
 
   @override

@@ -36,14 +36,14 @@ class ImagePreviewConfirmationScreen extends StatelessWidget {
         ],
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           child: Column(
             children: [
               Row(
                 children: [
                   IconButton(
-                    onPressed: () {},
+                    onPressed: () => Navigator.pop(context),
                     icon: const Icon(
                       Icons.arrow_back_ios_new,
                       color: Colors.blue,
@@ -149,7 +149,10 @@ class ImagePreviewConfirmationScreen extends StatelessWidget {
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: () {},
+                      onPressed: () => Navigator.pushNamed(
+                        context,
+                        "/upload-image",
+                      ),
                       icon: const Icon(Icons.edit_outlined),
                       label: const Text("Edit"),
                       style: OutlinedButton.styleFrom(
@@ -165,7 +168,10 @@ class ImagePreviewConfirmationScreen extends StatelessWidget {
                   const SizedBox(width: 20),
                   Expanded(
                     child: ElevatedButton.icon(
-                      onPressed: () {},
+                      onPressed: () => Navigator.pushNamed(
+                        context,
+                        "/comparison-answer",
+                      ),
                       icon: const Icon(Icons.check_circle_outline),
                       label: const Text("OK"),
                       style: ElevatedButton.styleFrom(
