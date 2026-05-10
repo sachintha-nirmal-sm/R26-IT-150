@@ -3,9 +3,10 @@ import '../quiz/quiz_details_page.dart';
 
 
 class LessonQuizzesPage extends StatefulWidget {
-  const LessonQuizzesPage({super.key, this.lessonTitle = 'Force'});
+  const LessonQuizzesPage({super.key, this.lessonTitle = 'Force', this.completedQuizzes = const {}});
 
   final String lessonTitle;
+  final Set<int> completedQuizzes;
 
   @override
   State<LessonQuizzesPage> createState() => _LessonQuizzesPageState();
@@ -13,12 +14,19 @@ class LessonQuizzesPage extends StatefulWidget {
 
 class _LessonQuizzesPageState extends State<LessonQuizzesPage> {
   String _selectedQuizTitle = 'Force 1.1';
+  late Set<int> _completedQuizzes;
 
-  void _selectQuiz(String title, bool isLocked) {
+  @override
+  void initState() {
+    super.initState();
+    _completedQuizzes = Set.from(widget.completedQuizzes);
+  }
+
+  void _selectQuiz(String title, int quizNumber, bool isLocked) {
     if (isLocked) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Complete the previous quiz to unlock this one.'),
+          content: const Text('Complete the previous quiz with 50% or more to unlock this one.'),
           behavior: SnackBarBehavior.floating,
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -95,28 +103,37 @@ class _LessonQuizzesPageState extends State<LessonQuizzesPage> {
               status: 'UNLOCKED',
               title: 'Force 1.1',
               subtitle: "Newton's First Law",
+              quizNumber: 1,
               isLocked: false,
               details: '15 mins  -  10 Questions',
             ),
             _buildAssessmentCard(
-              status: 'LOCKED',
+              status: _completedQuizzes.contains(1) ? 'UNLOCKED' : 'LOCKED',
               title: 'Force 1.2',
               subtitle: 'F = ma (Second Law)',
+              quizNumber: 2,
+              isLocked: !_completedQuizzes.contains(1),
             ),
             _buildAssessmentCard(
-              status: 'LOCKED',
+              status: _completedQuizzes.contains(2) ? 'UNLOCKED' : 'LOCKED',
               title: 'Force 1.3',
               subtitle: 'Action & Reaction',
+              quizNumber: 3,
+              isLocked: !_completedQuizzes.contains(2),
             ),
             _buildAssessmentCard(
-              status: 'LOCKED',
+              status: _completedQuizzes.contains(3) ? 'UNLOCKED' : 'LOCKED',
               title: 'Force 1.4',
               subtitle: 'Friction Fundamentals',
+              quizNumber: 4,
+              isLocked: !_completedQuizzes.contains(3),
             ),
             _buildAssessmentCard(
               status: 'LOCKED - MODULE EXAM',
               title: 'Force Unit Mastery',
               subtitle: 'Comprehensive Review',
+              quizNumber: 5,
+              isLocked: true,
               isExam: true,
             ),
           ],
@@ -187,6 +204,7 @@ class _LessonQuizzesPageState extends State<LessonQuizzesPage> {
     required String status,
     required String title,
     required String subtitle,
+    required int quizNumber,
     bool isLocked = true,
     bool isExam = false,
     String? details,
@@ -194,7 +212,7 @@ class _LessonQuizzesPageState extends State<LessonQuizzesPage> {
     final isSelected = title == _selectedQuizTitle;
 
     return GestureDetector(
-      onTap: () => _selectQuiz(title, isLocked),
+      onTap: () => _selectQuiz(title, quizNumber, isLocked),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
@@ -289,6 +307,7 @@ class _LessonQuizzesPageState extends State<LessonQuizzesPage> {
                                 builder: (context) => QuizDetailScreen(
                                   quizTitle: title,
                                   chapterTitle: subtitle,
+                                  quizNumber: quizNumber,
                                 ),
                               ),
                             );
