@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:video_player/video_player.dart';
 
 void main() => runApp(const MaterialApp(home: LessonDetailScreen(title: 'Preview', description: 'Preview description')));
 
-class LessonDetailScreen extends StatelessWidget {
+class LessonDetailScreen extends StatefulWidget {
   final String title;
   final String description;
 
@@ -11,6 +12,43 @@ class LessonDetailScreen extends StatelessWidget {
     required this.title,
     required this.description,
   });
+
+  @override
+  State<LessonDetailScreen> createState() => _LessonDetailScreenState();
+}
+
+class _LessonDetailScreenState extends State<LessonDetailScreen> {
+  late VideoPlayerController _videoController;
+  bool _isInitialized = false;
+  bool _hasError = false;
+  String _errorMessage = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeVideo();
+  }
+
+  Future<void> _initializeVideo() async {
+    try {
+      _videoController = VideoPlayerController.asset('assets/videos/force 1.mp4');
+      await _videoController.initialize();
+      setState(() {
+        _isInitialized = true;
+      });
+    } catch (e) {
+      setState(() {
+        _hasError = true;
+        _errorMessage = e.toString();
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _videoController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -46,47 +84,79 @@ class LessonDetailScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Video Section
-            Stack(
-              alignment: Alignment.center,
-              children: [
-                Container(
-                  height: 300,
-                  width: double.infinity,
-                  color: const Color(0xFF0D1B2A), // Dark background for video area
-                  child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(15),
-                        child: Image.asset(
-                          'assets/images/video.jpg', // Updated to match actual asset extension
-                          fit: BoxFit.cover,
-                          height: 200,
-                          width: double.infinity,
-                        ),
-                      ),
-                    ),
+            // Video Section with Understanding Force & Motion
+            Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Understanding Force & Motion',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
-                ),
-                // Play Button Overlay
-                CircleAvatar(
-                  radius: 30,
-                  backgroundColor: const Color(0xFF0056D2).withOpacity(0.9),
-                  child: const Icon(Icons.play_arrow, color: Colors.white, size: 40),
-                ),
-                // Custom Carousel Indicator at bottom of video
-                Positioned(
-                  bottom: 15,
-                  child: Row(
-                    children: [
-                      Container(width: 40, height: 3, color: Colors.white.withOpacity(0.5)),
-                      const SizedBox(width: 5),
-                      Container(width: 40, height: 3, color: Colors.white.withOpacity(0.2)),
-                    ],
+                  const SizedBox(height: 12),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(15),
+                    child: _hasError
+                        ? Container(
+                            height: 200,
+                            color: Colors.grey.shade300,
+                            child: Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(Icons.error_outline, size: 40, color: Colors.red),
+                                  const SizedBox(height: 10),
+                                  Padding(
+                                    padding: const EdgeInsets.all(16.0),
+                                    child: Text(
+                                      'Error loading video: $_errorMessage',
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(fontSize: 12),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        : _isInitialized
+                            ? GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    _videoController.value.isPlaying
+                                        ? _videoController.pause()
+                                        : _videoController.play();
+                                  });
+                                },
+                                child: Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    Container(
+                                      color: Colors.black,
+                                      child: AspectRatio(
+                                        aspectRatio: _videoController.value.aspectRatio,
+                                        child: VideoPlayer(_videoController),
+                                      ),
+                                    ),
+                                    if (!_videoController.value.isPlaying)
+                                      CircleAvatar(
+                                        radius: 30,
+                                        backgroundColor: const Color(0xFF0056D2).withOpacity(0.9),
+                                        child: const Icon(Icons.play_arrow, color: Colors.white, size: 40),
+                                      ),
+                                  ],
+                                ),
+                              )
+                            : Container(
+                                height: 200,
+                                color: Colors.grey.shade300,
+                                child: const Center(
+                                  child: CircularProgressIndicator(),
+                                ),
+                              ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
             
             const SizedBox(height: 20),
@@ -103,7 +173,7 @@ class LessonDetailScreen extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          title,
+                          widget.title,
                           style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                         ),
                       ),
@@ -123,7 +193,7 @@ class LessonDetailScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 15),
                   Text(
-                    description,
+                    widget.description,
                     style: const TextStyle(color: Colors.grey, fontSize: 15, height: 1.5),
                   ),
                   
