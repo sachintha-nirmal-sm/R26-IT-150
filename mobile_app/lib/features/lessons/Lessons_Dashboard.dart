@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../LessonList/lesson_list_page.dart';
 import '../quizzes/lesson_quizzes_page.dart';
+import '../experiments/presentation/screens/experiment_execution_screen.dart';
 
 class LessonsDashboard extends StatefulWidget {
   final String lessonTitle;
@@ -165,11 +166,22 @@ class _LessonsDashboardState extends State<LessonsDashboard> {
                     iconColor: const Color(0xFF2196F3),
                     bgColor: const Color.fromARGB(255, 210, 235, 255),
                   ),
-                  _buildGridCard(
-                    icon: Icons.science_outlined,
-                    label: 'Practicals',
-                    iconColor: const Color(0xFF2196F3),
-                    bgColor: const Color.fromARGB(255, 210, 235, 255),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              const ExperimentExecutionScreen(),
+                        ),
+                      );
+                    },
+                    child: _buildGridCard(
+                      icon: Icons.science_outlined,
+                      label: 'Practicals',
+                      iconColor: const Color(0xFF2196F3),
+                      bgColor: const Color.fromARGB(255, 210, 235, 255),
+                    ),
                   ),
                   _buildGridCard(
                     icon: Icons.menu_book_outlined,

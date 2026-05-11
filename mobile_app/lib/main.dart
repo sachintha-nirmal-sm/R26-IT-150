@@ -11,13 +11,12 @@ import 'features/quizzes/lesson_quizzes_page.dart';
 import 'features/lessons/lessons_dashboard.dart';
 import 'features/DeepLearn/deep_learn_screen.dart';
 import 'features/pro/profile_screen.dart';
-
-import "features/Step-by-Step Solution/step_by_step_solution_screen.dart";
-import "features/comparison-answer/comparison_final_return_screen.dart";
-import "features/image-preview/image_preview_confirmation_screen.dart";
-import "features/quiz-complete/quiz_complete_screen.dart";
-import "features/scenario-Based Question/scenario_question_screen.dart";
-import "features/upload-image/upload_image_screen.dart";
+import 'features/Step-by-Step Solution/step_by_step_solution_screen.dart';
+import 'features/comparison-answer/comparison_final_return_screen.dart';
+import 'features/image-preview/image_preview_confirmation_screen.dart';
+import 'features/quiz-complete/quiz_complete_screen.dart';
+import 'features/scenario-Based Question/scenario_question_screen.dart';
+import 'features/upload-image/upload_image_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -42,7 +41,9 @@ class MyApp extends StatelessWidget {
         appBarTheme: const AppBarTheme(
           backgroundColor: Colors.white,
           elevation: 0,
-          iconTheme: IconThemeData(color: Color(0xFF1A1A2E)),
+          iconTheme: IconThemeData(
+            color: Color(0xFF1A1A2E),
+          ),
         ),
       ),
     home: const GetStartedPage(),
