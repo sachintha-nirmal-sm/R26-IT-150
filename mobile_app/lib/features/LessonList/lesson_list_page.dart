@@ -180,8 +180,6 @@ class _PhysicsLessonsScreenState extends State<PhysicsLessonsScreen> {
     return GestureDetector(
       onTap: () {
         setState(() => _selectedLessonTitle = title);
-        Navigator.of(context).pushNamed('/force-motion');
-
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -191,7 +189,6 @@ class _PhysicsLessonsScreenState extends State<PhysicsLessonsScreen> {
             ),
           ),
         );
-
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 15),
