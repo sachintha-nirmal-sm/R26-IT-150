@@ -7,9 +7,10 @@ class QuizDetailScreen extends StatelessWidget {
     this.quizTitle = 'Force 1.1',
     this.chapterTitle = 'Chapter 2: Dynamics & Motion',
     this.questionsCount = 10,
-    this.timeLimit = '15 Minutes',
-    this.passingScore = '70%',
+    this.timeLimit = '10 Minutes',
+    this.passingScore = '50%',
     this.attemptsAllowed = '3 time',
+    this.quizNumber = 1,
   });
 
   final String quizTitle;
@@ -18,6 +19,7 @@ class QuizDetailScreen extends StatelessWidget {
   final String timeLimit;
   final String passingScore;
   final String attemptsAllowed;
+  final int quizNumber;
 
   @override
   Widget build(BuildContext context) {
@@ -125,6 +127,7 @@ class QuizDetailScreen extends StatelessWidget {
                     quizTitle: quizTitle,
                     totalQuestions: questionsCount,
                     timeLimit: 600, // 10 minutes in seconds
+                    quizNumber: quizNumber,
                   ),
                 ),
               );
