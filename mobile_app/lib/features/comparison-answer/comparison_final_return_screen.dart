@@ -14,6 +14,8 @@ class ComparisonFinalReturnScreen extends StatelessWidget {
         onTap: (index) {
           if (index == 0) {
             Navigator.pushNamed(context, "/home");
+          } else if (index == 3) {
+            Navigator.pushNamed(context, "/profile");
           }
         },
         items: const [
@@ -49,7 +51,7 @@ class ComparisonFinalReturnScreen extends StatelessWidget {
               Row(
                 children: [
                   IconButton(
-                    onPressed: () {},
+                    onPressed: () => Navigator.pop(context),
                     icon: const Icon(
                       Icons.arrow_back_ios_new,
                       color: Color(0xFF0057B8),

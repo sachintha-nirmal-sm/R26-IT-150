@@ -94,6 +94,11 @@ class _ScenarioQuestionScreenState extends State<ScenarioQuestionScreen> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: 2,
         type: BottomNavigationBarType.fixed,
+        onTap: (index) {
+          if (index == 3) {
+            Navigator.pushNamed(context, "/profile");
+          }
+        },
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home_outlined),
@@ -125,7 +130,7 @@ class _TopBar extends StatelessWidget {
     return Row(
       children: [
         IconButton(
-          onPressed: () {},
+          onPressed: () => Navigator.pop(context),
           icon: const Icon(
             Icons.arrow_back_ios_new,
             color: Colors.blue,

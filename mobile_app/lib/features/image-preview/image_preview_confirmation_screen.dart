@@ -12,6 +12,11 @@ class ImagePreviewConfirmationScreen extends StatelessWidget {
         currentIndex: 2,
         selectedItemColor: Colors.black,
         unselectedItemColor: Colors.grey,
+        onTap: (index) {
+          if (index == 3) {
+            Navigator.pushNamed(context, "/profile");
+          }
+        },
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home_outlined),

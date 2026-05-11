@@ -140,10 +140,13 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16),
-            child: CircleAvatar(
-              radius: 18,
-              backgroundColor: const Color(0xFFCCCCCC),
-              child: const Icon(Icons.person, color: Colors.white, size: 22),
+            child: GestureDetector(
+              onTap: () => Navigator.pushNamed(context, "/profile"),
+              child: CircleAvatar(
+                radius: 18,
+                backgroundColor: const Color(0xFFCCCCCC),
+                child: const Icon(Icons.person, color: Colors.white, size: 22),
+              ),
             ),
           ),
         ],
@@ -501,7 +504,12 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
         child: BottomNavigationBar(
           type: BottomNavigationBarType.fixed,
           currentIndex: _selectedIndex,
-          onTap: (i) => setState(() => _selectedIndex = i),
+          onTap: (i) {
+            setState(() => _selectedIndex = i);
+            if (i == 3) {
+              Navigator.pushNamed(context, "/profile");
+            }
+          },
           selectedItemColor: _primaryBlue,
           unselectedItemColor: _navInactive,
           backgroundColor: Colors.transparent,
