@@ -120,7 +120,7 @@ class _CompletionIllustration extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(24),
         child: Image.asset(
-          "assets/light_bulb.png",
+          "assets/images/light_bulb.png",
           fit: BoxFit.contain,
         ),
       ),

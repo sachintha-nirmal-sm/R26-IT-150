@@ -195,7 +195,7 @@ class _QuestionCard extends StatelessWidget {
               top: Radius.circular(24),
             ),
             child: Image.asset(
-              "assets/projectile_motion.jpg",
+              "assets/images/projectile_motion.png",
               height: 200,
               width: double.infinity,
               fit: BoxFit.cover,

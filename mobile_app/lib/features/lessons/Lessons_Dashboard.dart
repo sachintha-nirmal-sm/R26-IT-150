@@ -195,41 +195,45 @@ class _LessonsDashboardState extends State<LessonsDashboard> {
 
               // Centered Scenario Card
               Center(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFFE0E0E0)),
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 32,
-                    vertical: 24,
-                  ),
-                  child: Column(
-                    children: [
-                      Container(
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFE8F1FB),
-                          shape: BoxShape.circle,
+                child: GestureDetector(
+                  onTap: () =>
+                      Navigator.pushNamed(context, "/scenario-question"),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFE0E0E0)),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 32,
+                      vertical: 24,
+                    ),
+                    child: Column(
+                      children: [
+                        Container(
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE8F1FB),
+                            shape: BoxShape.circle,
+                          ),
+                          padding: const EdgeInsets.all(12),
+                          child: const Icon(
+                            Icons.menu_book_outlined,
+                            color: const Color(0xFF2196F3),
+                            size: 28,
+                          ),
                         ),
-                        padding: const EdgeInsets.all(12),
-                        child: const Icon(
-                          Icons.menu_book_outlined,
-                          color: const Color(0xFF2196F3),
-                          size: 28,
+                        const SizedBox(height: 12),
+                        const Text(
+                          "Scenario Based\nQuestion",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Color.fromARGB(255, 0, 0, 0),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 12),
-                      const Text(
-                        'Scenario Based\nQuestion',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Color.fromARGB(255, 0, 0, 0),
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
