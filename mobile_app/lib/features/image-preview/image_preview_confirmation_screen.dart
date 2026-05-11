@@ -133,7 +133,7 @@ class ImagePreviewConfirmationScreen extends StatelessWidget {
                     Center(
                       child: ClipOval(
                         child: Image.asset(
-                          "assets/equation.jpg",
+                          "assets/images/uploaded_answer.png",
                           width: 360,
                           height: 360,
                           fit: BoxFit.cover,
