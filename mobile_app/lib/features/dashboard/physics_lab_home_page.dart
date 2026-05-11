@@ -501,7 +501,12 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
         child: BottomNavigationBar(
           type: BottomNavigationBarType.fixed,
           currentIndex: _selectedIndex,
-          onTap: (i) => setState(() => _selectedIndex = i),
+          onTap: (i) {
+            setState(() => _selectedIndex = i);
+            if (i == 1) Navigator.pushNamed(context, '/lesson-list');
+            if (i == 2) Navigator.pushNamed(context, '/practical-home');
+            if (i == 3) Navigator.pushNamed(context, '/profile');
+          },
           selectedItemColor: _primaryBlue,
           unselectedItemColor: _navInactive,
           backgroundColor: Colors.transparent,
