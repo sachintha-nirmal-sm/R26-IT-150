@@ -51,10 +51,13 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
             ),
           ],
         ),
-        actions: const [
+        actions: [
           Padding(
-            padding: EdgeInsets.only(right: 12),
-            child: _ProfileAvatar(),
+            padding: const EdgeInsets.only(right: 12),
+            child: GestureDetector(
+              onTap: () => Navigator.pushNamed(context, "/profile"),
+              child: const _ProfileAvatar(),
+            ),
           ),
         ],
       ),
@@ -94,6 +97,11 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: 0,
         type: BottomNavigationBarType.fixed,
+        onTap: (index) {
+          if (index == 3) {
+            Navigator.pushNamed(context, "/profile");
+          }
+        },
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home),
