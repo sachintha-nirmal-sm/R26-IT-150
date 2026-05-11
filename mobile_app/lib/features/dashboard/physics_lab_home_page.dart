@@ -107,6 +107,7 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
                   ),
                 ),
               ),
+            ),
             if (_isSearching) _searchOverlay(),
           ],
         ),
