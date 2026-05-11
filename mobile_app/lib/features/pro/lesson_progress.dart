@@ -2,8 +2,13 @@ import 'package:flutter/material.dart';
 
 class NewtonModuleScreen extends StatelessWidget {
   final String lessonName;
+  final dynamic practicalScore;
 
-  const NewtonModuleScreen({super.key, required this.lessonName});
+  const NewtonModuleScreen({
+    super.key, 
+    required this.lessonName,
+    this.practicalScore,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -67,6 +72,15 @@ class NewtonModuleScreen extends StatelessWidget {
           // 3. Practicals Section
           _buildSectionHeader(Icons.science_outlined, "Practicals", headerColor: Colors.brown.shade700),
           const SizedBox(height: 10),
+          if (practicalScore != null)
+            _buildTaskCard(
+              title: "$lessonName Lab",
+              status: "Completed",
+              trailing: "$practicalScore%\nScore",
+              icon: Icons.check_circle,
+              iconColor: const Color(0xFF27AE60),
+              statusColor: const Color(0xFF27AE60),
+            ),
           _buildTaskCard(
             title: "Pendulum Motion",
             status: "Completed",
@@ -77,7 +91,7 @@ class NewtonModuleScreen extends StatelessWidget {
           ),
           
           // Specialized Progress Card for Friction Lab
-          _buildContinueCard(),
+          _buildContinueCard(context),
 
           const SizedBox(height: 25),
 
@@ -174,7 +188,7 @@ class NewtonModuleScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildContinueCard() {
+  Widget _buildContinueCard(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -198,7 +212,7 @@ class NewtonModuleScreen extends StatelessWidget {
             ),
           ),
           ElevatedButton(
-            onPressed: () {},
+            onPressed: () => Navigator.pushNamed(context, '/practical-home'),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF2196F3),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),

@@ -41,10 +41,6 @@ class _ScenarioQuestionScreenState extends State<ScenarioQuestionScreen> {
         _seconds += 1;
       });
 
-      if (_seconds >= _maxSeconds) {
-        timer.cancel();
-        _navigateToQuizComplete();
-      }
     });
   }
 
@@ -54,9 +50,16 @@ class _ScenarioQuestionScreenState extends State<ScenarioQuestionScreen> {
     }
 
     _navigated = true;
+    final completionSeconds = _seconds < 0 ? 0 : _seconds;
+    final overtimeSeconds = completionSeconds > _maxSeconds
+        ? completionSeconds - _maxSeconds
+        : 0;
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
-        builder: (context) => const QuizCompleteScreen(),
+        builder: (context) => QuizCompleteScreen(
+          completionSeconds: completionSeconds,
+          overtimeSeconds: overtimeSeconds,
+        ),
       ),
     );
   }
@@ -72,6 +75,10 @@ class _ScenarioQuestionScreenState extends State<ScenarioQuestionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isReadingTime = _seconds < 0;
+    final isOvertime = _seconds >= _maxSeconds;
+    final timerColor = isReadingTime || isOvertime ? Colors.red : Colors.blue;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F7),
       body: SafeArea(
@@ -81,7 +88,11 @@ class _ScenarioQuestionScreenState extends State<ScenarioQuestionScreen> {
             children: [
               const _TopBar(),
               const SizedBox(height: 20),
-              _TimerRow(timeText: _formatTimer(_seconds)),
+              _TimerRow(
+                timeText: _formatTimer(_seconds),
+                timeColor: timerColor,
+                showReadingLabel: isReadingTime,
+              ),
               const SizedBox(height: 30),
               _QuestionCard(onFinish: _navigateToQuizComplete),
               const SizedBox(height: 20),
@@ -165,25 +176,46 @@ class _TopBar extends StatelessWidget {
 }
 
 class _TimerRow extends StatelessWidget {
-  const _TimerRow({required this.timeText});
+  const _TimerRow({
+    required this.timeText,
+    required this.timeColor,
+    required this.showReadingLabel,
+  });
 
   final String timeText;
+  final Color timeColor;
+  final bool showReadingLabel;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+    return Column(
       children: [
-        const Icon(Icons.info, color: Colors.blue),
-        const SizedBox(width: 8),
-        Text(
-          timeText,
-          style: const TextStyle(
-            fontSize: 22,
-            color: Colors.blue,
-            fontWeight: FontWeight.w500,
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.info, color: timeColor),
+            const SizedBox(width: 8),
+            Text(
+              timeText,
+              style: TextStyle(
+                fontSize: 22,
+                color: timeColor,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
         ),
+        if (showReadingLabel) ...[
+          const SizedBox(height: 6),
+          const Text(
+            "Reading Time",
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.red,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ],
     );
   }
