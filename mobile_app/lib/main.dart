@@ -18,6 +18,7 @@ import 'features/image-preview/image_preview_confirmation_screen.dart';
 import 'features/quiz-complete/quiz_complete_screen.dart';
 import 'features/scenario-Based Question/scenario_question_screen.dart';
 import 'features/upload-image/upload_image_screen.dart';
+import 'features/games/vector_quest/presentation/pages/vector_quest_game_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -81,6 +82,8 @@ class MyApp extends StatelessWidget {
       const ComparisonFinalReturnScreen(),
     "/chatbot": (context) => const ChatbotScreen(),
     "/practical-home": (context) => const PracticalHomePage(),
+
+    "/game-intro": (context) => const VectorQuestGameScreen(),
     },
     );
   }
