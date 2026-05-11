@@ -61,7 +61,8 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
             Positioned(
               right: 0,
               bottom: 0,
-              child: IgnorePointer(
+              child: GestureDetector(
+                onTap: () => Navigator.pushNamed(context, "/chatbot"),
                 child: SizedBox(
                   width: 100,
                   height: 100,

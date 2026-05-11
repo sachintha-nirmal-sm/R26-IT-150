@@ -4,6 +4,7 @@ import 'features/LessonList/lesson_list_page.dart';
 import 'features/auth/presentation/get_started_page.dart';
 import 'features/auth/presentation/login_page.dart';
 import 'features/auth/presentation/sign_up.dart';
+import 'features/chatbot/chatbot_screen.dart';
 import 'features/dashboard/physics_lab_home_page.dart';
 import 'features/lessons/force_linear_motion_page.dart';
 import 'features/quizzes/lesson_quizzes_page.dart';
@@ -73,6 +74,7 @@ class MyApp extends StatelessWidget {
       const ImagePreviewConfirmationScreen(),
     "/comparison-answer": (context) =>
       const ComparisonFinalReturnScreen(),
+    "/chatbot": (context) => const ChatbotScreen(),
     },
     );
   }
