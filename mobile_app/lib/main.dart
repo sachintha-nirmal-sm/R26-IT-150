@@ -37,7 +37,7 @@ class MyApp extends StatelessWidget {
       ),
 
       home: const GetStartedPage(),
-      initialRoute: '/get-started',
+      initialRoute: '/lessonDBoard',
       routes: {
         '/get-started': (context) => const GetStartedPage(),
         '/login': (context) => const LoginPage(),
