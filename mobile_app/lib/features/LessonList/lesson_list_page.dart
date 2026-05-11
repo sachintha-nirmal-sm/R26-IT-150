@@ -34,6 +34,8 @@ class _PhysicsLessonsScreenState extends State<PhysicsLessonsScreen> {
 
   void _onNavTap(int index) {
     setState(() => _currentIndex = index);
+    if (index == 0) Navigator.pushNamed(context, '/home');
+    if (index == 2) Navigator.pushNamed(context, '/practical-home');
     if (index == 3) {
       Navigator.pushNamed(context, '/profile');
     }
