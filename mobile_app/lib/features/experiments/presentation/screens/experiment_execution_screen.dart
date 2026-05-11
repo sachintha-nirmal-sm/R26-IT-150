@@ -76,8 +76,8 @@ class _ExperimentExecutionScreenState extends State<ExperimentExecutionScreen> {
           borderRadius: BorderRadius.circular(8),
         ),
         child: IconButton(
-          icon: const Icon(Icons.menu, color: Colors.black87, size: 24),
-          onPressed: () {},
+          icon: const Icon(Icons.arrow_back, color: Color.fromARGB(255, 42, 128, 241), size: 24),
+          onPressed: () => Navigator.pop(context),
         ),
       ),
       title: const Text(
