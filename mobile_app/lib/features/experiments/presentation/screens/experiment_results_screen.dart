@@ -567,6 +567,9 @@ class _ExperimentResultsScreenState extends State<ExperimentResultsScreen> {
         setState(() {
           _selectedBottomNavIndex = index;
         });
+        if (index == 3) {
+          Navigator.pushNamed(context, '/profile');
+        }
       },
       type: BottomNavigationBarType.fixed,
       backgroundColor: Colors.white,
