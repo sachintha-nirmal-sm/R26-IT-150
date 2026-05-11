@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../lessons/Lessons_Dashboard.dart';
+import 'lesson_list_data.dart';
 
 class PhysicsLessonsScreen extends StatefulWidget {
   const PhysicsLessonsScreen({super.key});
@@ -11,9 +12,25 @@ class PhysicsLessonsScreen extends StatefulWidget {
 class _PhysicsLessonsScreenState extends State<PhysicsLessonsScreen> {
   static const Color _primaryBlue = Color(0xFF2196F3);
   static const Color _navInactive = Color(0xFFB0BEC5);
-  
+
   int _currentIndex = 1;
-  String _selectedLessonTitle = 'Linear Motion';
+  String _selectedLessonTitle = '';
+  String _grade = 'Grade 10';
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args is Map) {
+      final incoming = args['grade'] as String? ?? 'Grade 10';
+      if (_grade != incoming) {
+        setState(() {
+          _grade = incoming;
+          _selectedLessonTitle = '';
+        });
+      }
+    }
+  }
 
   void _onNavTap(int index) {
     setState(() => _currentIndex = index);
@@ -23,6 +40,9 @@ class _PhysicsLessonsScreenState extends State<PhysicsLessonsScreen> {
       Navigator.pushNamed(context, '/profile');
     }
   }
+
+  List<LessonItem> get _lessons => getLessonsForGrade(_grade);
+  String get _subtitle => gradeSubtitles[_grade] ?? 'Physics Lessons';
 
   @override
   Widget build(BuildContext context) {
@@ -60,52 +80,58 @@ class _PhysicsLessonsScreenState extends State<PhysicsLessonsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Grade 9 Physics',
-              style: TextStyle(
+            // Grade badge
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                color: _primaryBlue.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                _grade,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: _primaryBlue,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '$_grade Physics',
+              style: const TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
                 color: Color(0xFF1A1C1E),
               ),
             ),
             const SizedBox(height: 4),
-            const Text(
-              'Core Concepts & Foundations',
-              style: TextStyle(fontSize: 16, color: Colors.grey),
+            Text(
+              _subtitle,
+              style: const TextStyle(fontSize: 16, color: Colors.grey),
             ),
-            const SizedBox(height: 25),
+            const SizedBox(height: 8),
+            Text(
+              '${_lessons.length} lessons available',
+              style: TextStyle(
+                fontSize: 13,
+                color: _primaryBlue,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 20),
             Expanded(
-              child: ListView(
-                children: [
-                  _buildLessonCard(
-                    title: 'Introduction to Physics',
-                    subtitle: 'Completed',
-                    icon: Icons.check_circle_outline,
-                    isCompleted: true,
-                  ),
-                  _buildLessonCard(
-                    title: 'Linear Motion',
-                    subtitle: 'In Progress (60%)',
-                    icon: Icons.speed,
-                    isInProgress: true,
-                    progress: 0.6,
-                  ),
-                  _buildLessonCard(
-                    title: "Forces and Newton's Laws",
-                    subtitle: 'Start Lesson',
-                    icon: Icons.fitness_center,
-                  ),
-                  _buildLessonCard(
-                    title: 'Work, Energy, and Power',
-                    subtitle: 'Start Lesson',
-                    icon: Icons.bolt,
-                  ),
-                  _buildLessonCard(
-                    title: 'Waves and Sound',
-                    subtitle: 'Start Lesson',
-                    icon: Icons.graphic_eq,
-                  ),
-                ],
+              child: ListView.builder(
+                itemCount: _lessons.length,
+                itemBuilder: (context, index) {
+                  final lesson = _lessons[index];
+                  return _buildLessonCard(
+                    index: index,
+                    title: lesson.title,
+                    subtitle: lesson.subtitle,
+                    duration: lesson.duration,
+                  );
+                },
               ),
             ),
           ],
@@ -170,14 +196,27 @@ class _PhysicsLessonsScreenState extends State<PhysicsLessonsScreen> {
   }
 
   Widget _buildLessonCard({
+    required int index,
     required String title,
     required String subtitle,
-    required IconData icon,
-    bool isCompleted = false,
-    bool isInProgress = false,
-    double progress = 0.0,
+    required String duration,
   }) {
     final isSelected = title == _selectedLessonTitle;
+
+    // Icon per index cycling through meaningful icons
+    final icons = [
+      Icons.science,
+      Icons.speed,
+      Icons.fitness_center,
+      Icons.bolt,
+      Icons.graphic_eq,
+      Icons.thermostat,
+      Icons.lightbulb_outline,
+      Icons.electric_bolt,
+      Icons.waves,
+      Icons.memory,
+    ];
+    final icon = icons[index % icons.length];
 
     return GestureDetector(
       onTap: () {
@@ -187,7 +226,7 @@ class _PhysicsLessonsScreenState extends State<PhysicsLessonsScreen> {
           MaterialPageRoute(
             builder: (context) => LessonsDashboard(
               lessonTitle: title,
-              grade: 'Grade 9 Physics',
+              grade: '$_grade Physics',
             ),
           ),
         );
@@ -201,73 +240,45 @@ class _PhysicsLessonsScreenState extends State<PhysicsLessonsScreen> {
             color: isSelected ? Colors.blue : Colors.grey.shade200,
             width: isSelected ? 2 : 1,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: Column(
+        child: ListTile(
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 8,
+          ),
+          leading: Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFE8F1FF),
+              borderRadius: BorderRadius.circular(50),
+            ),
+            child: Icon(icon, color: const Color(0xFF2196F3)),
+          ),
+          title: Text(
+            title,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
+          subtitle: Row(
             children: [
-              ListTile(
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                leading: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE8F1FF),
-                    borderRadius: BorderRadius.circular(50),
-                  ),
-                  child: Icon(icon, color: const Color(0xFF2196F3)),
-                ),
-                title: Text(
-                  title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                  ),
-                ),
-                subtitle: Row(
-                  children: [
-                    if (isCompleted)
-                      const Icon(Icons.circle, size: 8, color: Colors.blue),
-                    if (isInProgress)
-                      const Icon(
-                        Icons.play_circle_outline,
-                        size: 14,
-                        color: Colors.blue,
-                      ),
-                    const SizedBox(width: 5),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        color: isInProgress || isCompleted
-                            ? Colors.blue
-                            : Colors.grey,
-                        fontWeight: isInProgress || isCompleted
-                            ? FontWeight.bold
-                            : FontWeight.normal,
-                      ),
-                    ),
-                  ],
-                ),
-                trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+              const Icon(Icons.access_time, size: 13, color: Colors.grey),
+              const SizedBox(width: 4),
+              Text(
+                duration,
+                style: const TextStyle(color: Colors.grey, fontSize: 12),
               ),
-              if (isInProgress)
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Container(
-                    height: 4,
-                    width: double.infinity,
-                    color: Colors.grey.shade200,
-                    child: FractionallySizedBox(
-                      alignment: Alignment.bottomLeft,
-                      widthFactor: progress,
-                      child: Container(color: Colors.blue),
-                    ),
-                  ),
-                ),
             ],
           ),
+          trailing: const Icon(Icons.chevron_right, color: Colors.grey),
         ),
       ),
     );
