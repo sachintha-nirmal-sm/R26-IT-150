@@ -139,7 +139,17 @@ class _UploadImageScreenState extends State<UploadImageScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 48),
+                  Padding(
+                    padding: const EdgeInsets.only(right: 16),
+                    child: GestureDetector(
+                      onTap: () => Navigator.pushNamed(context, "/profile"),
+                      child: const CircleAvatar(
+                        radius: 18,
+                        backgroundColor: Color(0xFFCCCCCC),
+                        child: Icon(Icons.person, color: Colors.white, size: 22),
+                      ),
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 30),
