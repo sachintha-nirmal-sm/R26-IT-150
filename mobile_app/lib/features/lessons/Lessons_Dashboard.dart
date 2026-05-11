@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import '../LessonList/lesson_list_page.dart';
 import '../quizzes/lesson_quizzes_page.dart';
-import '../experiments/presentation/screens/experiment_execution_screen.dart';
-import '../games/vector_quest/presentation/pages/vector_quest_game_screen.dart';
 
 class LessonsDashboard extends StatefulWidget {
   final String lessonTitle;
