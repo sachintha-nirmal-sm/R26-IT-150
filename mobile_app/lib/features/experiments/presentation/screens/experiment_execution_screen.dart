@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'experiment_in_progress_screen.dart';
+import 'practice_experience_screen.dart';
 
 class ExperimentExecutionScreen extends StatefulWidget {
   const ExperimentExecutionScreen({super.key});
@@ -183,7 +185,14 @@ class _ExperimentExecutionScreenState extends State<ExperimentExecutionScreen> {
               ],
             ),
             child: ElevatedButton.icon(
-              onPressed: () {},
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ExperimentInProgressScreen(),
+                  ),
+                );
+              },
               icon: const Icon(Icons.play_arrow, size: 20),
               label: const Text('Start Experiment'),
               style: ElevatedButton.styleFrom(
@@ -200,7 +209,14 @@ class _ExperimentExecutionScreenState extends State<ExperimentExecutionScreen> {
         const SizedBox(width: 12),
         Expanded(
           child: OutlinedButton.icon(
-            onPressed: () {},
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const PracticeExperienceScreen(),
+                ),
+              );
+            },
             icon: const Icon(Icons.science, size: 20),
             label: const Text('Try Demo'),
             style: OutlinedButton.styleFrom(

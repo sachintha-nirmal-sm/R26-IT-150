@@ -48,3 +48,6 @@ windows/flutter/ephemeral/
 firebase-debug.log
 firestore-debug.log
 ui-debug.log
+
+android/.gradle/
+.gradle/
