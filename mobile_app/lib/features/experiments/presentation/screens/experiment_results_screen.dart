@@ -102,9 +102,9 @@ class _ExperimentResultsScreenState extends State<ExperimentResultsScreen> {
         ),
       ),
       centerTitle: true,
-      actions: const [
+      actions: [
         Padding(
-          padding: EdgeInsets.all(16),
+          padding: const EdgeInsets.only(right: 16),
           child: Center(
             child: Text(
               '00:45',
@@ -114,6 +114,17 @@ class _ExperimentResultsScreenState extends State<ExperimentResultsScreen> {
                 fontWeight: FontWeight.w600,
                 fontFamily: 'Courier New',
               ),
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(right: 16),
+          child: GestureDetector(
+            onTap: () => Navigator.pushNamed(context, "/profile"),
+            child: const CircleAvatar(
+              radius: 18,
+              backgroundColor: Color(0xFFCCCCCC),
+              child: Icon(Icons.person, color: Colors.white, size: 22),
             ),
           ),
         ),
