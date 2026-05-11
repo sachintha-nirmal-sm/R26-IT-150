@@ -3,7 +3,14 @@ import "package:flutter/material.dart";
 import "../Step-by-Step Solution/step_by_step_solution_screen.dart";
 
 class QuizCompleteScreen extends StatelessWidget {
-  const QuizCompleteScreen({super.key});
+  const QuizCompleteScreen({
+    super.key,
+    required this.completionSeconds,
+    this.overtimeSeconds = 0,
+  });
+
+  final int completionSeconds;
+  final int overtimeSeconds;
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +44,10 @@ class QuizCompleteScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 36),
-              const _TimeSpentCard(),
+              _TimeSpentCard(
+                completionSeconds: completionSeconds,
+                overtimeSeconds: overtimeSeconds,
+              ),
               const SizedBox(height: 40),
               const _CheckAnswerButton(),
               const SizedBox(height: 30),
@@ -129,10 +139,27 @@ class _CompletionIllustration extends StatelessWidget {
 }
 
 class _TimeSpentCard extends StatelessWidget {
-  const _TimeSpentCard();
+  const _TimeSpentCard({
+    required this.completionSeconds,
+    required this.overtimeSeconds,
+  });
+
+  final int completionSeconds;
+  final int overtimeSeconds;
+
+  String _formatDuration(int totalSeconds) {
+    final minutes = totalSeconds ~/ 60;
+    final seconds = totalSeconds % 60;
+    return "${minutes.toString().padLeft(2, "0")} min ${seconds.toString().padLeft(2, "0")} sec";
+  }
 
   @override
   Widget build(BuildContext context) {
+    final completionText = _formatDuration(completionSeconds);
+    final overtimeText = overtimeSeconds > 0
+        ? "Overtime: ${_formatDuration(overtimeSeconds)}"
+        : null;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 22),
@@ -158,9 +185,9 @@ class _TimeSpentCard extends StatelessWidget {
           const SizedBox(width: 18),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
-              Text(
-                "TIME SPENT",
+            children: [
+              const Text(
+                "COMPLETION TIME",
                 style: TextStyle(
                   fontSize: 14,
                   letterSpacing: 1.2,
@@ -168,15 +195,26 @@ class _TimeSpentCard extends StatelessWidget {
                   color: Colors.black45,
                 ),
               ),
-              SizedBox(height: 4),
+              const SizedBox(height: 4),
               Text(
-                "12m 40s",
-                style: TextStyle(
-                  fontSize: 34,
+                completionText,
+                style: const TextStyle(
+                  fontSize: 32,
                   fontWeight: FontWeight.bold,
                   color: Colors.black87,
                 ),
               ),
+              if (overtimeText != null) ...[
+                const SizedBox(height: 6),
+                Text(
+                  overtimeText,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.redAccent,
+                  ),
+                ),
+              ],
             ],
           ),
         ],

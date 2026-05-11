@@ -1,0 +1,162 @@
+// ── Grade-wise Lesson Data for Sri Lankan Physics Curriculum ──
+
+class LessonItem {
+  final String title;
+  final String grade;
+  final String duration;
+  final String subtitle;
+
+  const LessonItem({
+    required this.title,
+    required this.grade,
+    required this.duration,
+    this.subtitle = 'Start Lesson',
+  });
+}
+
+const Map<String, List<LessonItem>> gradeLessons = {
+  'Grade 9': [
+    LessonItem(
+      title: 'Basic Concepts Associated with Force',
+      grade: 'Grade 9',
+      duration: '20 mins',
+      subtitle: 'Start Lesson',
+    ),
+    LessonItem(
+      title: 'Pressure Exerted by Solid',
+      grade: 'Grade 9',
+      duration: '18 mins',
+      subtitle: 'Start Lesson',
+    ),
+    LessonItem(
+      title: 'Density',
+      grade: 'Grade 9',
+      duration: '15 mins',
+      subtitle: 'Start Lesson',
+    ),
+    LessonItem(
+      title: 'Reflection and Refraction of Waves',
+      grade: 'Grade 9',
+      duration: '22 mins',
+      subtitle: 'Start Lesson',
+    ),
+    LessonItem(
+      title: 'Simple Machines',
+      grade: 'Grade 9',
+      duration: '20 mins',
+      subtitle: 'Start Lesson',
+    ),
+    LessonItem(
+      title: 'Nanotechnology and its Applications',
+      grade: 'Grade 9',
+      duration: '18 mins',
+      subtitle: 'Start Lesson',
+    ),
+  ],
+  'Grade 10': [
+    LessonItem(
+      title: 'Motion in a straight line',
+      grade: 'Grade 10',
+      duration: '25 mins',
+      subtitle: 'Start Lesson',
+    ),
+    LessonItem(
+      title: "Newton's laws of motion",
+      grade: 'Grade 10',
+      duration: '22 mins',
+      subtitle: 'Start Lesson',
+    ),
+    LessonItem(
+      title: 'Friction',
+      grade: 'Grade 10',
+      duration: '20 mins',
+      subtitle: 'Start Lesson',
+    ),
+    LessonItem(
+      title: 'Resultant force',
+      grade: 'Grade 10',
+      duration: '18 mins',
+      subtitle: 'Start Lesson',
+    ),
+    LessonItem(
+      title: 'Turning effect of a force',
+      grade: 'Grade 10',
+      duration: '20 mins',
+      subtitle: 'Start Lesson',
+    ),
+    LessonItem(
+      title: 'Equilibrium of Forces',
+      grade: 'Grade 10',
+      duration: '18 mins',
+      subtitle: 'Start Lesson',
+    ),
+    LessonItem(
+      title: 'Hydrostatic pressure and its applications',
+      grade: 'Grade 10',
+      duration: '22 mins',
+      subtitle: 'Start Lesson',
+    ),
+    LessonItem(
+      title: 'Work, energy and power',
+      grade: 'Grade 10',
+      duration: '20 mins',
+      subtitle: 'Start Lesson',
+    ),
+    LessonItem(
+      title: 'Current electricity',
+      grade: 'Grade 10',
+      duration: '25 mins',
+      subtitle: 'Start Lesson',
+    ),
+  ],
+  'Grade 11': [
+    LessonItem(
+      title: 'Waves and their applications',
+      grade: 'Grade 11',
+      duration: '22 mins',
+      subtitle: 'Start Lesson',
+    ),
+    LessonItem(
+      title: 'Geometrical Optics',
+      grade: 'Grade 11',
+      duration: '20 mins',
+      subtitle: 'Start Lesson',
+    ),
+    LessonItem(
+      title: 'Heat',
+      grade: 'Grade 11',
+      duration: '18 mins',
+      subtitle: 'Start Lesson',
+    ),
+    LessonItem(
+      title: 'Power and Energy of Electric Appliances',
+      grade: 'Grade 11',
+      duration: '20 mins',
+      subtitle: 'Start Lesson',
+    ),
+    LessonItem(
+      title: 'Electronics',
+      grade: 'Grade 11',
+      duration: '22 mins',
+      subtitle: 'Start Lesson',
+    ),
+    LessonItem(
+      title: 'Electromagnetism and Electromagnetic Induction',
+      grade: 'Grade 11',
+      duration: '25 mins',
+      subtitle: 'Start Lesson',
+    ),
+  ],
+};
+
+/// Returns the lessons for a given grade. Falls back to Grade 10 if not found.
+List<LessonItem> getLessonsForGrade(String grade) {
+  return gradeLessons[grade] ?? gradeLessons['Grade 10']!;
+}
+
+/// Grade subtitle labels
+const Map<String, String> gradeSubtitles = {
+  'Grade 9': 'Core Concepts & Foundations',
+  'Grade 10': 'Motion, Forces & Energy',
+  'Grade 11': 'Waves, Optics & Electronics',
+};

@@ -251,7 +251,10 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
   Widget _continueButton() => SizedBox(
         width: double.infinity, height: 52,
         child: ElevatedButton.icon(
-          onPressed: () => Navigator.of(context).pushNamed('/lesson-list'),
+          onPressed: () => Navigator.of(context).pushNamed(
+            '/lesson-list',
+            arguments: {'grade': _grade},
+          ),
           icon: const Icon(Icons.play_arrow, size: 20, color: Colors.white),
           label: const Text('Continue Learning',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white)),
