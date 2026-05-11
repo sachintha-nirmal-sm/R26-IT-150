@@ -9,9 +9,9 @@ class DynamicAssessmentPage extends StatefulWidget {
 }
 
 class _DynamicAssessmentPageState extends State<DynamicAssessmentPage> {
-  // Track answers: 0 = Formula, 1 = Scenario, 2 = Conceptual
+  // Track answers: 0 = Force Definition, 1 = Effects of Force, 2 = Calculation
   List<int?> userAnswers = List.filled(3, null);
-  final List<int> correctAnswers = [2, 1, 0]; // Example answer key
+  final List<int> correctAnswers = [1, 2, 1]; // B, C, B
   int currentQuestion = 0;
 
   @override
@@ -49,29 +49,29 @@ class _DynamicAssessmentPageState extends State<DynamicAssessmentPage> {
             child: ListView(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               children: [
-                // 1. Formula Based Question
+                // 1. Function / Definition Question
                 _buildQuestionCard(
                   0,
-                  "Topic: Newton's Second Law",
-                  "A force of 10N is applied to a 2kg mass. What is the acceleration? (a = F/m)",
-                  ["2 m/s²", "5 m/s²", "20 m/s²", "10 m/s²"],
+                  "Topic: Force - Definition",
+                  "What is force?",
+                  ["A type of energy", "A push or a pull", "A form of speed", "A type of mass"],
                   showInteractive: true,
                 ),
 
-                // 2. Scenario Based Question
+                // 2. Content Related Question
                 _buildQuestionCard(
                   1,
-                  "Topic: Friction",
-                  "If a block is sliding on a rough surface and the pushing force stops, what happens to the block's motion?",
-                  ["Accelerates", "Stops immediately", "Slows down gradually", "Constant speed"],
+                  "Topic: Force - Effects",
+                  "Which of the following is NOT an effect of force?",
+                  ["Changing the shape of an object", "Stopping a moving object", "Increasing the mass of\n an object", "Changing the direction of motion"],
                 ),
 
-                // 3. Conceptual Question
+                // 3. Calculation Related Question
                 _buildQuestionCard(
                   2,
-                  "Topic: Inertia",
-                  "Which object has the most inertia?",
-                  ["A 10kg rock at rest", "A 2kg ball rolling fast", "A 5kg feather", "Inertia depends only on speed"],
+                  "Topic: Force - Calculation",
+                  "A force of 10 N is applied to a box and another force of 5 N is applied to another box. How many times is the first force greater than the second?",
+                  ["1 time", "2 times", "5 times", "15 times"],
                 ),
 
                 const SizedBox(height: 20),
@@ -123,16 +123,20 @@ class _DynamicAssessmentPageState extends State<DynamicAssessmentPage> {
 
   // Analysis Logic to identify weak areas
   void _analyzePerformance() {
-    bool formulaCorrect = userAnswers[0] == correctAnswers[0];
-    bool scenarioCorrect = userAnswers[1] == correctAnswers[1];
-    bool conceptualCorrect = userAnswers[2] == correctAnswers[2];
+    // Q1 and Q2 are conceptual questions (Definition + Effects)
+    bool q1Correct = userAnswers[0] == correctAnswers[0]; // Definition
+    bool q2Correct = userAnswers[1] == correctAnswers[1]; // Effects
+    bool conceptualCorrect = q1Correct && q2Correct;
+    
+    // Q3 is a calculation question
+    bool calculationCorrect = userAnswers[2] == correctAnswers[2]; // Calculation
 
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => AnalysisResultsPage(
-          formulaCorrect: formulaCorrect,
-          scenarioCorrect: scenarioCorrect,
+          calculationCorrect: calculationCorrect,
+          scenarioCorrect: q2Correct,
           conceptualCorrect: conceptualCorrect,
         ),
       ),
