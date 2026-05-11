@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../quizzes/lesson_quizzes_page.dart';
 import 'dynamic_assessment_page.dart';
 
 class QuizFailureScreen extends StatelessWidget {
