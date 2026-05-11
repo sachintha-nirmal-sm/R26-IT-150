@@ -8,6 +8,15 @@ import 'features/dashboard/physics_lab_home_page.dart';
 import 'features/lessons/force_linear_motion_page.dart';
 import 'features/quizzes/lesson_quizzes_page.dart';
 import 'features/lessons/lessons_dashboard.dart';
+import 'features/DeepLearn/deep_learn_screen.dart';
+import 'features/pro/profile_screen.dart';
+
+import "features/Step-by-Step Solution/step_by_step_solution_screen.dart";
+import "features/comparison-answer/comparison_final_return_screen.dart";
+import "features/image-preview/image_preview_confirmation_screen.dart";
+import "features/quiz-complete/quiz_complete_screen.dart";
+import "features/scenario-Based Question/scenario_question_screen.dart";
+import "features/upload-image/upload_image_screen.dart";
 
 void main() {
   runApp(const MyApp());
@@ -37,20 +46,50 @@ class MyApp extends StatelessWidget {
       ),
 
       home: const GetStartedPage(),
-      initialRoute: '/lessonDBoard',
+      initialRoute: "/get-started",
+
       routes: {
-        '/get-started': (context) => const GetStartedPage(),
-        '/login': (context) => const LoginPage(),
-        '/home': (context) => const PhysicsLabHomePage(),
-        '/sign-up': (context) => const SignupScreen(),
-        '/lesson-list': (context) => const PhysicsLessonsScreen(),
-        '/force-motion': (context) => const ForceLinearMotionPage(),
-        '/lesson-quizzes': (context) => const LessonQuizzesPage(),
-        '/lessonDBoard': (context) => const LessonsDashboard(),
-        '/experiment-results':    (context) => const ExperimentResultsScreen(),
-        '/experiment-execution':  (context) => const ExperimentExecutionScreen(),
-        '/experiment-in-progress':(context) => const ExperimentInProgressScreen(),
-        '/practice-experience':   (context) => const PracticeExperienceScreen(),
+        "/get-started": (context) => const GetStartedPage(),
+        "/login": (context) => const LoginPage(),
+        "/home": (context) => const PhysicsLabHomePage(),
+        "/sign-up": (context) => const SignupScreen(),
+        "/lesson-list": (context) => const PhysicsLessonsScreen(),
+        "/force-motion": (context) => const ForceLinearMotionPage(),
+        "/lesson-quizzes": (context) => const LessonQuizzesPage(),
+        "/lessonDBoard": (context) => const LessonsDashboard(),
+
+        "/deep-learn": (context) => const DeepLearningScreen(),
+        "/profile": (context) => const ProfileScreen(),
+
+        "/experiment-results": (context) =>
+            const ExperimentResultsScreen(),
+
+        "/experiment-execution": (context) =>
+            const ExperimentExecutionScreen(),
+
+        "/experiment-in-progress": (context) =>
+            const ExperimentInProgressScreen(),
+
+        "/practice-experience": (context) =>
+            const PracticeExperienceScreen(),
+
+        "/scenario-question": (context) =>
+            const ScenarioQuestionScreen(),
+
+        "/quiz-complete": (context) =>
+            const QuizCompleteScreen(),
+
+        "/step-by-step": (context) =>
+            const StepByStepSolutionScreen(),
+
+        "/upload-image": (context) =>
+            const UploadImageScreen(),
+
+        "/image-preview": (context) =>
+            const ImagePreviewConfirmationScreen(),
+
+        "/comparison-answer": (context) =>
+            const ComparisonFinalReturnScreen(),
       },
     );
   }

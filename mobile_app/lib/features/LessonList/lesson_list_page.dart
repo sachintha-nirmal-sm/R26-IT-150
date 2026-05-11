@@ -17,6 +17,9 @@ class _PhysicsLessonsScreenState extends State<PhysicsLessonsScreen> {
 
   void _onNavTap(int index) {
     setState(() => _currentIndex = index);
+    if (index == 3) {
+      Navigator.pushNamed(context, '/profile');
+    }
   }
 
   @override
@@ -40,9 +43,12 @@ class _PhysicsLessonsScreenState extends State<PhysicsLessonsScreen> {
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16),
-            child: CircleAvatar(
-              backgroundColor: const Color(0xFFCCCCCC),
-              child: const Icon(Icons.person, color: Colors.white, size: 22),
+            child: GestureDetector(
+              onTap: () => Navigator.pushNamed(context, '/profile'),
+              child: const CircleAvatar(
+                backgroundColor: Color(0xFFCCCCCC),
+                child: Icon(Icons.person, color: Colors.white, size: 22),
+              ),
             ),
           ),
         ],

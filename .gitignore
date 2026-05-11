@@ -4,6 +4,12 @@ Thumbs.db
 *.log
 *.tmp
 *.swp
+desktop.ini
+
+# IDEs
+.idea/
+*.iml
+.vscode/
 
 # Python
 __pycache__/

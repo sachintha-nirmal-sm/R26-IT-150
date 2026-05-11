@@ -49,6 +49,9 @@ class _LessonsDashboardState extends State<LessonsDashboard> {
     setState(() {
       _selectedIndex = index;
     });
+    if (index == 3) {
+      Navigator.pushNamed(context, '/profile');
+    }
   }
 
   @override
@@ -78,12 +81,15 @@ class _LessonsDashboardState extends State<LessonsDashboard> {
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
-            child: CircleAvatar(
-              radius: 20,
-              backgroundColor: const Color.fromARGB(255, 190, 190, 191),
-              child: const Icon(
-                Icons.person,
-                color:  Color.fromARGB(255, 246, 250, 253),
+            child: GestureDetector(
+              onTap: () => Navigator.pushNamed(context, '/profile'),
+              child: const CircleAvatar(
+                radius: 20,
+                backgroundColor: Color.fromARGB(255, 190, 190, 191),
+                child: Icon(
+                  Icons.person,
+                  color: Color.fromARGB(255, 246, 250, 253),
+                ),
               ),
             ),
           ),
