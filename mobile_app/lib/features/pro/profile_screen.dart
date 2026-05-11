@@ -13,6 +13,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FE),
       appBar: AppBar(
@@ -121,6 +123,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 15),
 
             // Progress Items
+            if (args != null && args['topic'] != null)
+              _buildListItem(
+                Icons.check_circle, 
+                args['topic'], 
+                "Completed • ${args['score']}%", 
+                const Color(0xFF27AE60), 
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => NewtonModuleScreen(
+                        lessonName: args['topic'],
+                        practicalScore: args['score'],
+                      ),
+                    ),
+                  );
+                },
+              ),
             
             _buildListItem(Icons.more_horiz, "Linear motion", "Inprogress .60%", Colors.blue, onTap: () {
               Navigator.push(
@@ -179,7 +199,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Navigator.pushNamed(context, '/lesson-list');
               break;
             case 2:
-              Navigator.pushNamed(context, '/deep-learn');
+              Navigator.pushNamed(context, '/practical-home');
               break;
             case 3:
               // Already on profile
