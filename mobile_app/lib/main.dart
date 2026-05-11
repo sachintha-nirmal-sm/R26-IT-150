@@ -67,7 +67,10 @@ class MyApp extends StatelessWidget {
     "/practice-experience": (context) =>
       const PracticeExperienceScreen(),
     "/scenario-question": (context) => const ScenarioQuestionScreen(),
-    "/quiz-complete": (context) => const QuizCompleteScreen(),
+    "/quiz-complete": (context) => const QuizCompleteScreen(
+      completionSeconds: 0,
+      overtimeSeconds: 0,
+    ),
     "/step-by-step": (context) => const StepByStepSolutionScreen(),
     "/upload-image": (context) => const UploadImageScreen(),
     "/image-preview": (context) =>
