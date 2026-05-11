@@ -1,7 +1,38 @@
 import "package:flutter/material.dart";
 
-class ChatbotScreen extends StatelessWidget {
+class ChatbotScreen extends StatefulWidget {
   const ChatbotScreen({super.key});
+
+  @override
+  State<ChatbotScreen> createState() => _ChatbotScreenState();
+}
+
+class _ChatbotScreenState extends State<ChatbotScreen> {
+  final List<_ChatMessage> _messages = [
+    const _ChatMessage(
+      text: "Hello, Alex! How can I help you today?",
+      isUser: false,
+    ),
+  ];
+
+  final List<String> _quickQuestions = [
+    "Explain Newton's First Law",
+    "What is the formula for momentum?",
+    "How does friction affect motion?",
+    "Define kinetic energy",
+  ];
+
+  void _sendQuickQuestion(String question) {
+    setState(() {
+      _messages.add(_ChatMessage(text: question, isUser: true));
+      _messages.add(
+        _ChatMessage(
+          text: "Got it. Here's a quick explanation for: $question",
+          isUser: false,
+        ),
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,19 +60,32 @@ class ChatbotScreen extends StatelessWidget {
       ),
       body: Column(
         children: [
-          const Expanded(
-            child: SingleChildScrollView(
-              padding: EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _GreetingCard(),
-                  SizedBox(height: 16),
-                  _UserMessageBubble(),
-                  SizedBox(height: 16),
-                  _AiResponseCard(),
-                ],
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: _quickQuestions
+                    .map(
+                      (question) => ActionChip(
+                        label: Text(question),
+                        onPressed: () => _sendQuickQuestion(question),
+                      ),
+                    )
+                    .toList(),
               ),
+            ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: _messages.length,
+              itemBuilder: (context, index) {
+                final message = _messages[index];
+                return _ChatBubble(message: message);
+              },
             ),
           ),
           const _InputBar(),
@@ -73,6 +117,13 @@ class ChatbotScreen extends StatelessWidget {
   }
 }
 
+class _ChatMessage {
+  const _ChatMessage({required this.text, required this.isUser});
+
+  final String text;
+  final bool isUser;
+}
+
 class _ProfileAvatar extends StatelessWidget {
   const _ProfileAvatar();
 
@@ -95,131 +146,43 @@ class _ProfileAvatar extends StatelessWidget {
   }
 }
 
-class _GreetingCard extends StatelessWidget {
-  const _GreetingCard();
+class _ChatBubble extends StatelessWidget {
+  const _ChatBubble({required this.message});
+
+  final _ChatMessage message;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFE9ECF5),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: const Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text("Hello, Alex!", style: TextStyle(fontSize: 16)),
-          SizedBox(height: 6),
-          Text("How can I help you today?", style: TextStyle(fontSize: 14)),
-        ],
-      ),
-    );
-  }
-}
+    final alignment =
+        message.isUser ? Alignment.centerRight : Alignment.centerLeft;
+    final bubbleColor =
+        message.isUser ? const Color(0xFFECE6D8) : const Color(0xFF6E6B67);
+    final textColor = message.isUser ? Colors.black : Colors.white;
+    final radius = message.isUser
+        ? const BorderRadius.only(
+            topLeft: Radius.circular(16),
+            topRight: Radius.circular(16),
+            bottomLeft: Radius.circular(16),
+          )
+        : const BorderRadius.only(
+            topLeft: Radius.circular(16),
+            topRight: Radius.circular(16),
+            bottomRight: Radius.circular(16),
+          );
 
-class _UserMessageBubble extends StatelessWidget {
-  const _UserMessageBubble();
-
-  @override
-  Widget build(BuildContext context) {
     return Align(
-      alignment: Alignment.centerRight,
+      alignment: alignment,
       child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: const Color(0xFFECE6D8),
-          borderRadius: BorderRadius.circular(12),
+          color: bubbleColor,
+          borderRadius: radius,
         ),
-        child: const Text(
-          "Can you explain Boltzmann's Entropy Formula?",
+        child: Text(
+          message.text,
+          style: TextStyle(color: textColor),
         ),
-      ),
-    );
-  }
-}
-
-class _AiResponseCard extends StatelessWidget {
-  const _AiResponseCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF6E6B67),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            "Boltzmann's Entropy Formula is a fundamental idea in thermodynamics...",
-            style: TextStyle(color: Colors.white),
-          ),
-          const SizedBox(height: 16),
-          const Row(
-            children: [
-              SizedBox(
-                width: 6,
-                height: 6,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(color: Colors.blue),
-                ),
-              ),
-              SizedBox(width: 8),
-              Text(
-                "THE FORMULA",
-                style: TextStyle(
-                  color: Colors.white70,
-                  letterSpacing: 1.2,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Center(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFECE6D8),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Text(
-                "S = kB ln Omega",
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            "Boltzmann's entropy formula relates the thermodynamic entropy...",
-            style: TextStyle(color: Colors.white),
-          ),
-          const SizedBox(height: 16),
-          const Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                "CONCEPT COMPREHENSION",
-                style: TextStyle(
-                  color: Colors.blue,
-                  fontSize: 12,
-                ),
-              ),
-              Text("75%", style: TextStyle(color: Colors.white)),
-            ],
-          ),
-          const SizedBox(height: 6),
-          const LinearProgressIndicator(
-            value: 0.75,
-            backgroundColor: Color(0xFF7A7773),
-            color: Colors.blue,
-          ),
-        ],
       ),
     );
   }

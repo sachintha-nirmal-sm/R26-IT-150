@@ -11,6 +11,11 @@ class ComparisonFinalReturnScreen extends StatelessWidget {
         currentIndex: 2,
         selectedItemColor: Colors.black,
         unselectedItemColor: Colors.grey,
+        onTap: (index) {
+          if (index == 0) {
+            Navigator.pushNamed(context, "/home");
+          }
+        },
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home_outlined),
@@ -131,7 +136,7 @@ class ComparisonFinalReturnScreen extends StatelessWidget {
                           ClipRRect(
                             borderRadius: BorderRadius.circular(14),
                             child: Image.asset(
-                              "assets/generated_solution.jpg",
+                              "assets/images/generated_solution.png",
                               height: 210,
                               width: double.infinity,
                               fit: BoxFit.cover,
@@ -204,7 +209,7 @@ class ComparisonFinalReturnScreen extends StatelessWidget {
                           ClipRRect(
                             borderRadius: BorderRadius.circular(14),
                             child: Image.asset(
-                              "assets/uploaded_answer.jpg",
+                              "assets/images/uploaded_answer.png",
                               height: 210,
                               width: double.infinity,
                               fit: BoxFit.cover,
@@ -250,7 +255,7 @@ class ComparisonFinalReturnScreen extends StatelessWidget {
                 width: double.infinity,
                 height: 68,
                 child: ElevatedButton.icon(
-                  onPressed: () {},
+                    onPressed: () => Navigator.pushNamed(context, "/home"),
                   icon: const Icon(Icons.home_outlined),
                   label: const Text(
                     "Back to Home",
