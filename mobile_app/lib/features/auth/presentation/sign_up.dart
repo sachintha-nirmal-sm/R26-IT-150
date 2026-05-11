@@ -116,7 +116,11 @@ class _SignupScreenState extends State<SignupScreen> {
                 height: 55,
                 child: ElevatedButton(
                   onPressed: () {
-                    Navigator.of(context).pushReplacementNamed('/home');
+                    // Pass selected grade to home page
+                    Navigator.of(context).pushReplacementNamed(
+                      '/home',
+                      arguments: {'grade': _selectedGrade ?? 'Grade 10'},
+                    );
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _primaryBlue,
@@ -195,7 +199,8 @@ class _SignupScreenState extends State<SignupScreen> {
       decoration: InputDecoration(
         filled: true,
         fillColor: const Color(0xFFF8F9FE),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: _fieldBorder),
@@ -216,12 +221,16 @@ class _SignupScreenState extends State<SignupScreen> {
           Text('Select Grade', style: TextStyle(color: Colors.grey)),
         ],
       ),
-      items:
-          ['Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11']
-              .map((String value) {
+      items: ['Grade 9', 'Grade 10', 'Grade 11'].map((String value) {
         return DropdownMenuItem<String>(
           value: value,
-          child: Text(value),
+          child: Row(
+            children: [
+              const Icon(Icons.school, size: 18, color: Color(0xFF2196F3)),
+              const SizedBox(width: 8),
+              Text(value),
+            ],
+          ),
         );
       }).toList(),
       onChanged: (val) => setState(() => _selectedGrade = val),
