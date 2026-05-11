@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-class ExperimentResultsScreen extends StatelessWidget {
+class ExperimentResultsScreen extends StatefulWidget {
   final int? score; // The score passed from the practical (0-100)
   final String? finalDuration; // e.g., "12 min 30 sec"
   final String? topicName; // e.g., "Force"
@@ -11,6 +11,14 @@ class ExperimentResultsScreen extends StatelessWidget {
     this.finalDuration,
     this.topicName = "Force",
   });
+
+  @override
+  State<ExperimentResultsScreen> createState() =>
+      _ExperimentResultsScreenState();
+}
+
+class _ExperimentResultsScreenState extends State<ExperimentResultsScreen> {
+  int _selectedBottomNavIndex = 1;
 
   // Logic for Performance Level based on score
   String _getPerformanceLabel(int score) {
@@ -30,9 +38,9 @@ class ExperimentResultsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     // Extract arguments if passed via named route
     final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-    final displayScore = score ?? args?['score'] ?? 0;
-    final displayDuration = finalDuration ?? args?['finalDuration'] ?? "0 min 0 sec";
-    final displayTopic = topicName ?? args?['topicName'] ?? "Force";
+    final displayScore = widget.score ?? args?['score'] ?? 0;
+    final displayDuration = widget.finalDuration ?? args?['finalDuration'] ?? "0 min 0 sec";
+    final displayTopic = widget.topicName ?? args?['topicName'] ?? "Force";
 
     final label = _getPerformanceLabel(displayScore);
     final color = _getPerformanceColor(displayScore);
@@ -46,46 +54,6 @@ class ExperimentResultsScreen extends StatelessWidget {
         foregroundColor: const Color(0xFF2F80ED),
         elevation: 0,
       ),
-      title: const Text(
-        'Level 04: Kinematics',
-        style: TextStyle(
-          color: Color(0xFF2F80ED),
-          fontSize: 18,
-          fontWeight: FontWeight.w700,
-          fontFamily: 'Poppins',
-        ),
-      ),
-      centerTitle: true,
-      actions: [
-        Padding(
-          padding: const EdgeInsets.only(right: 16),
-          child: Center(
-            child: Text(
-              '00:45',
-              style: TextStyle(
-                color: Color(0xFF2F80ED),
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                fontFamily: 'Courier New',
-              ),
-            ),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.only(right: 16),
-          child: GestureDetector(
-            onTap: () => Navigator.pushNamed(context, "/profile"),
-            child: const CircleAvatar(
-              radius: 18,
-              backgroundColor: Color(0xFFCCCCCC),
-              child: Icon(Icons.person, color: Colors.white, size: 22),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24.0),
         child: Column(
@@ -183,6 +151,7 @@ class ExperimentResultsScreen extends StatelessWidget {
           ],
         ),
       ),
+      bottomNavigationBar: _buildBottomNavigationBar(),
     );
   }
 

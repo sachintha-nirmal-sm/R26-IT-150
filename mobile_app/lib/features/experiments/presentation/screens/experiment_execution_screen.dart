@@ -69,10 +69,6 @@ class _ExperimentExecutionScreenState extends State<ExperimentExecutionScreen> {
     return AppBar(
       elevation: 0,
       backgroundColor: Colors.white,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back, color: Color(0xFF2F80ED), size: 28),
-        onPressed: () => Navigator.pop(context),
-
       leading: Container(
         margin: const EdgeInsets.all(12),
         decoration: BoxDecoration(
