@@ -50,6 +50,8 @@ class _LessonsDashboardState extends State<LessonsDashboard> {
     setState(() {
       _selectedIndex = index;
     });
+    if (index == 0) Navigator.pushNamed(context, '/home');
+    if (index == 2) Navigator.pushNamed(context, '/practical-home');
     if (index == 3) {
       Navigator.pushNamed(context, '/profile');
     }
@@ -172,13 +174,7 @@ class _LessonsDashboardState extends State<LessonsDashboard> {
                   ),
                   GestureDetector(
                     onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              const ExperimentExecutionScreen(),
-                        ),
-                      );
+                      Navigator.pushNamed(context, '/practical-home');
                     },
                     child: _buildGridCard(
                       icon: Icons.science_outlined,

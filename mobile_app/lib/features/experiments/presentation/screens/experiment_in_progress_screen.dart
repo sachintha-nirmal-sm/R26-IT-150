@@ -430,13 +430,14 @@ class _ExperimentInProgressScreenState extends State<ExperimentInProgressScreen>
           _timer?.cancel();
           int finalMinutes = _elapsedSeconds ~/ 60;
           int finalSeconds = _elapsedSeconds % 60;
+          String durationStr = "${finalMinutes} min ${finalSeconds} sec";
 
           Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => ExperimentResultsScreen(
-                durationMinutes: finalMinutes,
-                durationSeconds: finalSeconds,
+                score: 0, // Practical not uploaded yet
+                finalDuration: durationStr,
               ),
             ),
           );

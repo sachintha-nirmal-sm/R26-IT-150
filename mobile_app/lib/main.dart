@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'features/experiments/experiments.dart';
+import 'features/experiments/presentation/screens/practical_home_page.dart';
 import 'features/LessonList/lesson_list_page.dart';
 import 'features/auth/presentation/get_started_page.dart';
 import 'features/auth/presentation/login_page.dart';
@@ -80,6 +81,8 @@ class MyApp extends StatelessWidget {
     "/comparison-answer": (context) =>
       const ComparisonFinalReturnScreen(),
     "/chatbot": (context) => const ChatbotScreen(),
+    "/practical-home": (context) => const PracticalHomePage(),
+
     "/game-intro": (context) => const VectorQuestGameScreen(),
     },
     );
