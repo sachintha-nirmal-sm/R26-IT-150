@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 void main() => runApp(const MaterialApp(home: LessonDetailScreen(title: 'Preview', description: 'Preview description')));
 
-class LessonDetailScreen extends StatelessWidget {
+class LessonDetailScreen extends StatefulWidget {
   final String title;
   final String description;
 
@@ -11,6 +11,24 @@ class LessonDetailScreen extends StatelessWidget {
     required this.title,
     required this.description,
   });
+
+  @override
+  State<LessonDetailScreen> createState() => _LessonDetailScreenState();
+}
+
+class _LessonDetailScreenState extends State<LessonDetailScreen> {
+  static const Color _primaryBlue = Color(0xFF2196F3);
+  static const Color _navInactive = Color(0xFFB0BEC5);
+  int _selectedIndex = 1; // Lessons tab selected by default
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+    if (index == 0) Navigator.pushNamed(context, '/home');
+    if (index == 2) Navigator.pushNamed(context, '/practical-home');
+    if (index == 3) Navigator.pushNamed(context, '/profile');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -103,7 +121,7 @@ class LessonDetailScreen extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          title,
+                          widget.title,
                           style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                         ),
                       ),
@@ -123,7 +141,7 @@ class LessonDetailScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 15),
                   Text(
-                    description,
+                    widget.description,
                     style: const TextStyle(color: Colors.grey, fontSize: 15, height: 1.5),
                   ),
                   
@@ -190,6 +208,61 @@ class LessonDetailScreen extends StatelessWidget {
             ),
           ],
         ),
+      ),
+      bottomNavigationBar: _buildBottomNav(),
+    );
+  }
+
+  Widget _buildBottomNav() {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 8,
+            offset: Offset(0, -2),
+          ),
+        ],
+      ),
+      child: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+        selectedItemColor: _primaryBlue,
+        unselectedItemColor: _navInactive,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        selectedLabelStyle: const TextStyle(
+          fontWeight: FontWeight.w700,
+          fontSize: 12,
+        ),
+        unselectedLabelStyle: const TextStyle(
+          fontWeight: FontWeight.w500,
+          fontSize: 12,
+        ),
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_outlined),
+            activeIcon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.menu_book_outlined),
+            activeIcon: Icon(Icons.menu_book),
+            label: 'Lessons',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.science_outlined),
+            activeIcon: Icon(Icons.science),
+            label: 'Labs',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline),
+            activeIcon: Icon(Icons.person),
+            label: 'Profile',
+          ),
+        ],
       ),
     );
   }
