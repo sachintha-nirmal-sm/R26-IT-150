@@ -9,7 +9,7 @@ class VectorQuestGameScreen extends StatefulWidget {
 
 class _VectorQuestGameScreenState extends State<VectorQuestGameScreen>
     with TickerProviderStateMixin {
-  int _selectedBottomNavIndex = 2;
+  int _selectedBottomNavIndex = 1;
   bool _howToPlayExpanded = true;
   bool _controlsExpanded = false;
   bool _rulesExpanded = false;
