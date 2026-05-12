@@ -98,7 +98,13 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         currentIndex: 0,
         type: BottomNavigationBarType.fixed,
         onTap: (index) {
-          if (index == 3) {
+          if (index == 0) {
+            Navigator.pushNamed(context, '/home');
+          } else if (index == 1) {
+            Navigator.pushNamed(context, '/lesson-list');
+          } else if (index == 2) {
+            Navigator.pushNamed(context, '/practical-home');
+          } else if (index == 3) {
             Navigator.pushNamed(context, "/profile");
           }
         },
