@@ -90,34 +90,6 @@ class _DynamicAssessmentPageState extends State<DynamicAssessmentPage> {
           ),
         ],
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 1,
-        selectedItemColor: Colors.blue,
-        unselectedItemColor: Colors.grey,
-        type: BottomNavigationBarType.fixed,
-        onTap: (index) {
-          switch (index) {
-            case 0:
-              Navigator.pushNamed(context, '/home');
-              break;
-            case 1:
-              Navigator.pushNamed(context, '/lesson-list');
-              break;
-            case 2:
-              Navigator.pushNamed(context, '/deep-learn');
-              break;
-            case 3:
-              Navigator.pushNamed(context, '/profile');
-              break;
-          }
-        },
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.menu_book), label: 'Lessons'),
-          BottomNavigationBarItem(icon: Icon(Icons.biotech_outlined), label: 'Labs'),
-          BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Profile'),
-        ],
-      ),
     );
   }
 

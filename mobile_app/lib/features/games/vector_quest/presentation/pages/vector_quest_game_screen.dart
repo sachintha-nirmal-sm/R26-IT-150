@@ -167,33 +167,14 @@ class _VectorQuestGameScreenState extends State<VectorQuestGameScreen>
       ),
       centerTitle: false,
       actions: [
-        Container(
-          margin: const EdgeInsets.all(12),
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: const LinearGradient(
-              colors: [_blue, Color(0xFF1C5ED6)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: _blue.withValues(alpha: 0.3),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: const Center(
-            child: Text(
-              'A',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
+        Padding(
+          padding: const EdgeInsets.only(right: 16),
+          child: GestureDetector(
+            onTap: () => Navigator.pushNamed(context, '/profile'),
+            child: const CircleAvatar(
+              radius: 18,
+              backgroundColor: Color(0xFFCCCCCC),
+              child: Icon(Icons.person, color: Colors.white, size: 22),
             ),
           ),
         ),
@@ -649,7 +630,7 @@ class _VectorQuestGameScreenState extends State<VectorQuestGameScreen>
             Navigator.of(context).pushNamed('/lesson-list');
             break;
           case 2:
-            // Already on Games — do nothing
+            Navigator.of(context).pushNamed('/practical-home');
             break;
           case 3:
             Navigator.of(context).pushNamed('/profile');
@@ -662,11 +643,11 @@ class _VectorQuestGameScreenState extends State<VectorQuestGameScreen>
       unselectedItemColor: Colors.grey,
       elevation: 8,
       items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+        BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home), label: 'Home'),
         BottomNavigationBarItem(
-            icon: Icon(Icons.menu_book), label: 'Lessons'),
+            icon: Icon(Icons.menu_book_outlined), activeIcon: Icon(Icons.menu_book), label: 'Lessons'),
         BottomNavigationBarItem(
-            icon: Icon(Icons.sports_esports), label: 'Games'),
+            icon: Icon(Icons.science_outlined), activeIcon: Icon(Icons.science), label: 'Labs'),
         BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
       ],
     );
