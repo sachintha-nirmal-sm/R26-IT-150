@@ -1,11 +1,10 @@
-Mobile-Based Virtual Physics Laboratory with AI Assistance
+**Mobile-Based Virtual Physics Laboratory with AI Assistance**
 
 A mobile-based virtual physics laboratory designed for Grade 6-11 students, especially students in rural areas with limited access to physical laboratory facilities.
 
 This project combines interactive physics games, virtual experiments, real-time measurement generation, automated physics calculations, and AI-assisted learning support to improve students' conceptual understanding and practical learning experience.
 
- Project Overview
-
+**Project Overview**
 Physics is often difficult for students because many concepts are abstract and schools may not have enough laboratory resources. This system provides a mobile learning platform where students can perform virtual experiments, play physics-based games, view measurements, and understand calculations step by step.
 
 The platform supports:
@@ -18,8 +17,7 @@ The platform supports:
 - Experiment performance feedback
 - Student progress tracking
 
-Problem Statement
-
+**Problem Statement**
 Many students struggle to understand physics due to:
 
 - Lack of physical laboratory facilities
@@ -29,8 +27,7 @@ Many students struggle to understand physics due to:
 
 Existing learning systems often focus only on simulations, quizzes, or gamification. Most do not combine real-time measurements, automatic calculations, experiment evaluation, and game-based interaction in one platform.
 
- Proposed Solution
-
+**Proposed Solution**
 This project introduces an integrated mobile learning environment where students can:
 
 - Perform virtual physics experiments
@@ -40,81 +37,70 @@ This project introduces an integrated mobile learning environment where students
 - Receive step-by-step explanations
 - Get feedback based on experiment performance
 
- Main Features
-
- Interactive Physics Games
-
+**Main Features**
+Interactive Physics Games
 - Physics simulations using Unity 2D
 - Motion-based activities
 - Real-time user interaction
 - Game-based concept learning
 
-Measurement Extraction
-
+**Measurement Extraction**
 - Distance calculation
 - Time measurement
 - Velocity calculation
 - Motion tracking using computer vision
 - Object detection using YOLOv8 and OpenCV
 
-Physics Calculation Engine
-
+**Physics Calculation Engine**
 - Automatic formula selection
 - Step-by-step calculation explanations
 - Concept-based learning support
 - Real-time result generation
 
- Virtual Laboratory
-
+**Virtual Laboratory**
 - Digital experiment environment
 - Interactive apparatus and tools
 - Guided practical activities
 - Student-friendly experiment flow
 
- Experiment Evaluation
-
+**Experiment Evaluation**
 - Procedure validation
 - Apparatus selection checking
 - Safety rule checking
 - Result accuracy evaluation
 - Performance feedback
 
- Cloud Storage
+**Cloud Storage**
 
 - Firebase integration
 - Cloud Firestore database
 - Real-time data synchronization
 - User progress tracking
 
- Technologies Used
+**Technologies Used**
 
- Frontend
-
+Frontend
 - Flutter
 - Unity 2D
 
- Backend
-
+Backend
 - Python
 
-Database and Cloud
-
+Database 
 - Firebase
 - Cloud Firestore
 
- AI and Computer Vision
-
+AI and Computer Vision
 - OpenCV
 - YOLOv8
 
 Development Tools
-
 - Visual Studio Code
 - Android Studio
 - Firebase Console
 - Unity Editor
 
-System Architecture
+**System Architecture**
 
 The system consists of the following main modules:
 
@@ -126,7 +112,7 @@ The system consists of the following main modules:
 6. Experiment Evaluation Module
 7. Firebase Cloud Database
 
-System Workflow
+**System Workflow**
 
 1. The student performs an activity in a game or virtual experiment.
 2. The system captures motion and experiment data.
@@ -136,7 +122,7 @@ System Workflow
 6. Experiment feedback is provided to the student.
 7. Student progress is stored in Firebase.
 
-Objectives
+**Objectives**
 
 Main Objective
 
@@ -151,14 +137,15 @@ Specific Objectives
 - Improve student engagement
 - Support rural education through mobile learning
   
-Target Users
+**Target Users**
+
 - Grade 6-11 students
 - Physics teachers
 - Schools
 - Tuition classes
 - Educational institutions
 
-Functional Requirements
+**Functional Requirements**
 The system should be able to:
 
 - Support interactive physics games
@@ -170,7 +157,7 @@ The system should be able to:
 - Store user progress
 - Provide learning feedback
  
-Non-Functional Requirements
+**Non-Functional Requirements**
 
 - Fast performance
 - User-friendly interface
@@ -179,7 +166,7 @@ Non-Functional Requirements
 - Reliable operation
 - Scalable cloud storage
 
-Research Contribution
+**Research Contribution**
 
 This project contributes an integrated physics learning platform that combines:
 
@@ -190,7 +177,7 @@ This project contributes an integrated physics learning platform that combines:
 - Mobile accessibility for rural students
 - Unlike many existing systems, this project combines simulations, calculations, feedback, and experiment evaluation into one mobile platform.
 
-Commercialization Plan
+**Commercialization Plan**
 The platform can be used as:
 
 - A school-based learning platform
@@ -205,7 +192,7 @@ Potential customers include:
 - Educational organizations
 - Individual students and teachers
 
-Future Improvements
+**Future Improvements**
 
 - Add more physics experiments
 - Integrate an AI tutor or chatbot
@@ -214,7 +201,7 @@ Future Improvements
 - Support multiplayer collaborative experiments
 - Improve computer vision-based measurement accuracy
 
-Expected Outcomes
+**Expected Outcomes**
 
 The expected outcomes of this project are:
 
@@ -224,7 +211,7 @@ The expected outcomes of this project are:
 - Accessible laboratory learning for rural students
 - Better support for teachers and educational institutions
 
-Research Methodology
+**Research Methodology**
 
 This project follows:
 
@@ -238,7 +225,7 @@ Testing includes:
 - Learning outcome evaluation
 - Sytem usability testing
 
-Set Up Unity Games
+**Set Up Unity Games**
 
 1.Open Unity Hub.
 2.Select Open Project.
@@ -246,11 +233,10 @@ Set Up Unity Games
 4.Open the project in Unity Editor.
 5.Build or export the Unity game module for mobile integration.
 
-Example 1: Velocity Calculation
+**Example 1: Velocity Calculation**
 A student performs a motion experiment.
 
 Input measurements:
-
 Distance = 10 meters
 Time = 5 seconds
 
@@ -270,7 +256,7 @@ Step-by-step explanation:
 3. Velocity is calculated using the formula: Velocity = Distance / Time.
 4. Therefore, Velocity = 10 / 5 = 2 m/s.
    
-Example 2: Virtual Experiment Flow
+**Example 2: Virtual Experiment Flow**
 
 1. Student selects a motion experiment.
 2. Student starts the virtual activity.
@@ -280,7 +266,7 @@ Example 2: Virtual Experiment Flow
 6. The student receives explanation and feedback.
 7. Progress is saved to Firebase.
    
-Example 3: Experiment Evaluation
+**Example 3: Experiment Evaluation**
 
 If a student selects the correct apparatus and follows the correct procedure:
 
