@@ -2,7 +2,7 @@
 
 A comprehensive intelligent tutoring system designed to identify weak areas in student learning and provide personalized remediation pathways for physics education (Grades 9-11).
 
-## 🎯 Project Overview
+##  Project Overview
 
 **Physics Lab** is an adaptive learning platform that combines:
 - **Interactive Physics Lessons** - Structured content for different grade levels
@@ -11,7 +11,7 @@ A comprehensive intelligent tutoring system designed to identify weak areas in s
 - **Personalized Remediation** - Targeted learning paths and resources
 - **Progress Tracking** - Real-time student performance monitoring
 
-## 🏗️ Architecture
+##  Architecture
 
 ### Project Structure
 
@@ -61,7 +61,7 @@ A comprehensive intelligent tutoring system designed to identify weak areas in s
     └── firebase.json           # Firebase config
 ```
 
-## ✨ Core Features
+##  Core Features
 
 ### 1. **Dynamic Assessment System**
 The platform uses a multi-dimensional assessment approach to identify weak areas:
@@ -130,7 +130,7 @@ Based on identified weaknesses, students receive customized remediation:
 
 **Location**: `mobile_app/lib/features/quiz/quiz_result_screen.dart`, `mobile_app/lib/features/quiz/quiz_failure_screen.dart`
 
-## 📱 Mobile App Features
+##  Mobile App Features
 
 ### Lesson Organization by Grade
 
@@ -148,10 +148,10 @@ Based on identified weaknesses, students receive customized remediation:
 
 ```
 Lessons Dashboard
-├── 📚 Learn (Video content + explanations)
-├── 📋 Quiz (Attempt lessons with 50%+ unlock requirement)
-├── 🔬 Experiment (Virtual lab simulations)
-└── 🎮 Game (Vector Quest - interactive learning)
+├──  Learn (Video content + explanations)
+├──  Quiz (Attempt lessons with 50%+ unlock requirement)
+├──  Experiment (Virtual lab simulations)
+└──  Game (Vector Quest - interactive learning)
 ```
 
 ### Quiz System
@@ -195,7 +195,7 @@ GET    /api/analytics/user       → User performance analytics
 - Weak area pattern recognition
 - Class-level and individual insights
 
-## 🔄 Remediation Workflow
+##  Remediation Workflow
 
 ```
 1. Student Takes Quiz
@@ -223,7 +223,7 @@ GET    /api/analytics/user       → User performance analytics
    └─ Update student profile
 ```
 
-## 📊 Data Models
+##  Data Models
 
 ### Student Performance Model
 ```dart
@@ -263,7 +263,7 @@ class LearningPath {
 }
 ```
 
-## 🔐 Security & Privacy
+##  Security & Privacy
 
 ### Firebase Security Rules
 - **Firestore Rules** (`firestore.rules`)
@@ -275,7 +275,7 @@ class LearningPath {
   - User can only upload to their folder
   - Admin can manage all media
 
-## 🎓 Learning Outcomes
+##  Learning Outcomes
 
 Students using the Physics Lab system with feedback-based remediation show:
 
@@ -285,7 +285,7 @@ Students using the Physics Lab system with feedback-based remediation show:
 ✅ **Increased Confidence** - Clear feedback and success tracking
 ✅ **Adaptive Learning** - Difficulty adjusts based on performance
 
-## 🚀 Getting Started
+##  Getting Started
 
 ### Prerequisites
 - Flutter SDK (latest version)
@@ -314,7 +314,7 @@ python app/main.py
 4. Set up authentication
 5. Deploy security rules: `firebase deploy --only firestore:rules,storage`
 
-## 📝 Environment Configuration
+##  Environment Configuration
 
 Create `.env` files in respective directories:
 
@@ -354,7 +354,7 @@ const String apiBaseUrl = 'https://your-api.com/api';
 - **Hosting**: Firebase Hosting (backend via Cloud Run)
 - **Analytics**: Firebase Analytics
 
-## 📈 Monitoring & Analytics
+##  Monitoring & Analytics
 
 Track key metrics:
 - Quiz attempt rates
@@ -365,21 +365,21 @@ Track key metrics:
 
 **Dashboard**: Firebase Console or custom analytics dashboard
 
-## 🤝 Integration Points
+##  Integration Points
 
 ### Third-party Services
 - **Google Classroom** - Single sign-on (future)
 - **Slack Notifications** - Teacher alerts for struggling students
 - **LMS Integration** - Canvas, Moodle (future)
 
-## 🐛 Known Limitations
+##  Known Limitations
 
 - Remediation service endpoints are scaffolded (not fully implemented)
 - Speech-to-text for voice-based assessments (future)
 - Collaborative learning features (future)
 - Offline-first architecture (in development)
 
-## 📚 Additional Resources
+##  Additional Resources
 
 ### Documentation Files
 - [Mobile App Architecture](mobile_app/README.md)
@@ -391,7 +391,7 @@ Track key metrics:
 - [FastAPI Guide](https://fastapi.tiangolo.com/)
 - [Firebase Documentation](https://firebase.google.com/docs)
 
-## 🔄 Version History
+##  Version History
 
 **v1.0.0** (Current)
 - ✅ Dynamic assessment system
@@ -402,7 +402,7 @@ Track key metrics:
 
 
 
-## 📞 Support & Contribution
+##  Support & Contribution
 
 ### Reporting Issues
 Please file issues with:
@@ -422,7 +422,7 @@ Please file issues with:
 
 This project is licensed under the MIT License - see LICENSE file for details.
 
-## 👥 Team
+##  Team
 
 **Project**: Physics Lab - Intelligent Tutoring System
 **Focus**: Feedback-Based Weak Student Remediation
