@@ -39,13 +39,13 @@ This repository contains the source code and configuration for:
 
 ### 📱 Mobile App
 - **Directory:** `/mobile_app`
-- **Tech Stack:** [Flutter](https://flutter.dev/) ![Flutter](https://cdn.jsdelivr.net/gh/devicons/devicon/icons/flutter/flutter-original.svg) & Dart
+- **Tech Stack:** [Flutter](https://flutter.dev/) <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/flutter/flutter-original.svg" width="100px" /> & Dart
 - **Platforms:** Android & iOS
 - **Info:** See [`mobile_app/README.md`](./mobile_app/README.md) for setup instructions.
 
 ### 🐍 Backend API
 - **Directory:** `/backend` (or update as needed)
-- **Language:** Python ![Python](https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg)
+- **Language:** Python <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg" width="100px" />
 - **Purpose:** Provides REST API and backend services
 
 ### ☁️ Firebase Configuration
