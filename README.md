@@ -1,4 +1,4 @@
-# 🔬 PhysiV-Lab: AI-Powered Virtual Physics Learning Platform
+# 🔬 Intelligent Keyword-Based Content Retrieval & Curriculum-Aligned 2D Game Generation
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Flutter](https://img.shields.io/badge/Flutter-3.0+-blue?logo=flutter)](https://flutter.dev)
@@ -55,7 +55,7 @@ The platform serves **Grade 6–11 students** with personalized, grade-adaptive 
 | **Keyword-Based Search** | Find physics topics, definitions, formulas, and examples |
 | **Semantic Understanding** | Natural language queries processed using SBERT |
 | **Hybrid Retrieval** | BM25 for fast keyword matching + SBERT for semantic similarity |
-| **Grade Filtering** | Content filtered by student grade level (6-11) |
+| **Grade Filtering** | Content filtered by student grade level (9-11) |
 | **NIE Alignment** | Results aligned with Sri Lankan curriculum standards |
 | **Content Types** | Returns definitions, formulas, examples, and explanations |
 
@@ -455,7 +455,7 @@ GET /search?query=string&grade=integer
 
 **Query Parameters:**
 - `query` (string): Physics topic or keyword
-- `grade` (integer): Student grade (6-11)
+- `grade` (integer): Student grade (9-11)
 
 **Response:**
 ```json
