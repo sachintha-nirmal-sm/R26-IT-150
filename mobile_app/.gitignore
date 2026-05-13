@@ -8,55 +8,46 @@ build/
 .flutter-plugins-dependencies
 .packages
 .metadata
+coverage/
+flutter_export_environment.sh
 
-# IDEs
-.idea/
-*.iml
-.vscode/
-
-# Mac/Windows/Linux system files
-.DS_Store
-Thumbs.db
-desktop.ini
-
-# Android
+# Android/Gradle generated files
 android/.gradle/
 android/local.properties
 android/key.properties
-**/android/app/debug
-**/android/app/profile
-**/android/app/release
+android/app/debug/
+android/app/profile/
+android/app/release/
+android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
+*.apk
+*.aab
+*.ap_
 
-# iOS
-**/ios/Flutter/App.framework
-**/ios/Flutter/Flutter.framework
-**/ios/Flutter/Flutter.podspec
-**/ios/Flutter/Generated.xcconfig
-**/ios/Flutter/ephemeral/
-**/ios/Flutter/flutter_export_environment.sh
-**/ios/Runner/GeneratedPluginRegistrant.*
-**/ios/Runner/GeneratedPluginRegistrant.swift
+# iOS generated files
+ios/Flutter/Generated.xcconfig
+ios/Flutter/ephemeral/
+ios/Flutter/flutter_export_environment.sh
+ios/Runner/GeneratedPluginRegistrant.*
 
-# macOS
-**/macos/Flutter/GeneratedPluginRegistrant.swift
-**/macos/Flutter/ephemeral/
-**/macos/Flutter/flutter_export_environment.sh
-**/macos/Runner/GeneratedPluginRegistrant.swift
+# macOS generated files
+macos/Flutter/ephemeral/
+macos/Flutter/flutter_export_environment.sh
+macos/Flutter/GeneratedPluginRegistrant.swift
+macos/Runner/GeneratedPluginRegistrant.swift
 
-# Web
-**/web/.dart_tool/
-**/web/build/
+# Linux/Windows generated files
+linux/flutter/generated_plugin_registrant.*
+linux/flutter/generated_plugins.cmake
+linux/flutter/ephemeral/
+windows/flutter/generated_plugin_registrant.*
+windows/flutter/generated_plugins.cmake
+windows/flutter/ephemeral/
 
-# Windows
-**/windows/flutter/ephemeral/
+# Firebase local files
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
 
-# Linux
-**/linux/flutter/ephemeral/
-
-# Coverage
-coverage/
-
-# Flutter build artifacts
-**/flutter_export_environment.sh
-**/.flutter-plugins-dependencies
-**/.flutter-plugins
+android/.gradle/
+.gradle/
