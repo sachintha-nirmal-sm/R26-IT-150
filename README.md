@@ -365,12 +365,7 @@ Track key metrics:
 
 **Dashboard**: Firebase Console or custom analytics dashboard
 
-##  Integration Points
 
-### Third-party Services
-- **Google Classroom** - Single sign-on (future)
-- **Slack Notifications** - Teacher alerts for struggling students
-- **LMS Integration** - Canvas, Moodle (future)
 
 ##  Known Limitations
 
