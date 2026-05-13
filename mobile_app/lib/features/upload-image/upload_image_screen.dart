@@ -88,6 +88,11 @@ class _UploadImageScreenState extends State<UploadImageScreen> {
         currentIndex: 2,
         selectedItemColor: Colors.black,
         unselectedItemColor: Colors.grey,
+        onTap: (index) {
+          if (index == 3) {
+            Navigator.pushNamed(context, "/profile");
+          }
+        },
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home_outlined),
@@ -120,7 +125,7 @@ class _UploadImageScreenState extends State<UploadImageScreen> {
               Row(
                 children: [
                   IconButton(
-                    onPressed: () {},
+                    onPressed: () => Navigator.pop(context),
                     icon: const Icon(Icons.arrow_back_ios_new),
                   ),
                   const Expanded(
@@ -134,7 +139,17 @@ class _UploadImageScreenState extends State<UploadImageScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 48),
+                  Padding(
+                    padding: const EdgeInsets.only(right: 16),
+                    child: GestureDetector(
+                      onTap: () => Navigator.pushNamed(context, "/profile"),
+                      child: const CircleAvatar(
+                        radius: 18,
+                        backgroundColor: Color(0xFFCCCCCC),
+                        child: Icon(Icons.person, color: Colors.white, size: 22),
+                      ),
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 30),
