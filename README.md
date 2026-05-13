@@ -18,6 +18,7 @@ The platform supports:
 - Student progress tracking
 
 **Problem Statement**
+
 Many students struggle to understand physics due to:
 
 - Lack of physical laboratory facilities
@@ -28,6 +29,7 @@ Many students struggle to understand physics due to:
 Existing learning systems often focus only on simulations, quizzes, or gamification. Most do not combine real-time measurements, automatic calculations, experiment evaluation, and game-based interaction in one platform.
 
 **Proposed Solution**
+
 This project introduces an integrated mobile learning environment where students can:
 
 - Perform virtual physics experiments
@@ -228,26 +230,35 @@ Testing includes:
 **Set Up Unity Games**
 
 1.Open Unity Hub.
+
 2.Select Open Project.
+
 3.Choose the unity_games/ folder.
+
 4.Open the project in Unity Editor.
+
 5.Build or export the Unity game module for mobile integration.
 
 **Example 1: Velocity Calculation**
+
 A student performs a motion experiment.
 
 Input measurements:
+
 Distance = 10 meters
 Time = 5 seconds
 
 Formula:
+
 Velocity = Distance / Time
 
 Calculation:
+
 Velocity = 10 / 5
 Velocity = 2 m/s
 
 Output shown to student:
+
 The object moved with a velocity of 2 m/s.
 
 Step-by-step explanation:
