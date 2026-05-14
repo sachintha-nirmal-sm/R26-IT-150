@@ -7,7 +7,7 @@
 [![Firebase](https://img.shields.io/badge/Firebase-Realtime%20Database-orange?logo=firebase)](https://firebase.google.com)
 [![Status](https://img.shields.io/badge/Status-In%20Development-yellow)]()
 
-> A mobile-based virtual physics laboratory with AI-powered semantic search and curriculum-aligned 2D educational games for Grade 6–11 students in Sri Lanka.
+> A mobile-based virtual physics laboratory with AI-powered semantic search and curriculum-aligned 2D educational games for Grade 9–11 students in Sri Lanka.
 
 **University**: Sri Lanka Institute of Information Technology  
 **Research Project Code**: R26-IT-150  
@@ -620,12 +620,11 @@ The system is evaluated using:
 
 ## 🔮 Future Improvements
 
-- [ ] **Multi-Language Support** - Tamil, Sinhala language support
+- [ ] **Language Support** - English language support
 - [ ] **Offline Mode** - Complete offline content access
 - [ ] **Voice Search** - Speech-to-text query input
 - [ ] **Collaborative Learning** - Multiplayer games and peer study
 - [ ] **Advanced Analytics** - ML-based learning recommendations
-- [ ] **AR Integration** - Augmented reality physics visualization
 - [ ] **Smart Tutoring** - AI chatbot for physics doubts
 - [ ] **Gamification** - Badges, leaderboards, achievements
 - [ ] **Content Expansion** - More game templates and topics
