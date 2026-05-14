@@ -61,7 +61,7 @@ class _LessonsDashboardState extends State<LessonsDashboard> {
       backgroundColor: const Color(0xFFF5F6FA),
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color:  const Color(0xFF2196F3)),
+          icon: const Icon(Icons.arrow_back, color: Color(0xFF2196F3)),
           onPressed: () => Navigator.pushReplacement(
             context,
             MaterialPageRoute(
@@ -181,11 +181,16 @@ class _LessonsDashboardState extends State<LessonsDashboard> {
                       bgColor: const Color.fromARGB(255, 210, 235, 255),
                     ),
                   ),
-                  _buildGridCard(
-                    icon: Icons.menu_book_outlined,
-                    label: 'Learning Materials',
-                    iconColor: const Color(0xFF2196F3),
-                    bgColor: const Color.fromARGB(255, 210, 235, 255),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.pushNamed(context, '/learning-materials');
+                    },
+                    child: _buildGridCard(
+                      icon: Icons.menu_book_outlined,
+                      label: 'Learning Materials',
+                      iconColor: const Color(0xFF2196F3),
+                      bgColor: const Color.fromARGB(255, 210, 235, 255),
+                    ),
                   ),
                 ],
               ),
