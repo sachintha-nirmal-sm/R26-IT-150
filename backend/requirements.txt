@@ -1,3 +1,5 @@
-fastapi
-uvicorn
-pydantic
+fastapi>=0.100.0
+uvicorn>=0.22.0
+firebase-admin>=6.2.0
+pydantic>=2.0.0
+python-dotenv>=1.0.0
