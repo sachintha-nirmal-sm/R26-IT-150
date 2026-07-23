@@ -68,3 +68,7 @@ local.properties
 firebase-debug.log
 firestore-debug.log
 ui-debug.log
+
+# Firebase Admin SDK service account key — NEVER commit this
+**/serviceAccountKey.json
+**/serviceAccountKey*.json

@@ -1,0 +1,5 @@
+# Firebase Admin SDK Python dependencies
+# Install with: pip install -r requirements.txt
+
+firebase-admin>=6.5.0
+python-dotenv>=1.0.0
