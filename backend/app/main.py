@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from app.core import db
+from app.api import auth as auth_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -21,6 +22,9 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
+# --- Routers ---
+app.include_router(auth_router.router)
 
 @app.get("/health", tags=["Health"])
 def health_check():
