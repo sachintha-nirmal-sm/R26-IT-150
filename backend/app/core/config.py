@@ -12,6 +12,13 @@ ROOT_DIR = BACKEND_DIR.parent
 
 PROJECT_ID: str = os.getenv("FIREBASE_PROJECT_ID", "physics-learning-platform")
 
+# New Firebase projects (created after Oct 2024) use firebasestorage.app
+# Old projects used appspot.com. Override via STORAGE_BUCKET env var if needed.
+STORAGE_BUCKET: str = os.getenv(
+    "STORAGE_BUCKET",
+    f"{PROJECT_ID}.firebasestorage.app"
+)
+
 # Candidate paths for serviceAccountKey.json
 DEFAULT_SERVICE_ACCOUNT_PATHS = [
     BACKEND_DIR / "serviceAccountKey.json",

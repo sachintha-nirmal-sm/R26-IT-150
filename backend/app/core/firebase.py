@@ -1,7 +1,7 @@
 import os
 import firebase_admin
-from firebase_admin import credentials, firestore, auth as firebase_auth
-from app.core.config import get_service_account_path
+from firebase_admin import credentials, firestore, auth as firebase_auth, storage
+from app.core.config import get_service_account_path, PROJECT_ID, STORAGE_BUCKET
 
 _service_account_path = get_service_account_path()
 
@@ -13,11 +13,14 @@ if not firebase_admin._apps:
             "Please ensure serviceAccountKey.json is placed in firebase/scripts/ or backend/ folder."
         )
     _cred = credentials.Certificate(_service_account_path)
-    firebase_admin.initialize_app(_cred)
+    firebase_admin.initialize_app(_cred, {
+        "storageBucket": STORAGE_BUCKET
+    })
 
-# Expose Firestore client and Firebase Auth module
+# Expose Firestore client, Firebase Auth, and Storage bucket
 db: firestore.Client = firestore.client()
 auth = firebase_auth
+bucket = storage.bucket()
 
 def get_db() -> firestore.Client:
     """Dependency helper to return Firestore DB client."""
