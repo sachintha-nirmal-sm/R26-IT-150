@@ -24,7 +24,11 @@ app = FastAPI(
 )
 
 # --- Routers ---
+from app.api import auth as auth_router
+from app.api import admin_lessons
+
 app.include_router(auth_router.router)
+app.include_router(admin_lessons.router)
 
 @app.get("/health", tags=["Health"])
 def health_check():
