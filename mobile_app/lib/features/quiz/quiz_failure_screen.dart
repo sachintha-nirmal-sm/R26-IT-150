@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../quizzes/lesson_quizzes_page.dart';
 import 'dynamic_assessment_page.dart';
 
 class QuizFailureScreen extends StatelessWidget {
@@ -37,10 +36,13 @@ class QuizFailureScreen extends StatelessWidget {
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
-            child: CircleAvatar(
-              radius: 18,
-              backgroundColor: const Color(0xFFCCCCCC),
-              child: const Icon(Icons.person, color: Colors.white, size: 22),
+            child: GestureDetector(
+              onTap: () => Navigator.pushNamed(context, "/profile"),
+              child: CircleAvatar(
+                radius: 18,
+                backgroundColor: const Color(0xFFCCCCCC),
+                child: const Icon(Icons.person, color: Colors.white, size: 22),
+              ),
             ),
           )
         ],
