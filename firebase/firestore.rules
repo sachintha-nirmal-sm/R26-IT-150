@@ -1,8 +1,247 @@
 rules_version = '2';
+
+// ============================================================
+// Firestore Security Rules — AI-Powered Grade-Based Learning Platform
+// ============================================================
+// Complete implementation of all rules specified in Section 10 of
+// mobile_app/devmini.md.
+//
+// Core principle: the Flutter client is never the source of truth for
+// grades, scores, attempt counts, or generated content. All such writes
+// happen via FastAPI + Firebase Admin SDK, which bypasses these rules.
+// These rules exist purely to lock down what the client SDK can read/write.
+//
+// Role source of truth: the 'role' Firebase Auth custom claim.
+// The users/{uid}.role field mirrors it for rule reads without a
+// token round-trip (but the claim always wins for Auth decisions).
+// ============================================================
+
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // --------------------------------------------------------
+    // Helper Functions
+    // --------------------------------------------------------
+
+    // True if the caller is signed in at all.
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // True if the caller carries the 'admin' custom claim.
+    // This is the single source of truth for admin access — not the
+    // users/{uid}.role field, which is only a mirror for UI display.
+    function isAdmin() {
+      return isAuthenticated() && request.auth.token.role == 'admin';
+    }
+
+    // True if the caller carries the 'student' custom claim.
+    function isStudent() {
+      return isAuthenticated() && request.auth.token.role == 'student';
+    }
+
+    // True if the caller's UID matches the path UID (owns the document).
+    function isOwner(uid) {
+      return isAuthenticated() && request.auth.uid == uid;
+    }
+
+    // Reads the student's currentGrade from their profile doc.
+    // Used to enforce grade-scoped lesson/quiz reads.
+    function getUserGrade(uid) {
+      return get(/databases/$(database)/documents/users/$(uid)).data.currentGrade;
+    }
+
+    // Reads the parent lesson document to check grade + status.
+    // Used by quizzes rules to avoid repeating the cross-document lookup.
+    function getLessonData(lessonId) {
+      return get(/databases/$(database)/documents/lessons/$(lessonId)).data;
+    }
+
+    // --------------------------------------------------------
+    // users/{uid}
+    // --------------------------------------------------------
+    // - Owners and admins may read the profile.
+    // - Public signup may CREATE the document only when role == 'student'
+    //   (admin accounts are provisioned out-of-band, never via signup).
+    // - Owners may UPDATE their own profile, EXCEPT for the
+    //   'currentGrade' and 'role' fields — those are server-only writes
+    //   (grade promotion via scheduled job; role via seed script / console).
+    // - Nobody may delete a user document through the client SDK.
+    // --------------------------------------------------------
+    match /users/{uid} {
+      allow read: if isOwner(uid) || isAdmin();
+
+      // Signup: owner creates their own doc, must set role = 'student'.
+      allow create: if isOwner(uid) && request.resource.data.role == 'student';
+
+      // Profile update: owner may change any field EXCEPT currentGrade or role.
+      // The affectedKeys() check ensures neither field appears in the diff,
+      // i.e. the client cannot add, change, or remove them.
+      allow update: if isOwner(uid)
+        && !(["currentGrade", "role"].hasAny(
+               request.resource.data.diff(resource.data).affectedKeys()
+             ));
+
+      allow delete: if false;
+
+      // --------------------------------------------------------
+      // users/{uid} — student subcollections
+      // --------------------------------------------------------
+      // Principle: all of these are written exclusively by FastAPI
+      // (Admin SDK). A malicious client must NOT be able to fake a
+      // perfect score, unlock a 4th attempt, or alter analytics by
+      // writing directly to any of these subcollections.
+      // Rule: owner may read their own data; write = false for everyone.
+      // --------------------------------------------------------
+
+      match /gradeHistory/{id} {
+        allow read: if isOwner(uid);
+        allow write: if false;
+      }
+
+      match /quizProgress/{id} {
+        allow read: if isOwner(uid);
+        allow write: if false;
+      }
+
+      match /quizAttempts/{id} {
+        allow read: if isOwner(uid);
+        allow write: if false;
+      }
+
+      match /wrongQuestions/{id} {
+        allow read: if isOwner(uid);
+        allow write: if false;
+      }
+
+      match /feedback/{id} {
+        allow read: if isOwner(uid);
+        allow write: if false;
+      }
+
+      match /weakTopics/{id} {
+        allow read: if isOwner(uid);
+        allow write: if false;
+      }
+
+      match /youtubeRecommendations/{id} {
+        allow read: if isOwner(uid);
+        allow write: if false;
+      }
+
+      match /finalQuizAttempts/{id} {
+        allow read: if isOwner(uid);
+        allow write: if false;
+      }
+
+      // performanceSummary: documented as a "single doc" in the schema
+      // (section 3.17), stored as one document inside this subcollection.
+      match /performanceSummary/{id} {
+        allow read: if isOwner(uid);
+        allow write: if false;
+      }
+    }
+
+    // --------------------------------------------------------
+    // lessons/{lessonId}
+    // --------------------------------------------------------
+    // Admins can read all lessons.
+    // Students may only read a lesson if:
+    //   (a) the lesson is published, AND
+    //   (b) the lesson's grade matches the student's currentGrade.
+    // Write is false — lesson metadata is created/edited via FastAPI only.
+    // --------------------------------------------------------
+    match /lessons/{lessonId} {
+      allow read: if isAdmin()
+        || (isAuthenticated()
+            && resource.data.status == 'published'
+            && resource.data.grade == getUserGrade(request.auth.uid));
+      allow write: if false;
+
+      // materials — raw PDFs/notes for RAG ingestion; client never reads these.
+      // Uploads go through a FastAPI endpoint that writes to Cloud Storage and
+      // updates this subcollection via Admin SDK.
+      match /materials/{materialId} {
+        allow read, write: if false;
+      }
+
+      // quizzes — same grade-check as the parent lesson.
+      // The client only reads quiz metadata (title, status, maxAttempts,
+      // activeQuestionBankVersionId). Questions are never served from here.
+      match /quizzes/{quizId} {
+        allow read: if isAdmin()
+          || (isAuthenticated()
+              && getLessonData(lessonId).status == 'published'
+              && getLessonData(lessonId).grade == getUserGrade(request.auth.uid));
+        allow write: if false;
+
+        // questionBankVersions + their questions — client NEVER reads these.
+        // The Flutter app calls GET /quizzes/{id}/start; FastAPI reads the
+        // bank server-side via Admin SDK and returns a sanitized payload with
+        // correctAnswer and explanation stripped out. This is the only reliable
+        // way to prevent a student from reading the answer key directly.
+        match /questionBankVersions/{versionId} {
+          allow read, write: if false;
+
+          match /questions/{questionId} {
+            allow read, write: if false;
+          }
+        }
+      }
+    }
+
+    // --------------------------------------------------------
+    // finalQuizzes/{finalQuizId}
+    // --------------------------------------------------------
+    // Same answer-key protection as questionBankVersions above.
+    // The client calls a FastAPI endpoint for attempt-start; FastAPI
+    // serves a shuffled, answer-stripped payload via Admin SDK.
+    // Neither the quiz metadata nor its questions subcollection is
+    // readable by the client SDK.
+    // --------------------------------------------------------
+    match /finalQuizzes/{finalQuizId} {
+      allow read, write: if false;
+
+      match /questions/{questionId} {
+        allow read, write: if false;
+      }
+    }
+
+    // --------------------------------------------------------
+    // generationJobs/{jobId}
+    // --------------------------------------------------------
+    // Admins may poll job progress (status, progressPercent, resultVersionId).
+    // Students should never see generation jobs.
+    // Write is false — jobs are created and updated exclusively by FastAPI.
+    // --------------------------------------------------------
+    match /generationJobs/{jobId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    // --------------------------------------------------------
+    // analytics/**
+    // --------------------------------------------------------
+    // Admin-dashboard aggregates maintained by backend tasks.
+    // Covers the nested sub-path structure:
+    //   analytics/lessonStats/{lessonId}
+    //   analytics/quizStats/{quizId}
+    //   analytics/questionStats/{questionId}
+    // Students should never see these docs.
+    // Write is false — all rollups happen server-side via Admin SDK.
+    // --------------------------------------------------------
+    match /analytics/{document=**} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    // --------------------------------------------------------
+    // Catch-all: deny everything not explicitly permitted above.
+    // This is the security baseline — do not remove.
+    // --------------------------------------------------------
     match /{document=**} {
       allow read, write: if false;
     }
+
   }
 }
