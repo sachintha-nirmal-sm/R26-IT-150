@@ -312,6 +312,12 @@ async def stub_rag_ingestion_pipeline(lesson_id: str, material_id: str):
 # ---------------------------------------------------------------------------
 
 @router.post(
+    "/{lesson_id}/upload-pdf",
+    response_model=MaterialResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Upload PDF for a lesson (alias)",
+)
+@router.post(
     "/{lesson_id}/materials",
     response_model=MaterialResponse,
     status_code=status.HTTP_201_CREATED,
@@ -321,7 +327,7 @@ async def upload_material(
     lesson_id: str,
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
-    materialType: Literal["pdf", "theoryNotes", "formulaSheet", "calculationSheet", "other"] = Form(...),
+    materialType: Literal["pdf", "theoryNotes", "formulaSheet", "calculationSheet", "other"] = Form("pdf"),
     admin: VerifiedUser = Depends(require_admin)
 ) -> MaterialResponse:
     """
@@ -348,19 +354,15 @@ async def upload_material(
         )
 
     material_id = str(uuid.uuid4())
-    storage_path = f"materials/{lesson_id}/{material_id}_{file.filename}"
-    
-    try:
-        blob = bucket.blob(storage_path)
-        blob.upload_from_string(
-            file_bytes,
-            content_type=file.content_type
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to upload file to Cloud Storage: {str(e)}"
-        )
+
+    # Firebase Storage requires Blaze plan — save to local disk instead
+    import pathlib
+    upload_dir = pathlib.Path(__file__).parent.parent.parent / "uploads"
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    local_filename = f"{lesson_id}_{material_id}_{file.filename}"
+    local_path = upload_dir / local_filename
+    local_path.write_bytes(file_bytes)
+    storage_path = str(local_path)
 
     # 2. Write metadata document to Firestore
     now = firestore.SERVER_TIMESTAMP

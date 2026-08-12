@@ -1,19 +1,18 @@
 import 'package:flutter/material.dart';
 import '../LessonList/lesson_list_page.dart';
-import '../quizzes/lesson_quizzes_page.dart';
-
+import '../quizzes/student_quiz_screen.dart';
 import '../experiments/presentation/screens/experiment_execution_screen.dart';
 import '../games/vector_quest/presentation/pages/vector_quest_game_screen.dart';
-import 'learning_materials_page.dart';
-
 
 class LessonsDashboard extends StatefulWidget {
+  final String lessonId;
   final String lessonTitle;
   final String grade;
   final String? lessonDescription;
 
   const LessonsDashboard({
     super.key,
+    required this.lessonId,
     this.lessonTitle = 'Linear Motion',
     this.grade = 'Grade 9 Physics',
     this.lessonDescription,
@@ -53,8 +52,6 @@ class _LessonsDashboardState extends State<LessonsDashboard> {
     setState(() {
       _selectedIndex = index;
     });
-    if (index == 0) Navigator.pushNamed(context, '/home');
-    if (index == 2) Navigator.pushNamed(context, '/practical-home');
     if (index == 3) {
       Navigator.pushNamed(context, '/profile');
     }
@@ -150,22 +147,24 @@ class _LessonsDashboardState extends State<LessonsDashboard> {
                 physics: const NeverScrollableScrollPhysics(),
                 children: [
                   GestureDetector(
-  onTap: () {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const LessonQuizzesPage(),
-      ),
-    );
-  },
-
-  child: _buildGridCard(
-    icon: Icons.quiz_outlined,
-    label: 'Quizzes',
-    iconColor: const Color(0xFF2196F3),
-    bgColor: const Color.fromARGB(255, 210, 235, 255),
-  ),
-),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => StudentQuizScreen(
+                            lessonId: widget.lessonId,
+                            lessonTitle: widget.lessonTitle,
+                          ),
+                        ),
+                      );
+                    },
+                    child: _buildGridCard(
+                      icon: Icons.quiz_outlined,
+                      label: 'Quizzes',
+                      iconColor: const Color(0xFF2196F3),
+                      bgColor: const Color.fromARGB(255, 210, 235, 255),
+                    ),
+                  ),
                   GestureDetector(
                     onTap: () => Navigator.pushNamed(context, '/game-intro'),
                     child: _buildGridCard(
@@ -177,7 +176,13 @@ class _LessonsDashboardState extends State<LessonsDashboard> {
                   ),
                   GestureDetector(
                     onTap: () {
-                      Navigator.pushNamed(context, '/practical-home');
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              const ExperimentExecutionScreen(),
+                        ),
+                      );
                     },
                     child: _buildGridCard(
                       icon: Icons.science_outlined,
@@ -186,24 +191,11 @@ class _LessonsDashboardState extends State<LessonsDashboard> {
                       bgColor: const Color.fromARGB(255, 210, 235, 255),
                     ),
                   ),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => LearningMaterialsPage(
-                            lessonTitle: widget.lessonTitle,
-                            grade: widget.grade,
-                          ),
-                        ),
-                      );
-                    },
-                    child: _buildGridCard(
-                      icon: Icons.menu_book_outlined,
-                      label: 'Learning Materials',
-                      iconColor: const Color(0xFF2196F3),
-                      bgColor: const Color.fromARGB(255, 210, 235, 255),
-                    ),
+                  _buildGridCard(
+                    icon: Icons.menu_book_outlined,
+                    label: 'Learning Materials',
+                    iconColor: const Color(0xFF2196F3),
+                    bgColor: const Color.fromARGB(255, 210, 235, 255),
                   ),
                 ],
               ),

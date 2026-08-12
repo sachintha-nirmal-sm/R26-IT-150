@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'features/experiments/experiments.dart';
-import 'features/experiments/presentation/screens/practical_home_page.dart';
 import 'features/LessonList/lesson_list_page.dart';
 import 'features/auth/presentation/get_started_page.dart';
 import 'features/auth/presentation/login_page.dart';
@@ -19,8 +20,13 @@ import 'features/quiz-complete/quiz_complete_screen.dart';
 import 'features/scenario-Based Question/scenario_question_screen.dart';
 import 'features/upload-image/upload_image_screen.dart';
 import 'features/games/vector_quest/presentation/pages/vector_quest_game_screen.dart';
+import 'features/admin/admin_dashboard.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(const MyApp());
 }
 
@@ -43,48 +49,39 @@ class MyApp extends StatelessWidget {
         appBarTheme: const AppBarTheme(
           backgroundColor: Colors.white,
           elevation: 0,
-          iconTheme: IconThemeData(
-            color: Color(0xFF1A1A2E),
-          ),
+          iconTheme: IconThemeData(color: Color(0xFF1A1A2E)),
         ),
       ),
-    home: const GetStartedPage(),
-    initialRoute: "/get-started",
-    routes: {
-    "/get-started": (context) => const GetStartedPage(),
-    "/login": (context) => const LoginPage(),
-    "/home": (context) => const PhysicsLabHomePage(),
-    "/sign-up": (context) => const SignupScreen(),
-    "/lesson-list": (context) => const PhysicsLessonsScreen(),
-    "/force-motion": (context) => const ForceLinearMotionPage(),
-    "/lesson-quizzes": (context) => const LessonQuizzesPage(),
-    "/lessonDBoard": (context) => const LessonsDashboard(),
-    "/deep-learn": (context) => const DeepLearningScreen(),
-    "/profile": (context) => const ProfileScreen(),
-    "/experiment-results": (context) =>
-      const ExperimentResultsScreen(),
-    "/experiment-execution": (context) =>
-      const ExperimentExecutionScreen(),
-    "/experiment-in-progress": (context) =>
-      const ExperimentInProgressScreen(),
-    "/practice-experience": (context) =>
-      const PracticeExperienceScreen(),
-    "/scenario-question": (context) => const ScenarioQuestionScreen(),
-    "/quiz-complete": (context) => const QuizCompleteScreen(
-      completionSeconds: 0,
-      overtimeSeconds: 0,
-    ),
-    "/step-by-step": (context) => const StepByStepSolutionScreen(),
-    "/upload-image": (context) => const UploadImageScreen(),
-    "/image-preview": (context) =>
-      const ImagePreviewConfirmationScreen(),
-    "/comparison-answer": (context) =>
-      const ComparisonFinalReturnScreen(),
-    "/chatbot": (context) => const ChatbotScreen(),
-    "/practical-home": (context) => const PracticalHomePage(),
+      home: const GetStartedPage(),
+      initialRoute: "/get-started",
+      routes: {
+        "/get-started": (context) => const GetStartedPage(),
+        "/login": (context) => const LoginPage(),
+        "/home": (context) => const PhysicsLabHomePage(),
+        "/sign-up": (context) => const SignupScreen(),
+        "/lesson-list": (context) => const PhysicsLessonsScreen(),
+        "/force-motion": (context) => const ForceLinearMotionPage(),
+        "/lesson-quizzes": (context) => const LessonQuizzesPage(),
 
-    "/game-intro": (context) => const VectorQuestGameScreen(),
-    },
+        "/deep-learn": (context) => const DeepLearningScreen(),
+        "/profile": (context) => const ProfileScreen(),
+        "/experiment-results": (context) => const ExperimentResultsScreen(),
+        "/experiment-execution": (context) => const ExperimentExecutionScreen(),
+        "/experiment-in-progress": (context) => const ExperimentInProgressScreen(),
+        "/practice-experience": (context) => const PracticeExperienceScreen(),
+        "/scenario-question": (context) => const ScenarioQuestionScreen(),
+        "/quiz-complete": (context) => const QuizCompleteScreen(
+              completionSeconds: 0,
+              overtimeSeconds: 0,
+            ),
+        "/step-by-step": (context) => const StepByStepSolutionScreen(),
+        "/upload-image": (context) => const UploadImageScreen(),
+        "/image-preview": (context) => const ImagePreviewConfirmationScreen(),
+        "/comparison-answer": (context) => const ComparisonFinalReturnScreen(),
+        "/chatbot": (context) => const ChatbotScreen(),
+        "/game-intro": (context) => const VectorQuestGameScreen(),
+        "/admin-dashboard": (context) => const AdminDashboard(),
+      },
     );
   }
 }
