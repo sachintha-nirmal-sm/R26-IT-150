@@ -72,3 +72,15 @@ ui-debug.log
 # Firebase Admin SDK service account key — NEVER commit this
 **/serviceAccountKey.json
 **/serviceAccountKey*.json
+
+# Local uploads (PDF files saved on disk)
+backend/uploads/
+
+# One-time scripts
+backend/fix_admin_role.py
+
+# Separate admin panel app (admin screens are inside mobile_app)
+admin_panel/
+
+# Research/notebooks
+research/
