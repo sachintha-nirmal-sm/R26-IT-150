@@ -140,13 +140,10 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16),
-            child: GestureDetector(
-              onTap: () => Navigator.pushNamed(context, "/profile"),
-              child: CircleAvatar(
-                radius: 18,
-                backgroundColor: const Color(0xFFCCCCCC),
-                child: const Icon(Icons.person, color: Colors.white, size: 22),
-              ),
+            child: CircleAvatar(
+              radius: 18,
+              backgroundColor: const Color(0xFFCCCCCC),
+              child: const Icon(Icons.person, color: Colors.white, size: 22),
             ),
           ),
         ],
@@ -509,10 +506,6 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
           currentIndex: _selectedIndex,
           onTap: (i) {
             setState(() => _selectedIndex = i);
-            if (i == 3) {
-              Navigator.pushNamed(context, "/profile");
-            }
-
             if (i == 1) Navigator.pushNamed(context, '/lesson-list');
             if (i == 2) Navigator.pushNamed(context, '/practical-home');
             if (i == 3) Navigator.pushNamed(context, '/profile');

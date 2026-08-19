@@ -126,11 +126,6 @@ class StepByStepSolutionScreen extends StatelessWidget {
         type: BottomNavigationBarType.fixed,
         selectedItemColor: Colors.blue,
         unselectedItemColor: Colors.grey,
-        onTap: (index) {
-          if (index == 3) {
-            Navigator.pushNamed(context, "/profile");
-          }
-        },
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home_outlined),
@@ -162,7 +157,7 @@ class _HeaderBar extends StatelessWidget {
     return Row(
       children: [
         IconButton(
-          onPressed: () => Navigator.pop(context),
+          onPressed: () {},
           icon: const Icon(
             Icons.arrow_back_ios_new,
             color: Colors.blue,

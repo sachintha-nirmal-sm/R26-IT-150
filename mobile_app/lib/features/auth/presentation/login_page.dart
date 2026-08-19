@@ -191,9 +191,6 @@ class _LoginPageState extends State<LoginPage> {
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                 color: Colors.blue.shade500,
                                 fontWeight: FontWeight.w600,
-                                fontSize: 16,
-
-                      
                               ),
                         ),
                       ),
@@ -309,7 +306,6 @@ class _LoginPageState extends State<LoginPage> {
                               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                     color: Colors.blue.shade500,
                                     fontWeight: FontWeight.w700,
-                                    fontSize: 14,
                                   ),
                             ),
                           ),

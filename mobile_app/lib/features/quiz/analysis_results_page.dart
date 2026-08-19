@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
 class AnalysisResultsPage extends StatelessWidget {
-  final bool calculationCorrect;
+  final bool formulaCorrect;
   final bool scenarioCorrect;
   final bool conceptualCorrect;
 
   const AnalysisResultsPage({
     super.key,
-    required this.calculationCorrect,
+    required this.formulaCorrect,
     required this.scenarioCorrect,
     required this.conceptualCorrect,
   });
@@ -15,17 +15,13 @@ class AnalysisResultsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Logic for dynamic feedback
-    String mainWeakness = !conceptualCorrect 
-        ? "Conceptual Understanding of Force" 
-        : (!calculationCorrect ? "Calculation & Problem-Solving" : "None! Great Job!");
+    String mainWeakness = !formulaCorrect 
+        ? "Calculation & Formula Application" 
+        : (!scenarioCorrect ? "Scenario-based Reasoning" : "None! Great Job");
 
-    String feedbackQuote = conceptualCorrect 
-        ? calculationCorrect
-            ? "Excellent! You have a strong grasp of both concepts and calculations. Keep practicing!"
-            : "You understand the concepts well, but need to improve your calculation accuracy. Practice more problems."
-        : calculationCorrect
-            ? "You can calculate well, but need to strengthen your conceptual understanding of force."
-            : "Both your conceptual understanding and calculation skills need improvement. Review the fundamentals.";
+    String feedbackQuote = formulaCorrect 
+        ? "You have a strong grasp of formulas. Keep applying them to complex scenarios."
+        : "You understand the concepts well, but tend to make errors when applying Newton's Second Law in multi-step problems.";
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FE),
@@ -107,17 +103,17 @@ class AnalysisResultsPage extends StatelessWidget {
             Row(
               children: [
                 _buildStatusCard(
-                  Icons.lightbulb, 
+                  Icons.bolt, 
                   "Conceptual Strength", 
                   conceptualCorrect ? "Good" : "Weak", 
-                  conceptualCorrect ? Colors.green : Colors.red
+                  conceptualCorrect ? Colors.blue : Colors.red
                 ),
                 const SizedBox(width: 15),
                 _buildStatusCard(
                   Icons.calculate, 
                   "Calculation Accuracy", 
-                  calculationCorrect ? "Good" : "Weak", 
-                  calculationCorrect ? Colors.green : Colors.red
+                  formulaCorrect ? "Good" : "Weak", 
+                  formulaCorrect ? Colors.blue : Colors.red
                 ),
               ],
             ),

@@ -186,7 +186,7 @@ class GetStartedPage extends StatelessWidget {
                       size: 20,
                     ),
                     label: Text(
-                      'Click to get started',
+                      'Swip to get started',
                       style: Theme.of(context).textTheme.labelLarge?.copyWith(
                             color: Colors.white,
                             fontSize: 16,

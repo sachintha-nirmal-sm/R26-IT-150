@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-class ExperimentResultsScreen extends StatefulWidget {
+class ExperimentResultsScreen extends StatelessWidget {
   final int? score; // The score passed from the practical (0-100)
   final String? finalDuration; // e.g., "12 min 30 sec"
   final String? topicName; // e.g., "Force"
@@ -11,14 +11,6 @@ class ExperimentResultsScreen extends StatefulWidget {
     this.finalDuration,
     this.topicName = "Force",
   });
-
-  @override
-  State<ExperimentResultsScreen> createState() =>
-      _ExperimentResultsScreenState();
-}
-
-class _ExperimentResultsScreenState extends State<ExperimentResultsScreen> {
-  int _selectedBottomNavIndex = 1;
 
   // Logic for Performance Level based on score
   String _getPerformanceLabel(int score) {
@@ -38,9 +30,9 @@ class _ExperimentResultsScreenState extends State<ExperimentResultsScreen> {
   Widget build(BuildContext context) {
     // Extract arguments if passed via named route
     final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-    final displayScore = widget.score ?? args?['score'] ?? 0;
-    final displayDuration = widget.finalDuration ?? args?['finalDuration'] ?? "0 min 0 sec";
-    final displayTopic = widget.topicName ?? args?['topicName'] ?? "Force";
+    final displayScore = score ?? args?['score'] ?? 0;
+    final displayDuration = finalDuration ?? args?['finalDuration'] ?? "0 min 0 sec";
+    final displayTopic = topicName ?? args?['topicName'] ?? "Force";
 
     final label = _getPerformanceLabel(displayScore);
     final color = _getPerformanceColor(displayScore);
@@ -151,7 +143,6 @@ class _ExperimentResultsScreenState extends State<ExperimentResultsScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: _buildBottomNavigationBar(),
     );
   }
 
@@ -210,134 +201,6 @@ class _ExperimentResultsScreenState extends State<ExperimentResultsScreen> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildActionButtons() {
-    return Column(
-      children: [
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: () {},
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              backgroundColor: const Color(0xFF2F80ED),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-            ),
-            child: const Text(
-              'Retry Experiment',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-                fontFamily: 'Poppins',
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton(
-                onPressed: () => Navigator.pop(context),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  side: const BorderSide(
-                    color: Color(0xFF2F80ED),
-                    width: 1.5,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                ),
-                child: const Text(
-                  'Back to Home',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF2F80ED),
-                    fontFamily: 'Poppins',
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: OutlinedButton(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Result saved successfully!'),
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
-                },
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  side: const BorderSide(
-                    color: Color(0xFF2F80ED),
-                    width: 1.5,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                ),
-                child: const Text(
-                  'Save Result',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF2F80ED),
-                    fontFamily: 'Poppins',
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildBottomNavigationBar() {
-    return BottomNavigationBar(
-      currentIndex: _selectedBottomNavIndex,
-      onTap: (index) {
-        setState(() {
-          _selectedBottomNavIndex = index;
-        });
-        if (index == 3) {
-          Navigator.pushNamed(context, '/profile');
-        }
-      },
-      type: BottomNavigationBarType.fixed,
-      backgroundColor: Colors.white,
-      selectedItemColor: const Color(0xFF2F80ED),
-      unselectedItemColor: Colors.grey,
-      elevation: 8,
-      items: const [
-        BottomNavigationBarItem(
-          icon: Icon(Icons.home),
-          label: 'Home',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.science),
-          label: 'Experiment',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.menu_book),
-          label: 'Library',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.person),
-          label: 'Profile',
-        ),
-      ],
     );
   }
 }

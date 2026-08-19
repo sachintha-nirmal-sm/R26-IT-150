@@ -2,11 +2,6 @@ import 'package:flutter/material.dart';
 import '../LessonList/lesson_list_page.dart';
 import '../quizzes/lesson_quizzes_page.dart';
 
-import '../experiments/presentation/screens/experiment_execution_screen.dart';
-import '../games/vector_quest/presentation/pages/vector_quest_game_screen.dart';
-import 'learning_materials_page.dart';
-
-
 class LessonsDashboard extends StatefulWidget {
   final String lessonTitle;
   final String grade;
@@ -66,7 +61,7 @@ class _LessonsDashboardState extends State<LessonsDashboard> {
       backgroundColor: const Color(0xFFF5F6FA),
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color:  const Color(0xFF2196F3)),
+          icon: const Icon(Icons.arrow_back, color: Color(0xFF2196F3)),
           onPressed: () => Navigator.pushReplacement(
             context,
             MaterialPageRoute(
@@ -188,15 +183,7 @@ class _LessonsDashboardState extends State<LessonsDashboard> {
                   ),
                   GestureDetector(
                     onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => LearningMaterialsPage(
-                            lessonTitle: widget.lessonTitle,
-                            grade: widget.grade,
-                          ),
-                        ),
-                      );
+                      Navigator.pushNamed(context, '/learning-materials');
                     },
                     child: _buildGridCard(
                       icon: Icons.menu_book_outlined,

@@ -105,11 +105,6 @@ class _ScenarioQuestionScreenState extends State<ScenarioQuestionScreen> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: 2,
         type: BottomNavigationBarType.fixed,
-        onTap: (index) {
-          if (index == 3) {
-            Navigator.pushNamed(context, "/profile");
-          }
-        },
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home_outlined),
@@ -141,7 +136,7 @@ class _TopBar extends StatelessWidget {
     return Row(
       children: [
         IconButton(
-          onPressed: () => Navigator.pop(context),
+          onPressed: () {},
           icon: const Icon(
             Icons.arrow_back_ios_new,
             color: Colors.blue,
@@ -159,17 +154,7 @@ class _TopBar extends StatelessWidget {
             ),
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.only(right: 16),
-          child: GestureDetector(
-            onTap: () => Navigator.pushNamed(context, "/profile"),
-            child: const CircleAvatar(
-              radius: 18,
-              backgroundColor: Color(0xFFCCCCCC),
-              child: Icon(Icons.person, color: Colors.white, size: 22),
-            ),
-          ),
-        ),
+        const SizedBox(width: 48),
       ],
     );
   }
