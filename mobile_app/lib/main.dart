@@ -18,8 +18,29 @@ import 'features/quiz-complete/quiz_complete_screen.dart';
 import 'features/scenario-Based Question/scenario_question_screen.dart';
 import 'features/upload-image/upload_image_screen.dart';
 import 'features/games/vector_quest/presentation/pages/vector_quest_game_screen.dart';
+import 'features/games/physics_force_game/presentation/physics_game_wrapper.dart';
+import 'features/games/pressure_puzzle_game/presentation/pressure_puzzle_screen.dart';
+import 'features/games/density_puzzle_game/density_puzzle_screen.dart';
+import 'features/games/simple_machines_game/simple_machines_screen.dart';
+import 'features/games/nano_shield_game/nano_shield_screen.dart';
+import 'features/games/motion_quest_game/motion_quest_screen.dart';
+import 'features/games/newton_game/newton_game_screen.dart';
+import 'features/games/friction_game/friction_game_screen.dart';
+import 'features/games/resultant_force/resultant_force_screen.dart';
+import 'features/games/turning_effect/turning_effect_screen.dart';
+import 'features/games/equilibrium_forces/equilibrium_forces_screen.dart';
+import 'features/games/hydrostatic_pressure_game/hydrostatic_pressure_game_screen.dart';
+import 'features/games/work_power_game/work_power_game_screen.dart';
+import 'features/games/current_electricity_game/current_electricity_game_screen.dart';
+import 'features/games/waves_game/waves_game_screen.dart';
+import 'features/games/geometrical_optics_game/geometrical_optics_game_screen.dart';
+import 'features/games/heat_game/heat_game_screen.dart';
+import 'features/games/power_energy_game/power_energy_game_screen.dart';
+import 'features/games/electronics_game/electronics_game_screen.dart';
+import 'features/games/electromagnetism_game/electromagnetism_game_screen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const MyApp());
 }
 
@@ -47,7 +68,6 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-    home: const GetStartedPage(),
     initialRoute: "/get-started",
     routes: {
     "/get-started": (context) => const GetStartedPage(),
@@ -81,6 +101,26 @@ class MyApp extends StatelessWidget {
       const ComparisonFinalReturnScreen(),
     "/chatbot": (context) => const ChatbotScreen(),
     "/game-intro": (context) => const VectorQuestGameScreen(),
+    "/force-game": (context) => const PhysicsGameWrapper(),
+    "/pressure-puzzle": (context) => const PressurePuzzleScreen(),
+    "/density-puzzle": (context) => const DensityPuzzleScreen(),
+    "/simple-machines-game": (context) => const SimpleMachinesScreen(),
+    "/nano-shield": (context) => const NanoShieldScreen(),
+    "/motion-quest": (context) => const MotionQuestScreen(),
+    "/newton-game": (context) => const NewtonGameScreen(),
+    "/friction-game": (context) => const FrictionGameScreen(),
+    "/resultant-force": (context) => const ResultantForceScreen(),
+    "/turning-effect": (context) => const TurningEffectScreen(),
+    "/equilibrium-forces": (context) => const EquilibriumForcesScreen(),
+    "/hydrostatic-pressure": (context) => const HydrostaticPressureGameScreen(),
+    "/work-power-game": (context) => const WorkPowerGameScreen(),
+    "/current-electricity-game": (context) => const CurrentElectricityGameScreen(),
+    "/waves-game": (context) => const WavesGameScreen(),
+    "/geometrical-optics-game": (context) => const GeometricalOpticsGameScreen(),
+    "/heat-game": (context) => const HeatGameScreen(),
+    "/power-energy-game": (context) => const PowerEnergyGameScreen(),
+    "/electronics-game": (context) => const ElectronicsGameScreen(),
+    "/electromagnetism-game": (context) => const ElectromagnetismGameScreen(),
     },
     );
   }
