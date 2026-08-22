@@ -3,9 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
+import 'dart:convert';
 
 class AdminLessonDetailScreen extends StatefulWidget {
   final String lessonId;
@@ -25,37 +24,288 @@ class AdminLessonDetailScreen extends StatefulWidget {
 
 class _AdminLessonDetailScreenState extends State<AdminLessonDetailScreen>
     with SingleTickerProviderStateMixin {
-  static final String _backendUrl =
-      kIsWeb ? 'http://localhost:8000' : 'http://10.0.2.2:8000';
+  late TabController _tabController;
 
-  // Quiz settings state
-  String _quizMode = 'random';      // 'random' or 'manual'
+  // Settings state
+  static final String _backendUrl =
+      kIsWeb ? 'http://localhost:9000' : 'http://10.0.2.2:9000';
+
+  String _quizMode = 'random';
   int _questionCount = 10;
   bool _isPublished = false;
   Set<String> _selectedQuestionIds = {};
-  bool _settingsLoading = true;
   bool _settingsSaving = false;
 
-  late TabController _tabController;
-  bool _isUploading = false;
-  bool _isGenerating = false;
-  String _selectedModel = 'gemini';
-  int _numQuestions = 10;
-  String? _selectedMaterialId;
-  String _statusLog = '';
+  // PDF state
+  List<Map<String, dynamic>> _pdfs = [];
+  bool _pdfsLoading = true;
+  bool _pdfSaving = false;
 
-  final List<Map<String, dynamic>> _models = [
-    {'value': 'gemini', 'label': 'Gemini 1.5 Flash', 'icon': '🔵', 'color': Colors.blue},
-    {'value': 'llama',  'label': 'Llama 3.3 70B',    'icon': '🟣', 'color': Colors.purple},
-    {'value': 'mistral','label': 'Mistral Small',     'icon': '🟠', 'color': Colors.orange},
-  ];
+  // Generate state
+  String _selectedModel = 'openrouter';
+  int _generateCount = 10;
+  bool _isGenerating = false;
+  Map<String, dynamic>? _lastGenerationStats;
+  List<Map<String, dynamic>> _sessionHistory = [];
+  bool _sessionsLoading = false;
+
+  // Difficulty accuracy state (computed live from current question docs)
+  Map<String, Map<String, int>> _difficultyStats = {};
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     _loadSettings();
+    _loadPdfs();
+    _loadSessionHistory();
   }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  Future<String?> _getToken() async =>
+      await FirebaseAuth.instance.currentUser?.getIdToken();
+
+  Future<void> _loadPdfs() async {
+    setState(() => _pdfsLoading = true);
+    try {
+      final token = await _getToken();
+      final res = await http.get(
+        Uri.parse('$_backendUrl/admin/lessons/${widget.lessonId}/pdfs'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+      if (res.statusCode == 200) {
+        final list = jsonDecode(res.body) as List;
+        setState(() => _pdfs = list.cast<Map<String, dynamic>>());
+      }
+    } catch (_) {}
+    setState(() => _pdfsLoading = false);
+  }
+
+  void _showAddLinkDialog() {
+    final nameCtrl = TextEditingController();
+    final urlCtrl = TextEditingController();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+          left: 20, right: 20, top: 20,
+          bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Add PDF Link',
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 6),
+            Text('Paste a Google Drive, Dropbox, or any public PDF link.',
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+            const SizedBox(height: 16),
+            TextField(
+              controller: nameCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Display Name',
+                hintText: 'e.g. Chapter 3 Notes',
+                border: OutlineInputBorder(),
+                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: urlCtrl,
+              keyboardType: TextInputType.url,
+              decoration: const InputDecoration(
+                labelText: 'PDF URL',
+                hintText: 'https://drive.google.com/...',
+                border: OutlineInputBorder(),
+                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              ),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  final name = nameCtrl.text.trim();
+                  final url = urlCtrl.text.trim();
+                  if (name.isEmpty || url.isEmpty) return;
+                  Navigator.pop(ctx);
+                  _savePdfLink(name, url);
+                },
+                icon: const Icon(Icons.link, color: Colors.white),
+                label: const Text('Save Link', style: TextStyle(color: Colors.white)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1A3CBA),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _savePdfLink(String fileName, String url) async {
+    final placeholder = {'id': '__pending__', 'fileName': fileName, 'url': url};
+    setState(() { _pdfs = [placeholder, ..._pdfs]; _pdfSaving = true; });
+    try {
+      final token = await _getToken();
+      final res = await http.post(
+        Uri.parse('$_backendUrl/admin/lessons/${widget.lessonId}/pdfs'),
+        headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
+        body: jsonEncode({'fileName': fileName, 'url': url}),
+      );
+      if (res.statusCode == 201) {
+        final saved = jsonDecode(res.body) as Map<String, dynamic>;
+        setState(() => _pdfs = [saved, ..._pdfs.where((p) => p['id'] != '__pending__')]);
+        if (mounted) _showSnack('Link saved!', Colors.green);
+      } else {
+        setState(() => _pdfs = _pdfs.where((p) => p['id'] != '__pending__').toList());
+        if (mounted) _showSnack('Failed: ${res.body}', Colors.red);
+      }
+    } catch (e) {
+      setState(() => _pdfs = _pdfs.where((p) => p['id'] != '__pending__').toList());
+      if (mounted) _showSnack('Error: $e', Colors.red);
+    }
+    setState(() => _pdfSaving = false);
+  }
+
+  Future<void> _uploadPdfFile() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf'],
+      withData: true,
+    );
+    if (result == null || result.files.isEmpty) return;
+    final file = result.files.first;
+    final bytes = file.bytes;
+    if (bytes == null) return;
+
+    final placeholder = {'id': '__pending__', 'fileName': file.name, 'url': ''};
+    setState(() { _pdfs = [placeholder, ..._pdfs]; _pdfSaving = true; });
+
+    try {
+      final token = await _getToken();
+      final request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$_backendUrl/admin/lessons/${widget.lessonId}/pdfs/upload'),
+      );
+      request.headers['Authorization'] = 'Bearer $token';
+      request.files.add(http.MultipartFile.fromBytes('file', bytes, filename: file.name));
+      final streamed = await request.send();
+      final body = await streamed.stream.bytesToString();
+      if (streamed.statusCode == 201) {
+        final saved = jsonDecode(body) as Map<String, dynamic>;
+        setState(() => _pdfs = [saved, ..._pdfs.where((p) => p['id'] != '__pending__')]);
+        if (mounted) _showSnack('PDF uploaded!', Colors.green);
+      } else {
+        setState(() => _pdfs = _pdfs.where((p) => p['id'] != '__pending__').toList());
+        if (mounted) _showSnack('Upload failed: $body', Colors.red);
+      }
+    } catch (e) {
+      setState(() => _pdfs = _pdfs.where((p) => p['id'] != '__pending__').toList());
+      if (mounted) _showSnack('Error: $e', Colors.red);
+    }
+    setState(() => _pdfSaving = false);
+  }
+
+  Future<void> _loadSessionHistory() async {
+    setState(() => _sessionsLoading = true);
+    try {
+      final snap = await FirebaseFirestore.instance
+          .collection('lessons')
+          .doc(widget.lessonId)
+          .collection('generationSessions')
+          .orderBy('createdAt', descending: true)
+          .limit(20)
+          .get();
+      if (mounted) {
+        setState(() => _sessionHistory =
+            snap.docs.map((d) => {'id': d.id, ...d.data()}).toList());
+      }
+    } catch (_) {}
+    if (mounted) setState(() => _sessionsLoading = false);
+    _loadDifficultyStats();
+  }
+
+  Future<void> _loadDifficultyStats() async {
+    try {
+      final snap = await FirebaseFirestore.instance
+          .collection('lessons')
+          .doc(widget.lessonId)
+          .collection('questions')
+          .get();
+      final stats = <String, Map<String, int>>{};
+      for (final doc in snap.docs) {
+        final d = doc.data();
+        final model = d['generatedBy'] as String? ?? 'unknown';
+        if (d['actualDifficulty'] == null) continue;
+        stats.putIfAbsent(model, () => {'evaluated': 0, 'matched': 0});
+        stats[model]!['evaluated'] = stats[model]!['evaluated']! + 1;
+        if (d['difficultyMatch'] == true) {
+          stats[model]!['matched'] = stats[model]!['matched']! + 1;
+        }
+      }
+      if (mounted) setState(() => _difficultyStats = stats);
+    } catch (_) {}
+  }
+
+  Future<void> _generateQuestions() async {
+    setState(() => _isGenerating = true);
+    try {
+      final token = await _getToken();
+      final res = await http.post(
+        Uri.parse('$_backendUrl/admin/lessons/${widget.lessonId}/generate-questions'),
+        headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
+        body: jsonEncode({'model': _selectedModel, 'count': _generateCount}),
+      ).timeout(const Duration(seconds: 180));
+      if (res.statusCode == 201) {
+        final data = jsonDecode(res.body) as Map<String, dynamic>;
+        final count = data['generated'] as int? ?? 0;
+        if (mounted) {
+          setState(() {
+            _lastGenerationStats = data;
+            _difficultyStats = {}; // reset until questions accumulate attempts
+          });
+          _loadSessionHistory();
+          _showSnack('Generated $count questions — accuracy verified!', Colors.green);
+          _tabController.animateTo(1);
+        }
+      } else {
+        if (mounted) _showSnack('Failed: ${res.body}', Colors.red);
+      }
+    } catch (e) {
+      if (mounted) _showSnack('Error: $e', Colors.red);
+    }
+    if (mounted) setState(() => _isGenerating = false);
+  }
+
+  Future<void> _deletePdf(String pdfId) async {
+    setState(() => _pdfs = _pdfs.where((p) => p['id'] != pdfId).toList());
+    try {
+      final token = await _getToken();
+      await http.delete(
+        Uri.parse('$_backendUrl/admin/lessons/${widget.lessonId}/pdfs/$pdfId'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+    } catch (_) {
+      _loadPdfs();
+    }
+  }
+
+  void _showSnack(String msg, Color color) => ScaffoldMessenger.of(context)
+      .showSnackBar(SnackBar(content: Text(msg), backgroundColor: color));
 
   Future<void> _loadSettings() async {
     try {
@@ -75,7 +325,6 @@ class _AdminLessonDetailScreenState extends State<AdminLessonDetailScreen>
         });
       }
     } catch (_) {}
-    setState(() => _settingsLoading = false);
   }
 
   Future<void> _saveSettings() async {
@@ -93,119 +342,20 @@ class _AdminLessonDetailScreenState extends State<AdminLessonDetailScreen>
         'selectedQuestionIds': _selectedQuestionIds.toList(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Settings saved!'), backgroundColor: Colors.green),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Settings saved!'), backgroundColor: Colors.green),
+        );
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
     }
     setState(() => _settingsSaving = false);
   }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
-
-  Future<String?> _getToken() async =>
-      await FirebaseAuth.instance.currentUser?.getIdToken();
-
-  Future<void> _uploadPdf() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['pdf'],
-      withData: true,
-    );
-    if (result == null || result.files.isEmpty) return;
-
-    final file = result.files.first;
-    final bytes = file.bytes;
-    if (bytes == null) return;
-
-    setState(() { _isUploading = true; _statusLog = ''; });
-    _log('Uploading ${file.name}...');
-
-    try {
-      final token = await _getToken();
-      final request = http.MultipartRequest(
-        'POST',
-        Uri.parse('$_backendUrl/admin/lessons/${widget.lessonId}/materials'),
-      );
-      request.headers['Authorization'] = 'Bearer $token';
-      request.files.add(http.MultipartFile.fromBytes(
-        'file', bytes, filename: file.name,
-      ));
-      request.fields['materialType'] = 'pdf';
-
-      final response = await request.send();
-      final body = await response.stream.bytesToString();
-
-      if (response.statusCode >= 400) {
-        _log('❌ Upload failed: $body');
-        return;
-      }
-      final data = jsonDecode(body) as Map<String, dynamic>;
-      final materialId = data['id'] ?? data['materialId'];
-      if (materialId != null) {
-        setState(() => _selectedMaterialId = materialId as String);
-        _log('✅ PDF uploaded successfully!');
-        _log('You can now generate quiz questions.');
-      } else {
-        _log('❌ Upload failed: $body');
-      }
-    } catch (e) {
-      _log('❌ Error: $e');
-    } finally {
-      setState(() => _isUploading = false);
-    }
-  }
-
-  Future<void> _generateQuiz() async {
-    if (_selectedMaterialId == null) {
-      _showError('Upload a PDF first.');
-      return;
-    }
-
-    setState(() { _isGenerating = true; _statusLog = ''; });
-    _log('Starting quiz generation...');
-    _log('Model: ${_models.firstWhere((m) => m['value'] == _selectedModel)['label']}');
-    _log('Questions: $_numQuestions');
-
-    try {
-      final token = await _getToken();
-      final response = await http.post(
-        Uri.parse('$_backendUrl/admin/lessons/${widget.lessonId}/generate-quiz'),
-        headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'model': _selectedModel,
-          'num_questions': _numQuestions,
-          'material_id': _selectedMaterialId,
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        _log('✅ Generated ${data['questions_saved']} questions using ${data['model_used']}!');
-        _log('Questions are now saved and visible to students.');
-        setState(() => _tabController.index = 1);
-      } else {
-        _log('❌ Error ${response.statusCode}: ${response.body}');
-      }
-    } catch (e) {
-      _log('❌ Error: $e');
-    } finally {
-      setState(() => _isGenerating = false);
-    }
-  }
-
-  void _log(String msg) => setState(() =>
-      _statusLog += '${DateTime.now().toString().substring(11, 19)} — $msg\n');
-
-  void _showError(String msg) => ScaffoldMessenger.of(context)
-      .showSnackBar(SnackBar(content: Text(msg), backgroundColor: Colors.red));
 
   @override
   Widget build(BuildContext context) {
@@ -226,7 +376,7 @@ class _AdminLessonDetailScreenState extends State<AdminLessonDetailScreen>
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
-            Tab(icon: Icon(Icons.upload_file), text: 'Generate'),
+            Tab(icon: Icon(Icons.auto_awesome), text: 'Generate'),
             Tab(icon: Icon(Icons.quiz), text: 'Questions'),
             Tab(icon: Icon(Icons.settings), text: 'Settings'),
           ],
@@ -234,167 +384,501 @@ class _AdminLessonDetailScreenState extends State<AdminLessonDetailScreen>
       ),
       body: TabBarView(
         controller: _tabController,
-        children: [_buildUploadTab(), _buildQuestionsTab(), _buildSettingsTab()],
-      ),
-    );
-  }
-
-  Widget _buildUploadTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // PDF Upload Section
-          _sectionHeader('Step 1: Upload Lesson PDF', Icons.upload_file, Colors.blue),
-          const SizedBox(height: 12),
-          GestureDetector(
-            onTap: _isUploading ? null : _uploadPdf,
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: _selectedMaterialId != null ? Colors.green : Colors.blue.withOpacity(0.3),
-                  width: 2,
-                  style: BorderStyle.solid,
-                ),
-              ),
-              child: Column(
-                children: [
-                  _isUploading
-                      ? const CircularProgressIndicator()
-                      : Icon(
-                          _selectedMaterialId != null ? Icons.check_circle : Icons.picture_as_pdf,
-                          size: 48,
-                          color: _selectedMaterialId != null ? Colors.green : Colors.blue,
-                        ),
-                  const SizedBox(height: 12),
-                  Text(
-                    _selectedMaterialId != null
-                        ? 'PDF Uploaded ✓\nTap to upload a different PDF'
-                        : _isUploading ? 'Uploading...' : 'Tap to select PDF file',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: _selectedMaterialId != null ? Colors.green : Colors.blue,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 28),
-
-          // AI Model Selection
-          _sectionHeader('Step 2: Choose AI Model', Icons.smart_toy, Colors.purple),
-          const SizedBox(height: 12),
-          ..._models.map((m) => _buildModelCard(m)),
-
-          const SizedBox(height: 20),
-
-          // Number of questions
-          _sectionHeader('Step 3: Number of Questions', Icons.format_list_numbered, Colors.orange),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              children: [
-                Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                  const Text('Questions:', style: TextStyle(fontWeight: FontWeight.w600)),
-                  Text('$_numQuestions',
-                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold,
-                          color: Color(0xFF1A3CBA))),
-                ]),
-                Slider(
-                  value: _numQuestions.toDouble(),
-                  min: 5, max: 20, divisions: 15,
-                  activeColor: const Color(0xFF1A3CBA),
-                  onChanged: (v) => setState(() => _numQuestions = v.round()),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 28),
-
-          // Generate Button
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: _isGenerating || _selectedMaterialId == null ? null : _generateQuiz,
-              icon: _isGenerating
-                  ? const SizedBox(width: 18, height: 18,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  : const Icon(Icons.auto_awesome, color: Colors.white),
-              label: Text(
-                _isGenerating ? 'Generating...' : 'Generate Quiz Questions',
-                style: const TextStyle(color: Colors.white, fontSize: 16),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1A3CBA),
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-          ),
-
-          // Status log
-          if (_statusLog.isNotEmpty) ...[
-            const SizedBox(height: 20),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1A1A2E),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(_statusLog,
-                  style: const TextStyle(color: Colors.greenAccent,
-                      fontFamily: 'monospace', fontSize: 12)),
-            ),
-          ],
+          _buildGenerateTab(),
+          _buildQuestionsTab(),
+          _buildSettingsTab(),
         ],
       ),
     );
   }
 
-  Widget _buildModelCard(Map<String, dynamic> m) {
-    final isSelected = _selectedModel == m['value'];
-    final color = m['color'] as Color;
-    return GestureDetector(
-      onTap: () => setState(() => _selectedModel = m['value']),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.08) : Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? color : Colors.grey.shade200,
-            width: isSelected ? 2 : 1,
+  // ---------------------------------------------------------------------------
+  // Generate Tab — placeholder until new quiz generation is built
+  // ---------------------------------------------------------------------------
+
+  Widget _buildGenerateTab() {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Upload button bar
+          Container(
+            color: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _pdfSaving ? null : _uploadPdfFile,
+                    icon: _pdfSaving
+                        ? const SizedBox(
+                            width: 18, height: 18,
+                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                        : const Icon(Icons.upload_file, color: Colors.white),
+                    label: Text(
+                      _pdfSaving ? 'Uploading...' : 'Upload PDF',
+                      style: const TextStyle(color: Colors.white, fontSize: 15),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF1A3CBA),
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                OutlinedButton.icon(
+                  onPressed: _pdfSaving ? null : _showAddLinkDialog,
+                  icon: const Icon(Icons.add_link, size: 18),
+                  label: const Text('Add Link'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ],
+            ),
           ),
+
+          // PDF list
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+            child: Text('Lesson PDFs',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey.shade500)),
+          ),
+          if (_pdfsLoading)
+            const Padding(
+              padding: EdgeInsets.all(24),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (_pdfs.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+              child: Row(children: [
+                Icon(Icons.picture_as_pdf_outlined, color: Colors.grey.shade300, size: 32),
+                const SizedBox(width: 12),
+                Text('No PDFs yet — upload one above.',
+                    style: TextStyle(color: Colors.grey.shade400, fontSize: 13)),
+              ]),
+            )
+          else
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: _pdfs.length,
+              itemBuilder: (ctx, i) {
+                final pdf = _pdfs[i];
+                final url = pdf['url'] as String? ?? '';
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    leading: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.picture_as_pdf, color: Colors.red, size: 26),
+                    ),
+                    title: Text(
+                      pdf['fileName'] ?? 'Unknown',
+                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    subtitle: Text(url,
+                        style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.delete_outline, color: Colors.red),
+                      onPressed: () => showDialog(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          title: const Text('Delete PDF'),
+                          content: Text('Delete "${pdf['fileName']}"?'),
+                          actions: [
+                            TextButton(onPressed: () => Navigator.pop(ctx),
+                                child: const Text('Cancel')),
+                            TextButton(
+                              onPressed: () {
+                                Navigator.pop(ctx);
+                                _deletePdf(pdf['id']);
+                              },
+                              child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Divider(),
+          ),
+
+          // Generate Questions section
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(children: [
+                  const Icon(Icons.auto_awesome, color: Color(0xFF1A3CBA), size: 20),
+                  const SizedBox(width: 8),
+                  const Text('Generate Questions',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                ]),
+                const SizedBox(height: 4),
+                Text('AI reads your PDFs and writes quiz questions automatically.',
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+                const SizedBox(height: 20),
+
+                // Model selector
+                const Text('AI Model', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                const SizedBox(height: 10),
+                Wrap(spacing: 8, runSpacing: 8, children: [
+                  _modelChip('openrouter', 'DeepSeek', Colors.teal),
+                  _modelChip('groq',       'Groq',     Colors.orange),
+                  _modelChip('mistral',    'Mistral',  Colors.purple),
+                ]),
+                const SizedBox(height: 20),
+
+                // Question count
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Questions to Generate',
+                        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1A3CBA).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text('$_generateCount',
+                          style: const TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold,
+                              color: Color(0xFF1A3CBA))),
+                    ),
+                  ],
+                ),
+                Slider(
+                  value: _generateCount.toDouble(),
+                  min: 5, max: 30, divisions: 25,
+                  activeColor: const Color(0xFF1A3CBA),
+                  onChanged: (v) => setState(() => _generateCount = v.round()),
+                ),
+                const SizedBox(height: 12),
+
+                // Last generation accuracy summary
+                if (_lastGenerationStats != null) _buildAccuracySummary(),
+                if (_lastGenerationStats != null) const SizedBox(height: 16),
+
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: _isGenerating ? null : _generateQuestions,
+                    icon: _isGenerating
+                        ? const SizedBox(
+                            width: 18, height: 18,
+                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                        : const Icon(Icons.auto_awesome, color: Colors.white),
+                    label: Text(
+                      _isGenerating ? 'Generating...' : 'Generate Questions',
+                      style: const TextStyle(color: Colors.white, fontSize: 15),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF1A3CBA),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // Model comparison table
+                _buildModelComparisonTable(),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAccuracySummary() {
+    final stats = _lastGenerationStats!;
+    final avg = stats['avgAccuracyScore'] as int? ?? 0;
+    final verified = stats['verifiedCount'] as int? ?? 0;
+    final flagged = stats['flaggedCount'] as int? ?? 0;
+    final generated = stats['generated'] as int? ?? 0;
+    final color = avg >= 80 ? Colors.green : avg >= 50 ? Colors.orange : Colors.red;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Row(children: [
+        Icon(Icons.verified, color: color, size: 22),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('Last Generation Accuracy',
+                style: TextStyle(fontWeight: FontWeight.bold, color: color, fontSize: 13)),
+            const SizedBox(height: 2),
+            Text(
+              '$generated questions  •  Avg: $avg%  •  $verified verified  •  $flagged flagged',
+              style: TextStyle(color: color.withOpacity(0.8), fontSize: 12),
+            ),
+          ]),
         ),
-        child: Row(children: [
-          Text(m['icon'], style: const TextStyle(fontSize: 24)),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(m['label'],
-                style: TextStyle(fontWeight: FontWeight.w600,
-                    color: isSelected ? color : Colors.black87)),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(20),
           ),
-          if (isSelected) Icon(Icons.check_circle, color: color),
+          child: Text('$avg%',
+              style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 16)),
+        ),
+      ]),
+    );
+  }
+
+  Widget _buildModelComparisonTable() {
+    if (_sessionsLoading) {
+      return const Center(child: Padding(
+        padding: EdgeInsets.all(16),
+        child: CircularProgressIndicator(strokeWidth: 2),
+      ));
+    }
+    if (_sessionHistory.isEmpty) return const SizedBox.shrink();
+
+    // Group sessions by model
+    final grouped = <String, List<Map<String, dynamic>>>{};
+    for (final s in _sessionHistory) {
+      final model = s['model'] as String? ?? 'unknown';
+      grouped.putIfAbsent(model, () => []).add(s);
+    }
+
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(children: [
+        const Icon(Icons.bar_chart, color: Color(0xFF1A3CBA), size: 18),
+        const SizedBox(width: 6),
+        const Text('Model Accuracy Comparison',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+        const Spacer(),
+        GestureDetector(
+          onTap: _loadSessionHistory,
+          child: Icon(Icons.refresh, size: 18, color: Colors.grey.shade500),
+        ),
+      ]),
+      const SizedBox(height: 10),
+      ...grouped.entries.map((entry) {
+        final model = entry.key;
+        final sessions = entry.value;
+        final scores = sessions
+            .where((s) => s['avgAccuracyScore'] != null)
+            .map((s) => (s['avgAccuracyScore'] as num).toInt())
+            .toList();
+        final avg = scores.isEmpty ? 0 : scores.reduce((a, b) => a + b) ~/ scores.length;
+        final best = scores.isEmpty ? 0 : scores.reduce((a, b) => a > b ? a : b);
+        final totalQ = sessions.fold<int>(0, (sum, s) => sum + ((s['questionCount'] as int?) ?? 0));
+        final color = _modelColor(model);
+        final barColor = avg >= 80 ? Colors.green : avg >= 50 ? Colors.orange : Colors.red;
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: Colors.grey.shade200),
+          ),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(_modelDisplayName(model),
+                    style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12)),
+              ),
+              const Spacer(),
+              Text('${sessions.length} session${sessions.length > 1 ? 's' : ''}  •  $totalQ questions',
+                  style: TextStyle(color: Colors.grey.shade500, fontSize: 11)),
+            ]),
+            const SizedBox(height: 8),
+            Row(children: [
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: avg / 100,
+                    backgroundColor: Colors.grey.shade200,
+                    color: barColor,
+                    minHeight: 8,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Text('$avg%',
+                  style: TextStyle(fontWeight: FontWeight.bold, color: barColor, fontSize: 14)),
+            ]),
+            const SizedBox(height: 4),
+            Text('Best: $best%',
+                style: TextStyle(color: Colors.grey.shade500, fontSize: 11)),
+            Builder(builder: (_) {
+              final ds = _difficultyStats[model];
+              if (ds == null || (ds['evaluated'] ?? 0) == 0) return const SizedBox.shrink();
+              final evaluated = ds['evaluated']!;
+              final matched = ds['matched']!;
+              final diffPct = (matched / evaluated * 100).round();
+              final diffColor = diffPct >= 70
+                  ? Colors.green.shade700
+                  : diffPct >= 40 ? Colors.orange.shade700 : Colors.red.shade700;
+              return Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Row(children: [
+                  Icon(Icons.psychology, size: 12, color: Colors.grey.shade500),
+                  const SizedBox(width: 4),
+                  Text('Difficulty accuracy: $diffPct% ($matched/$evaluated evaluated)',
+                      style: TextStyle(color: diffColor, fontSize: 11, fontWeight: FontWeight.w600)),
+                ]),
+              );
+            }),
+          ]),
+        );
+      }),
+    ]);
+  }
+
+  Widget _accuracyBadge(dynamic score, dynamic verified) {
+    if (score == null || verified == false) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade200,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text('—', style: TextStyle(color: Colors.grey.shade500, fontSize: 11)),
+      );
+    }
+    final s = (score as num).toInt();
+    final color = s >= 80 ? Colors.green : s >= 50 ? Colors.orange : Colors.red;
+    final icon = s >= 80 ? '✓' : s >= 50 ? '~' : '!';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Text('$icon $s%',
+          style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold)),
+    );
+  }
+
+  Widget _difficultyBadge(String? predicted, String? actual, bool? match) {
+    if (predicted == null) return const SizedBox.shrink();
+    Color diffColor(String d) =>
+        d == 'Easy' ? Colors.green : d == 'Hard' ? Colors.red : Colors.orange;
+
+    if (actual == null) {
+      final c = diffColor(predicted);
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(
+          color: c.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: c.withOpacity(0.25)),
+        ),
+        child: Text(predicted,
+            style: TextStyle(
+                color: c.withOpacity(0.75), fontSize: 10, fontWeight: FontWeight.w600)),
+      );
+    }
+
+    final matched = match == true;
+    final badgeColor = matched ? Colors.green : Colors.red;
+    final icon = matched ? '✓' : '≠';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: badgeColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: badgeColor.withOpacity(0.4)),
+      ),
+      child: Text('$predicted $icon $actual',
+          style: TextStyle(
+              color: matched ? Colors.green.shade700 : Colors.red.shade700,
+              fontSize: 10,
+              fontWeight: FontWeight.bold)),
+    );
+  }
+
+  String _modelDisplayName(String model) {
+    switch (model) {
+      case 'openrouter': return 'DeepSeek';
+      case 'groq': return 'Groq';
+      case 'mistral': return 'Mistral';
+      default: return model;
+    }
+  }
+
+  Color _modelColor(String model) {
+    switch (model) {
+      case 'openrouter': return Colors.teal;
+      case 'groq': return Colors.orange;
+      case 'mistral': return Colors.purple;
+      default: return Colors.blue;
+    }
+  }
+
+  Widget _modelChip(String value, String label, Color color) {
+    final selected = _selectedModel == value;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedModel = value),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? color.withOpacity(0.1) : Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+              color: selected ? color : Colors.grey.shade300,
+              width: selected ? 2 : 1),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          if (selected) ...[
+            Icon(Icons.check_circle, color: color, size: 14),
+            const SizedBox(width: 4),
+          ],
+          Text(label,
+              style: TextStyle(
+                  color: selected ? color : Colors.grey.shade600,
+                  fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                  fontSize: 13)),
         ]),
       ),
     );
   }
+
+  // ---------------------------------------------------------------------------
+  // Questions Tab
+  // ---------------------------------------------------------------------------
 
   Widget _buildQuestionsTab() {
     return StreamBuilder<QuerySnapshot>(
@@ -405,18 +889,24 @@ class _AdminLessonDetailScreenState extends State<AdminLessonDetailScreen>
           .orderBy('createdAt', descending: true)
           .snapshots(),
       builder: (context, snap) {
-        if (!snap.hasData) return const Center(child: CircularProgressIndicator());
-        final docs = snap.data!.docs;
+        final docs = snap.data?.docs ?? [];
+        if (!snap.hasData) {
+          return Center(
+            child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+              Icon(Icons.quiz_outlined, size: 64, color: Colors.grey.shade300),
+              const SizedBox(height: 12),
+              Text('Loading questions...', style: TextStyle(color: Colors.grey.shade400)),
+            ]),
+          );
+        }
 
         if (docs.isEmpty) {
           return Center(
             child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
               Icon(Icons.quiz_outlined, size: 64, color: Colors.grey.shade300),
               const SizedBox(height: 12),
-              Text('No questions yet.', style: TextStyle(color: Colors.grey.shade500)),
-              const SizedBox(height: 6),
-              const Text('Upload a PDF and generate questions.',
-                  style: TextStyle(color: Colors.grey)),
+              Text('No questions yet.',
+                  style: TextStyle(color: Colors.grey.shade500)),
             ]),
           );
         }
@@ -443,19 +933,32 @@ class _AdminLessonDetailScreenState extends State<AdminLessonDetailScreen>
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text('Q${i + 1}',
-                            style: const TextStyle(color: Color(0xFF1A3CBA),
-                                fontWeight: FontWeight.bold, fontSize: 12)),
+                            style: const TextStyle(
+                                color: Color(0xFF1A3CBA),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12)),
                       ),
                       const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(d['modelLabel'] ?? '',
-                            style: TextStyle(color: Colors.grey.shade500, fontSize: 11)),
-                      ),
+                      _accuracyBadge(d['accuracyScore'], d['accuracyVerified']),
+                      const Spacer(),
                       IconButton(
                         icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
                         onPressed: () => docs[i].reference.delete(),
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
+                      ),
+                    ]),
+                    const SizedBox(height: 6),
+                    Row(children: [
+                      _difficultyBadge(
+                        d['difficulty'] as String?,
+                        d['actualDifficulty'] as String?,
+                        d['difficultyMatch'] as bool?,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '${d['attempts'] ?? 0} attempt${(d['attempts'] ?? 0) == 1 ? '' : 's'}',
+                        style: TextStyle(color: Colors.grey.shade400, fontSize: 10),
                       ),
                     ]),
                     const SizedBox(height: 10),
@@ -469,7 +972,9 @@ class _AdminLessonDetailScreenState extends State<AdminLessonDetailScreen>
                         margin: const EdgeInsets.only(bottom: 6),
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                         decoration: BoxDecoration(
-                          color: isCorrect ? Colors.green.withOpacity(0.08) : Colors.grey.shade50,
+                          color: isCorrect
+                              ? Colors.green.withOpacity(0.08)
+                              : Colors.grey.shade50,
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
                             color: isCorrect ? Colors.green : Colors.grey.shade200,
@@ -498,8 +1003,10 @@ class _AdminLessonDetailScreenState extends State<AdminLessonDetailScreen>
                         child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                           const Icon(Icons.info_outline, color: Colors.blue, size: 16),
                           const SizedBox(width: 6),
-                          Expanded(child: Text(d['explanation'] ?? '',
-                              style: const TextStyle(color: Colors.blue, fontSize: 13))),
+                          Expanded(
+                            child: Text(d['explanation'] ?? '',
+                                style: const TextStyle(color: Colors.blue, fontSize: 13)),
+                          ),
                         ]),
                       ),
                     ],
@@ -513,9 +1020,11 @@ class _AdminLessonDetailScreenState extends State<AdminLessonDetailScreen>
     );
   }
 
-  Widget _buildSettingsTab() {
-    if (_settingsLoading) return const Center(child: CircularProgressIndicator());
+  // ---------------------------------------------------------------------------
+  // Settings Tab
+  // ---------------------------------------------------------------------------
 
+  Widget _buildSettingsTab() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -525,26 +1034,34 @@ class _AdminLessonDetailScreenState extends State<AdminLessonDetailScreen>
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: _isPublished ? Colors.green.withOpacity(0.08) : Colors.grey.shade50,
+              color: _isPublished
+                  ? Colors.green.withOpacity(0.08)
+                  : Colors.grey.shade50,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: _isPublished ? Colors.green : Colors.grey.shade300,
               ),
             ),
             child: Row(children: [
-              Icon(_isPublished ? Icons.visibility : Icons.visibility_off,
-                  color: _isPublished ? Colors.green : Colors.grey),
+              Icon(
+                _isPublished ? Icons.visibility : Icons.visibility_off,
+                color: _isPublished ? Colors.green : Colors.grey,
+              ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(_isPublished ? 'Quiz Published' : 'Quiz Unpublished',
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: _isPublished ? Colors.green : Colors.grey.shade700)),
-                  Text(_isPublished
-                      ? 'Students can see and take this quiz.'
-                      : 'Students cannot see this quiz yet.',
-                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                  Text(
+                    _isPublished ? 'Quiz Published' : 'Quiz Unpublished',
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: _isPublished ? Colors.green : Colors.grey.shade700),
+                  ),
+                  Text(
+                    _isPublished
+                        ? 'Students can see and take this quiz.'
+                        : 'Students cannot see this quiz yet.',
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  ),
                 ]),
               ),
               Switch(
@@ -554,93 +1071,40 @@ class _AdminLessonDetailScreenState extends State<AdminLessonDetailScreen>
               ),
             ]),
           ),
-          const SizedBox(height: 24),
 
+          const SizedBox(height: 24),
           _sectionHeader('Quiz Mode', Icons.tune, Colors.purple),
           const SizedBox(height: 12),
 
-          // Random mode
-          GestureDetector(
-            onTap: () => setState(() => _quizMode = 'random'),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              margin: const EdgeInsets.only(bottom: 10),
-              decoration: BoxDecoration(
-                color: _quizMode == 'random' ? Colors.purple.withOpacity(0.08) : Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: _quizMode == 'random' ? Colors.purple : Colors.grey.shade200,
-                  width: _quizMode == 'random' ? 2 : 1,
-                ),
-              ),
-              child: Row(children: [
-                Radio<String>(
-                  value: 'random',
-                  groupValue: _quizMode,
-                  activeColor: Colors.purple,
-                  onChanged: (v) => setState(() => _quizMode = v!),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    const Text('Random Shuffle', style: TextStyle(fontWeight: FontWeight.bold)),
-                    Text('Pick N random questions each time student takes quiz.',
-                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
-                  ]),
-                ),
-              ]),
-            ),
+          _modeCard(
+            label: 'Random Shuffle',
+            subtitle: 'Pick N random questions each time student takes quiz.',
+            value: 'random',
+            color: Colors.purple,
           ),
-
-          // Manual mode
-          GestureDetector(
-            onTap: () => setState(() => _quizMode = 'manual'),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: _quizMode == 'manual' ? Colors.blue.withOpacity(0.08) : Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: _quizMode == 'manual' ? Colors.blue : Colors.grey.shade200,
-                  width: _quizMode == 'manual' ? 2 : 1,
-                ),
-              ),
-              child: Row(children: [
-                Radio<String>(
-                  value: 'manual',
-                  groupValue: _quizMode,
-                  activeColor: Colors.blue,
-                  onChanged: (v) => setState(() => _quizMode = v!),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    const Text('Manual Selection', style: TextStyle(fontWeight: FontWeight.bold)),
-                    Text('Handpick exactly which questions students will see.',
-                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
-                  ]),
-                ),
-              ]),
-            ),
+          _modeCard(
+            label: 'Manual Selection',
+            subtitle: 'Handpick exactly which questions students will see.',
+            value: 'manual',
+            color: Colors.blue,
           ),
 
           const SizedBox(height: 24),
 
-          // Random: question count slider
           if (_quizMode == 'random') ...[
-            _sectionHeader('Number of Questions for Students', Icons.format_list_numbered, Colors.orange),
+            _sectionHeader('Questions per Attempt', Icons.format_list_numbered, Colors.orange),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-              ),
+                  color: Colors.white, borderRadius: BorderRadius.circular(12)),
               child: Column(children: [
                 Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                  const Text('Questions per attempt:', style: TextStyle(fontWeight: FontWeight.w600)),
+                  const Text('Questions:', style: TextStyle(fontWeight: FontWeight.w600)),
                   Text('$_questionCount',
-                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold,
+                      style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
                           color: Color(0xFF1A3CBA))),
                 ]),
                 Slider(
@@ -649,19 +1113,12 @@ class _AdminLessonDetailScreenState extends State<AdminLessonDetailScreen>
                   activeColor: Colors.orange,
                   onChanged: (v) => setState(() => _questionCount = v.round()),
                 ),
-                Text('Students will get $_questionCount random questions from the full question bank.',
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                    textAlign: TextAlign.center),
               ]),
             ),
           ],
 
-          // Manual: checklist of questions
           if (_quizMode == 'manual') ...[
-            _sectionHeader('Select Questions for Students', Icons.checklist, Colors.blue),
-            const SizedBox(height: 4),
-            Text('Tick the questions you want students to answer.',
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+            _sectionHeader('Select Questions', Icons.checklist, Colors.blue),
             const SizedBox(height: 12),
             StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
@@ -674,7 +1131,7 @@ class _AdminLessonDetailScreenState extends State<AdminLessonDetailScreen>
                 if (!snap.hasData) return const CircularProgressIndicator();
                 final docs = snap.data!.docs;
                 if (docs.isEmpty) {
-                  return const Text('No questions generated yet. Go to Generate tab first.');
+                  return const Text('No questions yet.');
                 }
                 return Column(
                   children: docs.asMap().entries.map((entry) {
@@ -688,8 +1145,7 @@ class _AdminLessonDetailScreenState extends State<AdminLessonDetailScreen>
                         color: isSelected ? Colors.blue.withOpacity(0.06) : Colors.white,
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                          color: isSelected ? Colors.blue : Colors.grey.shade200,
-                        ),
+                            color: isSelected ? Colors.blue : Colors.grey.shade200),
                       ),
                       child: CheckboxListTile(
                         value: isSelected,
@@ -707,7 +1163,7 @@ class _AdminLessonDetailScreenState extends State<AdminLessonDetailScreen>
                             style: const TextStyle(fontSize: 13),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis),
-                        subtitle: Text('Correct: ${d['correct']}  •  ${d['modelLabel'] ?? ''}',
+                        subtitle: Text('Correct: ${d['correct']}',
                             style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
                         controlAffinity: ListTileControlAffinity.leading,
                       ),
@@ -728,7 +1184,8 @@ class _AdminLessonDetailScreenState extends State<AdminLessonDetailScreen>
             child: ElevatedButton.icon(
               onPressed: _settingsSaving ? null : _saveSettings,
               icon: _settingsSaving
-                  ? const SizedBox(width: 18, height: 18,
+                  ? const SizedBox(
+                      width: 18, height: 18,
                       child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                   : const Icon(Icons.save, color: Colors.white),
               label: Text(_settingsSaving ? 'Saving...' : 'Save Settings',
@@ -741,6 +1198,45 @@ class _AdminLessonDetailScreenState extends State<AdminLessonDetailScreen>
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _modeCard({
+    required String label,
+    required String subtitle,
+    required String value,
+    required Color color,
+  }) {
+    final isSelected = _quizMode == value;
+    return GestureDetector(
+      onTap: () => setState(() => _quizMode = value),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        margin: const EdgeInsets.only(bottom: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? color.withOpacity(0.08) : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+              color: isSelected ? color : Colors.grey.shade200,
+              width: isSelected ? 2 : 1),
+        ),
+        child: Row(children: [
+          Radio<String>(
+            value: value,
+            groupValue: _quizMode,
+            activeColor: color,
+            onChanged: (v) => setState(() => _quizMode = v!),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+              Text(subtitle,
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+            ]),
+          ),
+        ]),
       ),
     );
   }

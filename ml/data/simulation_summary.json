@@ -1,0 +1,23 @@
+{
+  "total_responses": 315000,
+  "lessons": 12,
+  "questions": 210,
+  "runs": [
+    42,
+    7,
+    99,
+    13,
+    77
+  ],
+  "students_per_run": 300,
+  "ai_label_mismatches": 59,
+  "firestore_updated": true,
+  "files": [
+    "student_responses_full.csv",
+    "student_responses_seed42.csv",
+    "student_responses_seed7.csv",
+    "student_responses_seed99.csv",
+    "student_responses_seed13.csv",
+    "student_responses_seed77.csv"
+  ]
+}
