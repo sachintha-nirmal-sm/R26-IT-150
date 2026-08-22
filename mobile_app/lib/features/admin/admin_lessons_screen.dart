@@ -166,6 +166,10 @@ class _GradeLessonsViewState extends State<_GradeLessonsView> {
   }
 
   Future<void> _createLesson(Map<String, dynamic> data) async {
+    // Optimistic: add a placeholder immediately so the UI updates before the server responds
+    final placeholder = {...data, 'id': '__pending__'};
+    setState(() => _lessons = [..._lessons, placeholder]);
+
     try {
       final token = await _getToken();
       final response = await http.post(
@@ -174,27 +178,45 @@ class _GradeLessonsViewState extends State<_GradeLessonsView> {
         body: jsonEncode(data),
       );
       if (response.statusCode == 200 || response.statusCode == 201) {
-        _showSuccess('Lesson created!');
-        _loadLessons();
+        final newLesson = jsonDecode(response.body) as Map<String, dynamic>;
+        // Replace placeholder with real server data
+        setState(() => _lessons = [
+          ..._lessons.where((l) => l['id'] != '__pending__'),
+          newLesson,
+        ]);
+        if (mounted) _showSuccess('Lesson created!');
       } else {
-        _showError('Failed: ${response.body}');
+        // Rollback on failure
+        setState(() => _lessons = _lessons.where((l) => l['id'] != '__pending__').toList());
+        if (mounted) _showError('Failed: ${response.body}');
       }
     } catch (e) {
-      _showError('Error: $e');
+      setState(() => _lessons = _lessons.where((l) => l['id'] != '__pending__').toList());
+      if (mounted) _showError('Error: $e');
     }
   }
 
   Future<void> _deleteLesson(String id) async {
+    // Optimistic: remove immediately, restore if server fails
+    final removed = _lessons.firstWhere((l) => l['id'] == id, orElse: () => {});
+    setState(() => _lessons = _lessons.where((l) => l['id'] != id).toList());
+
     try {
       final token = await _getToken();
-      await http.delete(
+      final response = await http.delete(
         Uri.parse('${widget.backendUrl}/admin/lessons/$id'),
         headers: {'Authorization': 'Bearer $token'},
       );
-      _showSuccess('Lesson deleted.');
-      _loadLessons();
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        if (mounted) _showSuccess('Lesson deleted.');
+      } else {
+        // Rollback
+        if (removed.isNotEmpty) setState(() => _lessons = [..._lessons, removed]);
+        if (mounted) _showError('Failed to delete lesson.');
+      }
     } catch (_) {
-      _showError('Error deleting lesson.');
+      if (removed.isNotEmpty) setState(() => _lessons = [..._lessons, removed]);
+      if (mounted) _showError('Error deleting lesson.');
     }
   }
 

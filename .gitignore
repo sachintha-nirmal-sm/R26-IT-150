@@ -19,6 +19,7 @@ __pycache__/
 venv/
 .env
 .env.*
+!.env.example
 
 # Flutter/Dart
 **/.dart_tool/
@@ -84,3 +85,6 @@ admin_panel/
 
 # Research/notebooks
 research/
+
+# ML large synthetic data files (regenerate with ml/run_simulation.py)
+ml/data/*.csv

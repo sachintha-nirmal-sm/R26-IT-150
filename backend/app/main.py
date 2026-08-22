@@ -1,20 +1,22 @@
+import sys
+import io
 import traceback
 from fastapi import FastAPI, Request
 from fastapi.responses import Response, JSONResponse
 
+# Force UTF-8 on Windows so binary data in tracebacks never crashes the process
+if hasattr(sys.stdout, 'buffer'):
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+if hasattr(sys.stderr, 'buffer'):
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+
 from app.api.auth import router as auth_router
 from app.api.admin_lessons import router as admin_lessons_router
-from app.api.quiz_generation import router as quiz_gen_router
+from app.api.generate_questions import router as generate_router
+from app.api.ml_analytics import router as ml_analytics_router
+from app.api.recommendations import router as recommendations_router
 
 app = FastAPI(title="PhysicsLab API")
-
-ALLOWED_ORIGINS = [
-    "http://localhost",
-    "http://localhost:8080",
-    "http://localhost:3000",
-    "http://127.0.0.1:8080",
-    "http://10.0.2.2:8000",
-]
 
 CORS_HEADERS = {
     "Access-Control-Allow-Origin": "*",
@@ -29,8 +31,11 @@ async def cors_middleware(request: Request, call_next):
         return Response(status_code=204, headers=CORS_HEADERS)
     try:
         response = await call_next(request)
-    except Exception:
-        traceback.print_exc()
+    except Exception as exc:
+        try:
+            traceback.print_exc()
+        except Exception:
+            print(f"[error] {type(exc).__name__}: {repr(exc)[:200]}", file=sys.__stderr__)
         response = JSONResponse(status_code=500, content={"detail": "Internal server error"})
     for key, value in CORS_HEADERS.items():
         response.headers[key] = value
@@ -39,7 +44,9 @@ async def cors_middleware(request: Request, call_next):
 
 app.include_router(auth_router)
 app.include_router(admin_lessons_router)
-app.include_router(quiz_gen_router)
+app.include_router(generate_router)
+app.include_router(ml_analytics_router)
+app.include_router(recommendations_router)
 
 
 @app.get("/")
