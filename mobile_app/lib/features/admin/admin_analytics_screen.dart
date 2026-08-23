@@ -562,7 +562,7 @@ class _AdminAnalyticsScreenState extends State<AdminAnalyticsScreen> {
     return _card(StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collectionGroup('quizAttempts')
-          .limit(10).snapshots(),
+          .limit(50).snapshots(),
       builder: (context, snap) {
         if (!snap.hasData) {
           return const Center(child: CircularProgressIndicator());
@@ -571,6 +571,23 @@ class _AdminAnalyticsScreenState extends State<AdminAnalyticsScreen> {
           return const Text('No quiz attempts yet.',
               style: TextStyle(color: Colors.grey));
         }
+        // Sort client-side by submittedAt descending, take top 10
+        DateTime? _toDateTime(dynamic v) {
+          if (v == null) return null;
+          if (v is Timestamp) return v.toDate();
+          if (v is String) return DateTime.tryParse(v);
+          return null;
+        }
+        final docs = snap.data!.docs.toList()
+          ..sort((a, b) {
+            final at = _toDateTime((a.data() as Map)['submittedAt']);
+            final bt = _toDateTime((b.data() as Map)['submittedAt']);
+            if (at == null && bt == null) return 0;
+            if (at == null) return 1;
+            if (bt == null) return -1;
+            return bt.compareTo(at);
+          });
+        final recent = docs.take(10).toList();
         return SizedBox(
           height: 320,
           child: Scrollbar(
@@ -579,10 +596,10 @@ class _AdminAnalyticsScreenState extends State<AdminAnalyticsScreen> {
             child: SingleChildScrollView(
               controller: _attemptsScrollCtrl,
               child: Column(
-                children: snap.data!.docs.map((doc) {
+                children: recent.map((doc) {
             final data   = doc.data() as Map<String, dynamic>;
             final score  = (data['score'] as num? ?? 0).toInt();
-            final passed = score >= 60;
+            final passed = score >= 70;
             return Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: Row(children: [
@@ -613,7 +630,7 @@ class _AdminAnalyticsScreenState extends State<AdminAnalyticsScreen> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis),
                     Text(
-                        '${data['studentName'] ?? 'Unknown'} · Grade ${data['grade'] ?? '-'}',
+                        '${(data['studentName'] as String?)?.trim().isNotEmpty == true ? data['studentName'] : 'Unknown'} · Grade ${data['grade'] ?? '-'}',
                         style: TextStyle(color: Colors.grey.shade600, fontSize: 11),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis),

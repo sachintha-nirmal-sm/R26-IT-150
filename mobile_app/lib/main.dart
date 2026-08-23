@@ -51,6 +51,21 @@ class MyApp extends StatelessWidget {
           elevation: 0,
           iconTheme: IconThemeData(color: Color(0xFF1A1A2E)),
         ),
+        scrollbarTheme: ScrollbarThemeData(
+          thickness: WidgetStateProperty.all(3),
+          radius: const Radius.circular(10),
+          thumbColor: WidgetStateProperty.all(
+            const Color(0xFF2196F3).withOpacity(0.45),
+          ),
+          trackColor: WidgetStateProperty.all(
+            const Color(0xFF2196F3).withOpacity(0.08),
+          ),
+          trackBorderColor: WidgetStateProperty.all(Colors.transparent),
+          thumbVisibility: WidgetStateProperty.all(true),
+          trackVisibility: WidgetStateProperty.all(true),
+          crossAxisMargin: 2,
+          mainAxisMargin: 4,
+        ),
       ),
       home: const GetStartedPage(),
       initialRoute: "/get-started",

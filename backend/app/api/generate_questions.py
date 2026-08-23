@@ -1,6 +1,10 @@
 """
 generate_questions.py — AI-powered quiz question generation + accuracy verification.
   POST /admin/lessons/{lesson_id}/generate-questions
+
+  If the lesson has sub-lessons defined, questions are generated separately for
+  each sub-lesson in parallel and tagged with subLessonId / subLessonNumber.
+  If no sub-lessons exist the original behaviour is preserved (no tags).
 """
 
 import asyncio
@@ -24,13 +28,56 @@ router = APIRouter(prefix="/admin/lessons", tags=["Admin - Generate"])
 
 class GenerateRequest(BaseModel):
     model: Literal["gemini", "groq", "mistral", "openrouter"]
-    count: int = Field(default=10, ge=5, le=30)
+    count: int = Field(default=5, ge=0, le=10)
+    # Per-sub-lesson counts: {subLessonId: count}. When present, overrides `count` per sub-lesson.
+    sub_lesson_counts: dict[str, int] | None = None
 
 
+# ---------------------------------------------------------------------------
+# Prompts
+# ---------------------------------------------------------------------------
+
+# Used when lesson has NO sub-lessons (original behaviour)
 _PROMPT = """You are a physics teacher creating a quiz.
 Based on the content below, generate exactly {count} multiple-choice questions.
 
 Rules:
+- Each question has exactly 4 options labeled A, B, C, D
+- Exactly one option is correct
+- Base questions strictly on the provided content
+- Return ONLY a valid JSON array with no markdown fences, no explanation
+- Assign a difficulty to every question using these criteria:
+    Easy   — basic recall or single-step reasoning
+    Medium — multi-step reasoning or formula application
+    Hard   — complex problem-solving or synthesis of multiple concepts
+
+Required format:
+[
+  {{
+    "question": "Question text?",
+    "options": [
+      {{"label": "A", "text": "Option A"}},
+      {{"label": "B", "text": "Option B"}},
+      {{"label": "C", "text": "Option C"}},
+      {{"label": "D", "text": "Option D"}}
+    ],
+    "correct": "A",
+    "explanation": "Why A is correct",
+    "difficulty": "Easy"
+  }}
+]
+
+Content:
+{content}
+"""
+
+# Used per sub-lesson — keeps questions focused on the specific sub-topic
+_SUB_LESSON_PROMPT = """You are a physics teacher creating a quiz.
+Based on the content below, generate exactly {count} multiple-choice questions
+focused ONLY on the sub-topic: {sub_lesson_number} - {sub_lesson_title}.
+
+Rules:
+- Every question must be directly about "{sub_lesson_title}"
 - Each question has exactly 4 options labeled A, B, C, D
 - Exactly one option is correct
 - Base questions strictly on the provided content
@@ -124,22 +171,24 @@ async def _build_content(lesson_id: str) -> str:
     return "General high school physics"
 
 
-def _sanitize(text: str) -> str:
-    """Remove corrupted UTF-8 mojibake characters that some LLMs output."""
-    return (text
-            .replace("â€¢", "")   # â€¢ → corrupted bullet
-            .replace("â€”", "-")   # â€" → corrupted em-dash
-            .replace("â€·", "")    # â€· → corrupted middle dot
-            .replace("•", "")                     # plain bullet
-            .strip())
-
-
-def _sanitize_question(q: dict) -> dict:
-    q["question"] = _sanitize(q.get("question", ""))
-    q["explanation"] = _sanitize(q.get("explanation", ""))
-    for opt in q.get("options", []):
-        opt["text"] = _sanitize(opt.get("text", ""))
-    return q
+def _fetch_sub_lessons(lesson_id: str) -> list[dict]:
+    docs = (
+        db.collection("lessons")
+        .document(lesson_id)
+        .collection("subLessons")
+        .order_by("order")
+        .stream()
+    )
+    result = []
+    for doc in docs:
+        d = doc.to_dict()
+        result.append({
+            "id": doc.id,
+            "number": d.get("number", ""),
+            "title": d.get("title", ""),
+            "order": d.get("order", 0),
+        })
+    return result
 
 
 def _extract_json(raw: str) -> list[dict]:
@@ -148,8 +197,7 @@ def _extract_json(raw: str) -> list[dict]:
     end = raw.rfind("]")
     if start == -1 or end == -1:
         raise ValueError("No JSON array found")
-    questions = json.loads(raw[start : end + 1])
-    return [_sanitize_question(q) for q in questions]
+    return json.loads(raw[start : end + 1])
 
 
 # ---------------------------------------------------------------------------
@@ -169,19 +217,22 @@ async def _call_gemini(prompt: str) -> str:
 
 
 async def _call_groq(prompt: str) -> str:
-    from groq import Groq
-    client = Groq(api_key=os.getenv("GROQ_API_KEY", ""))
-    loop = asyncio.get_event_loop()
-    resp = await loop.run_in_executor(
-        None,
-        lambda: client.chat.completions.create(
-            model="openai/gpt-oss-120b",
+    from groq import AsyncGroq
+    api_key = os.getenv("GROQ_API_KEY", "")
+    if not api_key:
+        raise ValueError("GROQ_API_KEY is not set")
+    client = AsyncGroq(api_key=api_key)
+    try:
+        resp = await client.chat.completions.create(
+            model="openai/gpt-oss-20b",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.3,
-            max_tokens=8000,
-        ),
-    )
-    return resp.choices[0].message.content
+            max_tokens=2500,
+        )
+        return resp.choices[0].message.content
+    except Exception as e:
+        print(f"[Groq] API error: {type(e).__name__}: {e}")
+        raise
 
 
 async def _call_openrouter(prompt: str) -> str:
@@ -222,19 +273,42 @@ async def _call_mistral(prompt: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Accuracy verification (always uses OpenRouter as independent judge)
+# Sub-lesson generation helper
 # ---------------------------------------------------------------------------
 
-async def _verify_accuracy(content: str, questions: list[dict]) -> list[dict]:
-    if not content.strip() or not questions:
-        for q in questions:
-            q["accuracyScore"] = None
-            q["accuracyReason"] = "No content to verify against"
-            q["accuracyVerified"] = False
-        return questions
+async def _generate_for_sub_lesson(
+    content: str,
+    sub_lesson: dict,
+    count: int,
+    call_model,
+) -> list[dict]:
+    prompt = _SUB_LESSON_PROMPT.format(
+        count=count,
+        sub_lesson_number=sub_lesson["number"],
+        sub_lesson_title=sub_lesson["title"],
+        content=content[:8000],
+    )
+    # Let exceptions propagate — caller surfaces the real error message
+    raw = await call_model(prompt)
+    questions = _extract_json(raw)
 
+    for q in questions:
+        q["subLessonId"] = sub_lesson["id"]
+        q["subLessonNumber"] = sub_lesson["number"]
+        q["subLessonTitle"] = sub_lesson["title"]
+
+    return questions
+
+
+# ---------------------------------------------------------------------------
+# Accuracy verification (always uses Groq as independent judge)
+# Batched to 10 questions per call so large sub-lesson sets don't overwhelm the API.
+# ---------------------------------------------------------------------------
+
+async def _verify_batch(content: str, batch: list[dict], call_model) -> None:
+    """Verify one batch of ≤10 questions in-place using the same model that generated them."""
     q_lines = []
-    for i, q in enumerate(questions):
+    for i, q in enumerate(batch):
         correct_text = next(
             (o.get("text", "") for o in q.get("options", []) if o.get("label") == q.get("correct")),
             "",
@@ -250,23 +324,37 @@ async def _verify_accuracy(content: str, questions: list[dict]) -> list[dict]:
     )
 
     try:
-        raw = await _call_groq(prompt)
+        raw = await call_model(prompt)
         scores = _extract_json(raw)
         score_map = {
             item.get("index", -1): item
             for item in scores
             if isinstance(item, dict)
         }
-        for i, q in enumerate(questions):
+        for i, q in enumerate(batch):
             item = score_map.get(i, {})
             q["accuracyScore"] = min(100, max(0, int(item.get("score", 0))))
             q["accuracyReason"] = str(item.get("reason", ""))[:300]
             q["accuracyVerified"] = True
     except Exception:
-        for q in questions:
+        for q in batch:
             q["accuracyScore"] = None
             q["accuracyReason"] = "Verification unavailable"
             q["accuracyVerified"] = False
+
+
+async def _verify_accuracy(content: str, questions: list[dict], call_model) -> list[dict]:
+    if not content.strip() or not questions:
+        for q in questions:
+            q["accuracyScore"] = None
+            q["accuracyReason"] = "No content to verify against"
+            q["accuracyVerified"] = False
+        return questions
+
+    # Split into batches of 10 and run in parallel
+    _BATCH = 10
+    batches = [questions[i : i + _BATCH] for i in range(0, len(questions), _BATCH)]
+    await asyncio.gather(*[_verify_batch(content, b, call_model) for b in batches])
 
     return questions
 
@@ -282,30 +370,54 @@ async def generate_questions(
     admin: VerifiedUser = Depends(require_admin),
 ):
     content = await _build_content(lesson_id)
-    prompt = _PROMPT.format(count=body.count, content=content[:8000])
+    sub_lessons = _fetch_sub_lessons(lesson_id)
+
+    # Wrap model selection into a single callable for reuse
+    async def call_model(prompt: str) -> str:
+        if body.model == "gemini":
+            return await _call_gemini(prompt)
+        elif body.model == "groq":
+            return await _call_groq(prompt)
+        elif body.model == "openrouter":
+            return await _call_openrouter(prompt)
+        else:
+            return await _call_mistral(prompt)
 
     try:
-        if body.model == "gemini":
-            raw = await _call_gemini(prompt)
-        elif body.model == "groq":
-            raw = await _call_groq(prompt)
-        elif body.model == "openrouter":
-            raw = await _call_openrouter(prompt)
+        if sub_lessons:
+            sub_lesson_tasks = [
+                (sl, (body.sub_lesson_counts.get(sl["id"], body.count) if body.sub_lesson_counts else body.count))
+                for sl in sub_lessons
+                if (body.sub_lesson_counts.get(sl["id"], body.count) if body.sub_lesson_counts else body.count) > 0
+            ]
+            questions: list[dict] = []
+            if body.model == "groq":
+                # Groq free tier has strict rate limits — run sequentially with a delay
+                for sl, sl_count in sub_lesson_tasks:
+                    result = await _generate_for_sub_lesson(content, sl, sl_count, call_model)
+                    questions.extend(result)
+                    await asyncio.sleep(1.0)
+            else:
+                # Other models handle parallel calls fine
+                tasks = [_generate_for_sub_lesson(content, sl, sl_count, call_model) for sl, sl_count in sub_lesson_tasks]
+                results = await asyncio.gather(*tasks, return_exceptions=True)
+                for r in results:
+                    if isinstance(r, list):
+                        questions.extend(r)
         else:
-            raw = await _call_mistral(prompt)
+            # Original behaviour — single call, no sub-lesson tags
+            prompt = _PROMPT.format(count=body.count, content=content[:8000])
+            raw = await call_model(prompt)
+            questions = _extract_json(raw)
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"{body.model} error: {e}")
 
-    try:
-        questions = _extract_json(raw)
-    except Exception:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Could not parse AI response: {raw[:300]}",
-        )
+    if not questions:
+        raise HTTPException(status_code=500, detail="AI returned no questions.")
 
-    # Verify accuracy against source content
-    questions = await _verify_accuracy(content, questions)
+    # Verify accuracy against source content (uses the same model that generated the questions)
+    questions = await _verify_accuracy(content, questions, call_model)
 
     # Compute accuracy stats
     verified = [q for q in questions if q.get("accuracyVerified") and q.get("accuracyScore") is not None]
@@ -322,7 +434,7 @@ async def generate_questions(
             delete_batch.delete(doc.reference)
         delete_batch.commit()
 
-    # Save new questions with accuracy scores and difficulty
+    # Save new questions with accuracy scores, difficulty, and sub-lesson tags
     _valid_difficulties = {"Easy", "Medium", "Hard"}
     save_batch = db.batch()
     count = 0
@@ -341,6 +453,10 @@ async def generate_questions(
             "accuracyScore": q.get("accuracyScore"),
             "accuracyReason": q.get("accuracyReason", ""),
             "accuracyVerified": q.get("accuracyVerified", False),
+            # Sub-lesson fields (None when no sub-lessons are defined)
+            "subLessonId": q.get("subLessonId"),
+            "subLessonNumber": q.get("subLessonNumber"),
+            "subLessonTitle": q.get("subLessonTitle"),
             "attempts": 0,
             "correctCount": 0,
             "actualDifficulty": None,
@@ -354,6 +470,8 @@ async def generate_questions(
     db.collection("lessons").document(lesson_id).collection("generationSessions").document().set({
         "model": body.model,
         "questionCount": count,
+        "subLessonCount": len(sub_lessons),
+        "countPerSubLesson": body.count if sub_lessons else None,
         "avgAccuracyScore": avg_score,
         "verifiedCount": len(verified),
         "flaggedCount": flagged,
@@ -363,6 +481,7 @@ async def generate_questions(
 
     return {
         "generated": count,
+        "subLessonCount": len(sub_lessons),
         "avgAccuracyScore": avg_score,
         "verifiedCount": len(verified),
         "flaggedCount": flagged,

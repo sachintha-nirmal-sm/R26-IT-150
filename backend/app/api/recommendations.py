@@ -41,7 +41,8 @@ async def _any_firebase_user(
 class QuizFeedbackRequest(BaseModel):
     lesson_id: str
     lesson_title: str
-    score: int  # percentage 0-100
+    score: int          # percentage 0-100
+    topic_title: str | None = None  # overrides lesson_title for YouTube search (e.g. sub-lesson title)
 
 
 @router.post("/quiz-feedback")
@@ -62,8 +63,9 @@ async def quiz_feedback(
         if grade_digits:
             grade_str = f"grade {grade_digits}"
 
-    # Build search query
-    query = f"physics {grade_str} {body.lesson_title} explained tutorial".strip()
+    # Build search query — use topic_title (sub-lesson) when provided, else lesson_title
+    search_title = (body.topic_title or body.lesson_title).strip()
+    query = f"physics {grade_str} {search_title} explained tutorial".strip()
     query = " ".join(query.split())  # collapse extra spaces
 
     # Firestore cache — avoids burning API quota for repeated requests
@@ -85,7 +87,7 @@ async def quiz_feedback(
     recommendations = []
     if videos:
         recommendations.append({
-            "topic": body.lesson_title,
+            "topic": search_title,
             "videos": videos,
         })
 
