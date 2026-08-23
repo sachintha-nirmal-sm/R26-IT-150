@@ -124,13 +124,32 @@ async def _build_content(lesson_id: str) -> str:
     return "General high school physics"
 
 
+def _sanitize(text: str) -> str:
+    """Remove corrupted UTF-8 mojibake characters that some LLMs output."""
+    return (text
+            .replace("â€¢", "")   # â€¢ → corrupted bullet
+            .replace("â€”", "-")   # â€" → corrupted em-dash
+            .replace("â€·", "")    # â€· → corrupted middle dot
+            .replace("•", "")                     # plain bullet
+            .strip())
+
+
+def _sanitize_question(q: dict) -> dict:
+    q["question"] = _sanitize(q.get("question", ""))
+    q["explanation"] = _sanitize(q.get("explanation", ""))
+    for opt in q.get("options", []):
+        opt["text"] = _sanitize(opt.get("text", ""))
+    return q
+
+
 def _extract_json(raw: str) -> list[dict]:
     raw = re.sub(r"```(?:json)?\s*", "", raw).strip()
     start = raw.find("[")
     end = raw.rfind("]")
     if start == -1 or end == -1:
         raise ValueError("No JSON array found")
-    return json.loads(raw[start : end + 1])
+    questions = json.loads(raw[start : end + 1])
+    return [_sanitize_question(q) for q in questions]
 
 
 # ---------------------------------------------------------------------------
@@ -159,6 +178,7 @@ async def _call_groq(prompt: str) -> str:
             model="openai/gpt-oss-120b",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.3,
+            max_tokens=8000,
         ),
     )
     return resp.choices[0].message.content
@@ -230,7 +250,7 @@ async def _verify_accuracy(content: str, questions: list[dict]) -> list[dict]:
     )
 
     try:
-        raw = await _call_openrouter(prompt)
+        raw = await _call_groq(prompt)
         scores = _extract_json(raw)
         score_map = {
             item.get("index", -1): item

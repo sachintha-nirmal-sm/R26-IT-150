@@ -163,7 +163,7 @@ class _AdminStudentsScreenState extends State<AdminStudentsScreen> {
                         style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                     Text(data['email'] ?? '-',
                         style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
-                    Text('${data['grade'] ?? '-'} • ${data['status'] ?? 'active'}',
+                    Text('${data['grade'] ?? '-'}  ·  ${data['status'] ?? 'active'}',
                         style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
                   ]),
                 ),

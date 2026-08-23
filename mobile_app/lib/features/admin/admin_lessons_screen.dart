@@ -1,7 +1,8 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
+import 'dart:async';
 import 'dart:convert';
 import 'admin_lesson_detail_screen.dart';
 
@@ -14,7 +15,7 @@ class AdminLessonsScreen extends StatefulWidget {
 
 class _AdminLessonsScreenState extends State<AdminLessonsScreen> {
   static final String _backendUrl =
-      kIsWeb ? 'http://localhost:8000' : 'http://10.0.2.2:8000';
+      'http://localhost:9000';
 
   String? _selectedGrade;
 
@@ -132,36 +133,50 @@ class _GradeLessonsView extends StatefulWidget {
 }
 
 class _GradeLessonsViewState extends State<_GradeLessonsView> {
+  // Cache keyed by grade so switching grades is also instant
+  static final Map<String, List<Map<String, dynamic>>> _cache = {};
+
   List<Map<String, dynamic>> _lessons = [];
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadLessons();
+    // Show cached data instantly, then refresh in background
+    if (_cache.containsKey(widget.grade)) {
+      _lessons = _cache[widget.grade]!;
+      _isLoading = false;
+    }
+    _loadLessons(silent: _cache.containsKey(widget.grade));
   }
 
   Future<String?> _getToken() async =>
       await FirebaseAuth.instance.currentUser?.getIdToken();
 
-  Future<void> _loadLessons() async {
-    setState(() => _isLoading = true);
+  Future<void> _loadLessons({bool silent = false}) async {
+    if (!silent) setState(() => _isLoading = true);
     try {
-      final token = await _getToken();
+      final token = await _getToken().timeout(const Duration(seconds: 10));
       final response = await http.get(
         Uri.parse('${widget.backendUrl}/admin/lessons'),
         headers: {'Authorization': 'Bearer $token'},
-      );
+      ).timeout(const Duration(seconds: 15));
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as List;
         final all = data.cast<Map<String, dynamic>>();
         final gradeNum = int.tryParse(widget.grade.replaceAll(RegExp(r'[^0-9]'), '')) ?? 10;
-        setState(() => _lessons = all.where((l) => l['grade'] == gradeNum).toList());
+        final filtered = all.where((l) => l['grade'] == gradeNum).toList();
+        _cache[widget.grade] = filtered;
+        if (mounted) setState(() => _lessons = filtered);
+      } else {
+        if (!silent) _showError('Backend error ${response.statusCode}: ${response.body}');
       }
+    } on TimeoutException {
+      if (!silent) _showError('Timed out "” backend not reachable at ${widget.backendUrl}');
     } catch (e) {
-      _showError('Failed to load lessons. Is backend running?');
+      if (!silent) _showError('Error: $e');
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -184,6 +199,7 @@ class _GradeLessonsViewState extends State<_GradeLessonsView> {
           ..._lessons.where((l) => l['id'] != '__pending__'),
           newLesson,
         ]);
+        _cache.remove(widget.grade);
         if (mounted) _showSuccess('Lesson created!');
       } else {
         // Rollback on failure
@@ -208,6 +224,7 @@ class _GradeLessonsViewState extends State<_GradeLessonsView> {
         headers: {'Authorization': 'Bearer $token'},
       );
       if (response.statusCode == 200 || response.statusCode == 204) {
+        _cache.remove(widget.grade);
         if (mounted) _showSuccess('Lesson deleted.');
       } else {
         // Rollback
@@ -246,7 +263,7 @@ class _GradeLessonsViewState extends State<_GradeLessonsView> {
                 ),
               ),
               const SizedBox(width: 10),
-              Text('New Lesson — ${widget.grade}',
+              Text('New Lesson "” ${widget.grade}',
                   style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
             ]),
             const SizedBox(height: 16),
@@ -363,7 +380,7 @@ class _GradeLessonsViewState extends State<_GradeLessonsView> {
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Center(
-                                  child: Text('${lesson['order'] ?? i + 1}',
+                                  child: Text('${i + 1}',
                                       style: const TextStyle(
                                           color: Color(0xFF1A3CBA),
                                           fontWeight: FontWeight.bold, fontSize: 16)),
@@ -427,3 +444,5 @@ class _GradeLessonsViewState extends State<_GradeLessonsView> {
     );
   }
 }
+
+

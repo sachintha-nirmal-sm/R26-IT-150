@@ -1,4 +1,4 @@
-import 'dart:math' as math;
+﻿import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -6,6 +6,15 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+
+String _clean(String? s) {
+  if (s == null) return '';
+  return s
+      .replaceAll('â€¢', '') // corrupted bullet (3-char UTF-8 mojibake)
+      .replaceAll('â€”', '-') // corrupted em-dash
+      .replaceAll('•', '')              // actual bullet point
+      .trim();
+}
 
 class AdminAnalyticsScreen extends StatefulWidget {
   const AdminAnalyticsScreen({super.key});
@@ -16,9 +25,9 @@ class AdminAnalyticsScreen extends StatefulWidget {
 
 class _AdminAnalyticsScreenState extends State<AdminAnalyticsScreen> {
   static final String _base =
-      kIsWeb ? 'http://localhost:9000' : 'http://10.0.2.2:9000';
+      'http://localhost:9000';
 
-  // Static cache — survives tab switches, cleared on pull-to-refresh only
+  // Static cache "” survives tab switches, cleared on pull-to-refresh only
   static Map<String, dynamic>? _cachedMlReport;
   static Map<String, dynamic>? _cachedDiffAnalytics;
 
@@ -33,7 +42,7 @@ class _AdminAnalyticsScreenState extends State<AdminAnalyticsScreen> {
   @override
   void initState() {
     super.initState();
-    // Show cached data immediately — no spinner on revisit
+    // Show cached data immediately "” no spinner on revisit
     if (_cachedMlReport != null) {
       _mlReport   = _cachedMlReport;
       _loadingMl  = false;
@@ -140,7 +149,7 @@ class _AdminAnalyticsScreenState extends State<AdminAnalyticsScreen> {
     );
   }
 
-  // ── Section header ──────────────────────────────────────────────────────────
+  // â”€â”€ Section header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _sectionHeader(String title, IconData icon, Color color) {
     return Row(children: [
       Icon(icon, color: color, size: 20),
@@ -151,7 +160,7 @@ class _AdminAnalyticsScreenState extends State<AdminAnalyticsScreen> {
     ]);
   }
 
-  // ── ML model comparison card ────────────────────────────────────────────────
+  // â”€â”€ ML model comparison card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _buildMlCard() {
     if (_loadingMl) return _loadingBox();
     if (_mlReport == null || _mlReport!.containsKey('error')) {
@@ -241,7 +250,7 @@ class _AdminAnalyticsScreenState extends State<AdminAnalyticsScreen> {
               child: Text(
                 'AI label agreement with IRT ground truth: '
                 '${((_mlReport!['ai_label_agreement'] as num) * 100).toStringAsFixed(1)}%'
-                '  — ~28% mismatch intentionally models real AI labeling errors.',
+                '  "” ~28% mismatch intentionally models real AI labeling errors.',
                 style: TextStyle(color: Colors.grey.shade600, fontSize: 11),
               ),
             ),
@@ -278,7 +287,7 @@ class _AdminAnalyticsScreenState extends State<AdminAnalyticsScreen> {
     ]);
   }
 
-  // ── Difficulty distribution — PIE CHART ────────────────────────────────────
+  // â”€â”€ Difficulty distribution "” PIE CHART â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _buildDiffDistributionCard() {
     if (_loadingDiff) return _loadingBox();
     if (_diffAnalytics == null) {
@@ -387,7 +396,7 @@ class _AdminAnalyticsScreenState extends State<AdminAnalyticsScreen> {
     ]);
   }
 
-  // ── Per-lesson difficulty accuracy bars ─────────────────────────────────────
+  // â”€â”€ Per-lesson difficulty accuracy bars â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _buildLessonAccuracyCard() {
     if (_loadingDiff) return _loadingBox();
     if (_diffAnalytics == null) return const SizedBox.shrink();
@@ -458,7 +467,7 @@ class _AdminAnalyticsScreenState extends State<AdminAnalyticsScreen> {
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                    child: Text(title,
+                    child: Text(_clean(title),
                         style: const TextStyle(
                             fontWeight: FontWeight.w600, fontSize: 13),
                         overflow: TextOverflow.ellipsis)),
@@ -487,7 +496,7 @@ class _AdminAnalyticsScreenState extends State<AdminAnalyticsScreen> {
                 ),
               ),
               const SizedBox(height: 4),
-              Text('$total questions  •  $attempts simulated attempts',
+              Text('$total questions  ·  $attempts simulated attempts',
                   style: TextStyle(
                       color: Colors.grey.shade500, fontSize: 10)),
             ],
@@ -500,7 +509,7 @@ class _AdminAnalyticsScreenState extends State<AdminAnalyticsScreen> {
     ));
   }
 
-  // ── Grade breakdown ─────────────────────────────────────────────────────────
+  // â”€â”€ Grade breakdown â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _buildGradeBreakdown() {
     return _card(Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -548,7 +557,7 @@ class _AdminAnalyticsScreenState extends State<AdminAnalyticsScreen> {
     ));
   }
 
-  // ── Recent attempts ─────────────────────────────────────────────────────────
+  // â”€â”€ Recent attempts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _buildRecentAttemptsCard() {
     return _card(StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
@@ -597,11 +606,15 @@ class _AdminAnalyticsScreenState extends State<AdminAnalyticsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                        data['lessonTitle'] ??
-                            data['quizId'] ?? '-',
+                        data['lessonTitle'] ?? data['quizId'] ?? '-',
                         style: const TextStyle(
                             fontWeight: FontWeight.w600,
                             fontSize: 13),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis),
+                    Text(
+                        '${data['studentName'] ?? 'Unknown'} · Grade ${data['grade'] ?? '-'}',
+                        style: TextStyle(color: Colors.grey.shade600, fontSize: 11),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis),
                     Text(passed ? 'Pass' : 'Fail',
@@ -625,7 +638,7 @@ class _AdminAnalyticsScreenState extends State<AdminAnalyticsScreen> {
     ));
   }
 
-  // ── Shared helpers ──────────────────────────────────────────────────────────
+  // â”€â”€ Shared helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _card(Widget child) => Container(
     width: double.infinity,
     padding: const EdgeInsets.all(16),
@@ -685,7 +698,7 @@ class _AdminAnalyticsScreenState extends State<AdminAnalyticsScreen> {
   );
 }
 
-// ── Pie chart painter ────────────────────────────────────────────────────────
+// â”€â”€ Pie chart painter â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _PieSlice {
   final double fraction;
   final Color color;
@@ -727,3 +740,6 @@ class _PieChartPainter extends CustomPainter {
   bool shouldRepaint(covariant _PieChartPainter old) =>
       old.slices != slices;
 }
+
+
+

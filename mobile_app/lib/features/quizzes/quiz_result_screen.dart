@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -28,7 +28,7 @@ class QuizResultScreen extends StatefulWidget {
 
 class _QuizResultScreenState extends State<QuizResultScreen> {
   static final String _base =
-      kIsWeb ? 'http://localhost:9000' : 'http://10.0.2.2:9000';
+      'http://localhost:9000';
 
   List<Map<String, dynamic>> _recommendations = [];
   bool _loadingRec = false;
@@ -119,7 +119,7 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
     );
   }
 
-  // ── Score card ──────────────────────────────────────────────────────────────
+  // â”€â”€ Score card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _buildScoreCard() {
     final color = _passed ? Colors.green : Colors.orange;
     return Container(
@@ -175,7 +175,7 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
             borderRadius: BorderRadius.circular(20),
           ),
           child: Text(
-            _passed ? 'Passed' : 'Not Passed — Review recommended',
+            _passed ? 'Passed' : 'Not Passed "” Review recommended',
             style: TextStyle(color: color,
                 fontWeight: FontWeight.bold, fontSize: 13),
           ),
@@ -184,7 +184,7 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
     );
   }
 
-  // ── Stats row ───────────────────────────────────────────────────────────────
+  // â”€â”€ Stats row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _buildStatsRow() {
     return Row(children: [
       _statCard('Correct', '${widget.correct}',
@@ -222,7 +222,7 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
     );
   }
 
-  // ── Recommendations ─────────────────────────────────────────────────────────
+  // â”€â”€ Recommendations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _buildRecommendationsSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -371,7 +371,7 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
     );
   }
 
-  // ── Buttons ─────────────────────────────────────────────────────────────────
+  // â”€â”€ Buttons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _buildButtons() {
     return Row(children: [
       Expanded(
@@ -405,3 +405,7 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
     ]);
   }
 }
+
+
+
+
