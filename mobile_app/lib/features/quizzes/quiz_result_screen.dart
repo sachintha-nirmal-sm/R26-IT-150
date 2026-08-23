@@ -1,7 +1,7 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
@@ -9,9 +9,14 @@ import 'package:url_launcher/url_launcher.dart';
 class QuizResultScreen extends StatefulWidget {
   final String lessonId;
   final String lessonTitle;
-  final int correct;
-  final int total;
+  final int    correct;
+  final int    total;
   final VoidCallback onRetry;
+
+  // Optional sub-lesson context
+  final String? subLessonId;
+  final String? subLessonNumber;
+  final String? subLessonTitle; // used as YouTube search topic when in sub-lesson mode
 
   const QuizResultScreen({
     super.key,
@@ -20,6 +25,9 @@ class QuizResultScreen extends StatefulWidget {
     required this.correct,
     required this.total,
     required this.onRetry,
+    this.subLessonId,
+    this.subLessonNumber,
+    this.subLessonTitle,
   });
 
   @override
@@ -27,14 +35,15 @@ class QuizResultScreen extends StatefulWidget {
 }
 
 class _QuizResultScreenState extends State<QuizResultScreen> {
-  static final String _base =
-      'http://localhost:9000';
+  static const String _base = 'http://localhost:9000';
 
   List<Map<String, dynamic>> _recommendations = [];
   bool _loadingRec = false;
 
-  late final int _score;
-  late final bool _passed;
+  late final int  _score;
+  late final bool _passed; // 70% threshold
+
+  bool get _isSubLesson => widget.subLessonId != null;
 
   @override
   void initState() {
@@ -42,18 +51,62 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
     _score  = widget.total > 0
         ? ((widget.correct / widget.total) * 100).round()
         : 0;
-    _passed = _score >= 60;
+    _passed = _score >= 70; // sub-lessons require 70%
 
-    // Show recommendations whenever the student got any question wrong
+    // Save sub-lesson progress whenever a sub-lesson quiz is submitted
+    if (_isSubLesson) _saveSubLessonProgress();
+
+    // Show YouTube recommendations whenever the student got any question wrong
     if (widget.correct < widget.total) {
       _loadingRec = true;
       _fetchRecommendations();
     }
   }
 
+  // ── Sub-lesson progress ─────────────────────────────────────────────────────
+  Future<void> _saveSubLessonProgress() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    final key = '${widget.lessonId}_${widget.subLessonId}';
+    final ref = FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .collection('subLessonProgress')
+        .doc(key);
+
+    try {
+      final existing = await ref.get();
+      final prevBest      = existing.exists
+          ? (existing.data()!['bestScore']   as int?  ?? 0)
+          : 0;
+      final prevAttempts  = existing.exists
+          ? (existing.data()!['attempts']    as int?  ?? 0)
+          : 0;
+      final wasCompleted  = existing.exists
+          ? (existing.data()!['isCompleted'] as bool? ?? false)
+          : false;
+
+      await ref.set({
+        'lessonId':       widget.lessonId,
+        'subLessonId':    widget.subLessonId,
+        'subLessonNumber': widget.subLessonNumber ?? '',
+        'subLessonTitle': widget.subLessonTitle   ?? '',
+        // Once completed, it stays completed even on retry failure
+        'isCompleted':    wasCompleted || _passed,
+        'bestScore':      _score > prevBest ? _score : prevBest,
+        'attempts':       prevAttempts + 1,
+        'lastAttemptAt':  FieldValue.serverTimestamp(),
+      });
+    } catch (_) {}
+  }
+
+  // ── YouTube recommendations ─────────────────────────────────────────────────
   Future<void> _fetchRecommendations() async {
     try {
       final token = await FirebaseAuth.instance.currentUser?.getIdToken();
+      // When in sub-lesson mode, search for the sub-lesson topic specifically
+      final searchTopic = widget.subLessonTitle ?? widget.lessonTitle;
       final res = await http.post(
         Uri.parse('$_base/student/quiz-feedback'),
         headers: {
@@ -64,9 +117,9 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
           'lesson_id':    widget.lessonId,
           'lesson_title': widget.lessonTitle,
           'score':        _score,
+          'topic_title':  searchTopic,
         }),
       );
-      debugPrint('[Recommendations] status=${res.statusCode} body=${res.body}');
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body) as Map<String, dynamic>;
         if (mounted) {
@@ -77,12 +130,11 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
           });
         }
       }
-    } catch (e) {
-      debugPrint('[Recommendations] error: $e');
-    }
+    } catch (_) {}
     if (mounted) setState(() => _loadingRec = false);
   }
 
+  // ── Build ───────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -105,7 +157,8 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
             const SizedBox(height: 16),
             _buildStatsRow(),
 
-            if (widget.correct < widget.total) ...[
+            // YouTube recommendations — only on failure (score < 70%)
+            if (!_passed && widget.correct < widget.total) ...[
               const SizedBox(height: 24),
               _buildRecommendationsSection(),
             ],
@@ -119,9 +172,13 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
     );
   }
 
-  // â”€â”€ Score card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Score card ──────────────────────────────────────────────────────────────
   Widget _buildScoreCard() {
     final color = _passed ? Colors.green : Colors.orange;
+    final title = _isSubLesson
+        ? '${widget.subLessonNumber} · ${widget.subLessonTitle}'
+        : widget.lessonTitle;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
@@ -149,7 +206,7 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
           style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 4),
-        Text(widget.lessonTitle,
+        Text(title,
             style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
             textAlign: TextAlign.center),
         const SizedBox(height: 22),
@@ -168,6 +225,7 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
           ),
         ),
         const SizedBox(height: 14),
+
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
           decoration: BoxDecoration(
@@ -175,16 +233,20 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
             borderRadius: BorderRadius.circular(20),
           ),
           child: Text(
-            _passed ? 'Passed' : 'Not Passed "” Review recommended',
+            _passed
+                ? 'Passed ✓  ${_isSubLesson ? "Next sub-lesson unlocked!" : ""}'
+                    .trim()
+                : 'Not Passed · Score 70% or more to unlock the next sub-lesson',
             style: TextStyle(color: color,
-                fontWeight: FontWeight.bold, fontSize: 13),
+                fontWeight: FontWeight.bold, fontSize: 12),
+            textAlign: TextAlign.center,
           ),
         ),
       ]),
     );
   }
 
-  // â”€â”€ Stats row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Stats row ───────────────────────────────────────────────────────────────
   Widget _buildStatsRow() {
     return Row(children: [
       _statCard('Correct', '${widget.correct}',
@@ -222,20 +284,21 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
     );
   }
 
-  // â”€â”€ Recommendations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Recommendations ─────────────────────────────────────────────────────────
   Widget _buildRecommendationsSection() {
+    final topicName = widget.subLessonTitle ?? widget.lessonTitle;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(children: [
-          const Icon(Icons.lightbulb_rounded, color: Colors.amber, size: 20),
-          const SizedBox(width: 8),
-          const Text('Recommended for You',
+        const Row(children: [
+          Icon(Icons.lightbulb_rounded, color: Colors.amber, size: 20),
+          SizedBox(width: 8),
+          Text('Recommended for You',
               style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
         ]),
         const SizedBox(height: 4),
         Text(
-          'Watch these to strengthen your understanding of ${widget.lessonTitle}',
+          'Watch these to strengthen your understanding of "$topicName"',
           style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
         ),
         const SizedBox(height: 14),
@@ -250,7 +313,7 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
                 child: CircularProgressIndicator(strokeWidth: 2)),
           )
         else if (_recommendations.isEmpty)
-          _noVideosBox()
+          _noVideosBox(topicName)
         else
           ..._recommendations.expand((rec) {
             final videos = (rec['videos'] as List? ?? [])
@@ -261,7 +324,7 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
     );
   }
 
-  Widget _noVideosBox() {
+  Widget _noVideosBox(String topic) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -274,7 +337,7 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
         Expanded(
           child: Text(
             'No videos found right now. Try searching '
-            '"${widget.lessonTitle} physics" on YouTube.',
+            '"$topic physics" on YouTube.',
             style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
           ),
         ),
@@ -300,14 +363,12 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
           ],
         ),
         child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          // Thumbnail
           ClipRRect(
             borderRadius: const BorderRadius.horizontal(
                 left: Radius.circular(14)),
             child: Image.network(
               video['thumbnail'] ?? '',
-              width: 120,
-              height: 82,
+              width: 120, height: 82,
               fit: BoxFit.cover,
               errorBuilder: (_, __, ___) => Container(
                 width: 120, height: 82,
@@ -317,8 +378,6 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
               ),
             ),
           ),
-
-          // Info
           Expanded(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
@@ -371,16 +430,39 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
     );
   }
 
-  // â”€â”€ Buttons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Buttons ─────────────────────────────────────────────────────────────────
   Widget _buildButtons() {
+    if (_passed) {
+      // Passed: only "Done" — pops both result screen and quiz screen back to
+      // SubLessonsScreen, which reloads and reveals the newly unlocked entry.
+      return SizedBox(
+        width: double.infinity,
+        child: ElevatedButton.icon(
+          icon: const Icon(Icons.check, color: Colors.white),
+          label: const Text('Done',
+              style: TextStyle(
+                  color: Colors.white, fontWeight: FontWeight.bold)),
+          onPressed: () {
+            Navigator.pop(context); // close result screen
+            Navigator.pop(context); // close quiz screen → back to SubLessonsScreen
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.green,
+            padding: const EdgeInsets.symmetric(vertical: 14),
+          ),
+        ),
+      );
+    }
+
+    // Failed: Retry + Done
     return Row(children: [
       Expanded(
         child: OutlinedButton.icon(
           icon: const Icon(Icons.refresh),
           label: const Text('Retry Quiz'),
           onPressed: () {
-            Navigator.pop(context);
-            widget.onRetry();
+            Navigator.pop(context); // close result screen
+            widget.onRetry();       // reload questions in quiz screen
           },
           style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 14)),
@@ -389,9 +471,10 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
       const SizedBox(width: 12),
       Expanded(
         child: ElevatedButton.icon(
-          icon: const Icon(Icons.check, color: Colors.white),
+          icon: const Icon(Icons.close, color: Colors.white),
           label: const Text('Done',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              style: TextStyle(
+                  color: Colors.white, fontWeight: FontWeight.bold)),
           onPressed: () {
             Navigator.pop(context); // close result screen
             Navigator.pop(context); // close quiz screen
@@ -405,7 +488,3 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
     ]);
   }
 }
-
-
-
-

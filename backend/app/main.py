@@ -12,6 +12,7 @@ if hasattr(sys.stderr, 'buffer'):
 
 from app.api.auth import router as auth_router
 from app.api.admin_lessons import router as admin_lessons_router
+from app.api.admin_sub_lessons import router as sub_lessons_router
 from app.api.generate_questions import router as generate_router
 from app.api.ml_analytics import router as ml_analytics_router
 from app.api.recommendations import router as recommendations_router
@@ -44,6 +45,7 @@ async def cors_middleware(request: Request, call_next):
 
 app.include_router(auth_router)
 app.include_router(admin_lessons_router)
+app.include_router(sub_lessons_router)
 app.include_router(generate_router)
 app.include_router(ml_analytics_router)
 app.include_router(recommendations_router)

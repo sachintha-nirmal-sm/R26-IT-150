@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../LessonList/lesson_list_page.dart';
 import '../quizzes/student_quiz_screen.dart';
 import '../experiments/presentation/screens/experiment_execution_screen.dart';
 import '../games/vector_quest/presentation/pages/vector_quest_game_screen.dart';
+import 'sub_lessons_screen.dart';
 
 class LessonsDashboard extends StatefulWidget {
   final String lessonId;
@@ -29,12 +31,53 @@ class _LessonsDashboardState extends State<LessonsDashboard> {
   int _selectedIndex = 1; // Lessons tab selected by default
 
   late String _currentLessonDescription;
+  bool? _hasSubLessons; // null = still checking
 
   @override
   void initState() {
     super.initState();
     _currentLessonDescription = widget.lessonDescription ??
         _getDescriptionForLesson(widget.lessonTitle);
+    _checkSubLessons();
+  }
+
+  Future<void> _checkSubLessons() async {
+    try {
+      final snap = await FirebaseFirestore.instance
+          .collection('lessons')
+          .doc(widget.lessonId)
+          .collection('subLessons')
+          .limit(1)
+          .get();
+      if (mounted) setState(() => _hasSubLessons = snap.docs.isNotEmpty);
+    } catch (_) {
+      if (mounted) setState(() => _hasSubLessons = false);
+    }
+  }
+
+  void _navigateToQuiz() {
+    if (_hasSubLessons == true) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => SubLessonsScreen(
+            lessonId: widget.lessonId,
+            lessonTitle: widget.lessonTitle,
+            grade: widget.grade,
+          ),
+        ),
+      );
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => StudentQuizScreen(
+            lessonId: widget.lessonId,
+            lessonTitle: widget.lessonTitle,
+          ),
+        ),
+      );
+    }
   }
 
   String _getDescriptionForLesson(String title) {
@@ -147,21 +190,13 @@ class _LessonsDashboardState extends State<LessonsDashboard> {
                 physics: const NeverScrollableScrollPhysics(),
                 children: [
                   GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => StudentQuizScreen(
-                            lessonId: widget.lessonId,
-                            lessonTitle: widget.lessonTitle,
-                          ),
-                        ),
-                      );
-                    },
+                    onTap: _hasSubLessons == null ? null : _navigateToQuiz,
                     child: _buildGridCard(
                       icon: Icons.quiz_outlined,
                       label: 'Quizzes',
-                      iconColor: const Color(0xFF2196F3),
+                      iconColor: _hasSubLessons == null
+                          ? Colors.grey
+                          : const Color(0xFF2196F3),
                       bgColor: const Color.fromARGB(255, 210, 235, 255),
                     ),
                   ),
