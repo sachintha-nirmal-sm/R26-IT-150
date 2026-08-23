@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -28,7 +28,7 @@ class _AdminLessonDetailScreenState extends State<AdminLessonDetailScreen>
 
   // Settings state
   static final String _backendUrl =
-      kIsWeb ? 'http://localhost:9000' : 'http://10.0.2.2:9000';
+      'http://localhost:9000';
 
   String _quizMode = 'random';
   int _questionCount = 10;
@@ -279,7 +279,7 @@ class _AdminLessonDetailScreenState extends State<AdminLessonDetailScreen>
             _difficultyStats = {}; // reset until questions accumulate attempts
           });
           _loadSessionHistory();
-          _showSnack('Generated $count questions — accuracy verified!', Colors.green);
+          _showSnack('Generated $count questions "” accuracy verified!', Colors.green);
           _tabController.animateTo(1);
         }
       } else {
@@ -394,7 +394,7 @@ class _AdminLessonDetailScreenState extends State<AdminLessonDetailScreen>
   }
 
   // ---------------------------------------------------------------------------
-  // Generate Tab — placeholder until new quiz generation is built
+  // Generate Tab "” placeholder until new quiz generation is built
   // ---------------------------------------------------------------------------
 
   Widget _buildGenerateTab() {
@@ -458,7 +458,7 @@ class _AdminLessonDetailScreenState extends State<AdminLessonDetailScreen>
               child: Row(children: [
                 Icon(Icons.picture_as_pdf_outlined, color: Colors.grey.shade300, size: 32),
                 const SizedBox(width: 12),
-                Text('No PDFs yet — upload one above.',
+                Text('No PDFs yet "” upload one above.',
                     style: TextStyle(color: Colors.grey.shade400, fontSize: 13)),
               ]),
             )
@@ -638,7 +638,7 @@ class _AdminLessonDetailScreenState extends State<AdminLessonDetailScreen>
                 style: TextStyle(fontWeight: FontWeight.bold, color: color, fontSize: 13)),
             const SizedBox(height: 2),
             Text(
-              '$generated questions  •  Avg: $avg%  •  $verified verified  •  $flagged flagged',
+              '$generated questions  ·  Avg: $avg%  ·  $verified verified  ·  $flagged flagged',
               style: TextStyle(color: color.withOpacity(0.8), fontSize: 12),
             ),
           ]),
@@ -718,7 +718,7 @@ class _AdminLessonDetailScreenState extends State<AdminLessonDetailScreen>
                     style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12)),
               ),
               const Spacer(),
-              Text('${sessions.length} session${sessions.length > 1 ? 's' : ''}  •  $totalQ questions',
+              Text('${sessions.length} session${sessions.length > 1 ? 's' : ''}  ·  $totalQ questions',
                   style: TextStyle(color: Colors.grey.shade500, fontSize: 11)),
             ]),
             const SizedBox(height: 8),
@@ -774,12 +774,12 @@ class _AdminLessonDetailScreenState extends State<AdminLessonDetailScreen>
           color: Colors.grey.shade200,
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Text('—', style: TextStyle(color: Colors.grey.shade500, fontSize: 11)),
+        child: Text('"”', style: TextStyle(color: Colors.grey.shade500, fontSize: 11)),
       );
     }
     final s = (score as num).toInt();
     final color = s >= 80 ? Colors.green : s >= 50 ? Colors.orange : Colors.red;
-    final icon = s >= 80 ? '✓' : s >= 50 ? '~' : '!';
+    final icon = s >= 80 ? 'âœ“' : s >= 50 ? '~' : '!';
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
@@ -814,7 +814,7 @@ class _AdminLessonDetailScreenState extends State<AdminLessonDetailScreen>
 
     final matched = match == true;
     final badgeColor = matched ? Colors.green : Colors.red;
-    final icon = matched ? '✓' : '≠';
+    final icon = matched ? 'âœ“' : 'â‰ ';
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
@@ -1249,3 +1249,6 @@ class _AdminLessonDetailScreenState extends State<AdminLessonDetailScreen>
     ]);
   }
 }
+
+
+

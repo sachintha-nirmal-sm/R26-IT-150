@@ -65,13 +65,31 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 }
 
-class _AdminHomeOverview extends StatelessWidget {
+class _AdminHomeOverview extends StatefulWidget {
   const _AdminHomeOverview();
+
+  @override
+  State<_AdminHomeOverview> createState() => _AdminHomeOverviewState();
+}
+
+class _AdminHomeOverviewState extends State<_AdminHomeOverview> {
+  final _studentsScrollCtrl = ScrollController();
+
+  @override
+  void dispose() {
+    _studentsScrollCtrl.dispose();
+    super.dispose();
+  }
 
   Future<int> _count(String collection, {String? field, String? value}) async {
     Query q = FirebaseFirestore.instance.collection(collection);
     if (field != null && value != null) q = q.where(field, isEqualTo: value);
     final snap = await q.count().get();
+    return snap.count ?? 0;
+  }
+
+  Future<int> _countGroup(String group) async {
+    final snap = await FirebaseFirestore.instance.collectionGroup(group).count().get();
     return snap.count ?? 0;
   }
 
@@ -85,7 +103,6 @@ class _AdminHomeOverview extends StatelessWidget {
           const Text('Overview', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
           const SizedBox(height: 20),
 
-          // Stat cards
           GridView.count(
             crossAxisCount: 2,
             shrinkWrap: true,
@@ -112,44 +129,49 @@ class _AdminHomeOverview extends StatelessWidget {
             stream: FirebaseFirestore.instance
                 .collection('users')
                 .where('role', isEqualTo: 'student')
-                .limit(5)
+                .limit(20)
                 .snapshots(),
             builder: (context, snap) {
               if (!snap.hasData) return const CircularProgressIndicator();
               if (snap.data!.docs.isEmpty) return const Text('No students yet.');
-              return Column(
-                children: snap.data!.docs.map((doc) {
-                  final d = doc.data() as Map<String, dynamic>;
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: const Color(0xFF1A3CBA).withOpacity(0.1),
-                        child: Text(
-                          (d['fullName'] ?? 'S').toString().substring(0, 1).toUpperCase(),
-                          style: const TextStyle(color: Color(0xFF1A3CBA), fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      title: Text(d['fullName'] ?? '-'),
-                      subtitle: Text(d['email'] ?? '-'),
-                      trailing: Chip(
-                        label: Text(d['grade'] ?? '-', style: const TextStyle(fontSize: 12)),
-                        backgroundColor: const Color(0xFF1A3CBA).withOpacity(0.1),
-                      ),
+              return SizedBox(
+                height: 320,
+                child: Scrollbar(
+                  controller: _studentsScrollCtrl,
+                  thumbVisibility: true,
+                  child: SingleChildScrollView(
+                    controller: _studentsScrollCtrl,
+                    child: Column(
+                      children: snap.data!.docs.map((doc) {
+                        final d = doc.data() as Map<String, dynamic>;
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          child: ListTile(
+                            leading: CircleAvatar(
+                              backgroundColor: const Color(0xFF1A3CBA).withOpacity(0.1),
+                              child: Text(
+                                (d['fullName'] ?? 'S').toString().substring(0, 1).toUpperCase(),
+                                style: const TextStyle(color: Color(0xFF1A3CBA), fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            title: Text(d['fullName'] ?? '-'),
+                            subtitle: Text(d['email'] ?? '-'),
+                            trailing: Chip(
+                              label: Text(d['grade']?.toString() ?? '-', style: const TextStyle(fontSize: 12)),
+                              backgroundColor: const Color(0xFF1A3CBA).withOpacity(0.1),
+                            ),
+                          ),
+                        );
+                      }).toList(),
                     ),
-                  );
-                }).toList(),
+                  ),
+                ),
               );
             },
           ),
         ],
       ),
     );
-  }
-
-  Future<int> _countGroup(String group) async {
-    final snap = await FirebaseFirestore.instance.collectionGroup(group).count().get();
-    return snap.count ?? 0;
   }
 
   Widget _statCard(String title, IconData icon, Color color, Future<int> future) {
@@ -173,14 +195,18 @@ class _AdminHomeOverview extends StatelessWidget {
               child: Icon(icon, color: color, size: 22),
             ),
             const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(snap.data?.toString() ?? '...',
-                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                Text(title, style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
-              ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(snap.data?.toString() ?? '...',
+                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                      overflow: TextOverflow.ellipsis),
+                  Text(title, style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                      overflow: TextOverflow.ellipsis),
+                ],
+              ),
             ),
           ],
         ),

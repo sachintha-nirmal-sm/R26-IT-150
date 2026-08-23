@@ -175,6 +175,8 @@ class _StudentQuizScreenState extends State<StudentQuizScreen> {
     // Save attempt with wrong question IDs (used for adaptive retry)
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid != null) {
+      final userDoc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      final userData = userDoc.data() ?? {};
       await FirebaseFirestore.instance
           .collection('users')
           .doc(uid)
@@ -185,8 +187,10 @@ class _StudentQuizScreenState extends State<StudentQuizScreen> {
         'score':            ((_questions.isEmpty ? 0 : correct / _questions.length) * 100).round(),
         'correct':          correct,
         'total':            _questions.length,
-        'wrongQuestionIds': wrongIds,   // ← enables adaptive retry
+        'wrongQuestionIds': wrongIds,
         'isAdaptive':       _isAdaptive,
+        'studentName':      userData['fullName'] ?? '',
+        'grade':            userData['grade']?.toString() ?? '',
         'submittedAt':      FieldValue.serverTimestamp(),
       });
     }

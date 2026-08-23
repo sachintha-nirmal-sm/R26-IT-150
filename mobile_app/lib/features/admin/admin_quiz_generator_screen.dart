@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
@@ -14,7 +14,7 @@ class AdminQuizGeneratorScreen extends StatefulWidget {
 class _AdminQuizGeneratorScreenState extends State<AdminQuizGeneratorScreen>
     with SingleTickerProviderStateMixin {
   static final String _backendUrl =
-      kIsWeb ? 'http://localhost:8000' : 'http://10.0.2.2:8000';
+      'http://localhost:9000';
   late TabController _tabController;
 
   List<Map<String, dynamic>> _lessons = [];
@@ -68,19 +68,19 @@ class _AdminQuizGeneratorScreenState extends State<AdminQuizGeneratorScreen>
         body: jsonEncode(body),
       );
       if (response.statusCode == 200 || response.statusCode == 202) {
-        _appendLog('✅ Generation started successfully!');
+        _appendLog('âœ… Generation started successfully!');
       } else {
-        _appendLog('❌ Error ${response.statusCode}: ${response.body}');
+        _appendLog('âŒ Error ${response.statusCode}: ${response.body}');
       }
     } catch (e) {
-      _appendLog('❌ Error: $e');
+      _appendLog('âŒ Error: $e');
     } finally {
       setState(() => _isGenerating = false);
     }
   }
 
   void _appendLog(String msg) => setState(() =>
-      _log += '${DateTime.now().toString().substring(11, 19)} — $msg\n');
+      _log += '${DateTime.now().toString().substring(11, 19)} "” $msg\n');
 
   @override
   Widget build(BuildContext context) {
@@ -247,3 +247,6 @@ class _AdminQuizGeneratorScreenState extends State<AdminQuizGeneratorScreen>
     );
   }
 }
+
+
+
