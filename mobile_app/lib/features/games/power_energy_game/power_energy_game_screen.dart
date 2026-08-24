@@ -1,3 +1,4 @@
+import '../lesson_id_helper.dart';
 import 'dart:math';
 import 'dart:ui';
 import 'package:flame/components.dart';
@@ -1005,7 +1006,8 @@ class _PowerEnergyGameScreenState extends State<PowerEnergyGameScreen> {
     _game.resetGame();
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(
-        builder: (_) => const LessonsDashboard(
+        builder: (_) => LessonsDashboard(
+          lessonId: LessonIdHelper.getLessonId('Power and Energy'),
           lessonTitle: 'Power and Energy of Electric Appliances',
           grade: 'Grade 11 Physics',
         ),

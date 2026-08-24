@@ -4,6 +4,7 @@ import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'dart:math';
 import '../../lessons/Lessons_Dashboard.dart';
+import '../lesson_id_helper.dart';
 
 // ---------------------------------------------------------
 // 1. Flutter Overlays
@@ -1031,7 +1032,8 @@ class _CurrentElectricityGameScreenState extends State<CurrentElectricityGameScr
     _game.resetGame();
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(
-        builder: (_) => const LessonsDashboard(
+        builder: (_) => LessonsDashboard(
+          lessonId: LessonIdHelper.getLessonId('Current electricity'),
           lessonTitle: 'Current electricity',
           grade: 'Grade 10 Physics',
         ),

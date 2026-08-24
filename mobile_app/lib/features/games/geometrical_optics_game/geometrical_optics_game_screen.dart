@@ -1,3 +1,4 @@
+import '../lesson_id_helper.dart';
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flame/game.dart';
@@ -850,7 +851,8 @@ class _GeometricalOpticsGameScreenState extends State<GeometricalOpticsGameScree
     _game.resetGame();
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(
-        builder: (_) => const LessonsDashboard(
+        builder: (_) => LessonsDashboard(
+          lessonId: LessonIdHelper.getLessonId('Geometrical Optics'),
           lessonTitle: 'Geometrical Optics',
           grade: 'Grade 11 Physics',
         ),
