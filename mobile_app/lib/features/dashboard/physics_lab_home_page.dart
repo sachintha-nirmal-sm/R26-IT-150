@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'search_data.dart';
+import 'screens/grade_revision_screen.dart';
 
 class PhysicsLabHomePage extends StatefulWidget {
   const PhysicsLabHomePage({super.key});
@@ -29,6 +32,20 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
     _searchFocus.addListener(() {
       if (_searchFocus.hasFocus) setState(() => _isSearching = true);
     });
+    _loadGradeFromFirestore();
+  }
+
+  Future<void> _loadGradeFromFirestore() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+      final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      final gradeRaw = doc.data()?['grade'];
+      final gradeInt = (gradeRaw is int) ? gradeRaw : int.tryParse(gradeRaw?.toString() ?? '');
+      if (gradeInt != null && mounted) {
+        setState(() => _grade = 'Grade $gradeInt');
+      }
+    } catch (_) {}
   }
 
   @override
@@ -36,7 +53,7 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
     super.didChangeDependencies();
     final args = ModalRoute.of(context)?.settings.arguments;
     if (args is Map) {
-      setState(() => _grade = args['grade'] ?? 'Grade 10');
+      setState(() => _grade = args['grade'] ?? _grade);
     }
   }
 
@@ -90,6 +107,10 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
                   _recommendedRow(),
                   const SizedBox(height: 16),
                   _virtualLabsBanner(),
+                  if (_grade == 'Grade 11') ...[
+                    const SizedBox(height: 16),
+                    _revisionBanner(),
+                  ],
                 ],
               ),
             ),
@@ -335,6 +356,69 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
                 ]),
           ),
         ]),
+      );
+
+  // ── Grade 10 Revision Banner (Grade 11 only) ──────────────────────────────
+  Widget _revisionBanner() => GestureDetector(
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const GradeRevisionScreen(revisionGrade: 10),
+          ),
+        ),
+        child: Container(
+          height: 120,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            gradient: const LinearGradient(
+              begin: Alignment.topRight,
+              end: Alignment.bottomLeft,
+              colors: [Color(0xFF9F67FA), Color(0xFF7C3AED), Color(0xFF5B21B6)],
+            ),
+            boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 2))],
+          ),
+          child: Stack(
+            children: [
+              Positioned(
+                top: -20, right: -20,
+                child: Container(width: 100, height: 100,
+                    decoration: BoxDecoration(shape: BoxShape.circle,
+                        color: Colors.white.withValues(alpha: 0.07))),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Icons.history_edu, color: Colors.white, size: 28),
+                    ),
+                    const SizedBox(width: 16),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text('Revise Grade 10',
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white)),
+                          SizedBox(height: 4),
+                          Text('Practice last year\'s lessons, materials & quizzes',
+                              style: TextStyle(fontSize: 12, color: Colors.white70)),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.arrow_forward_ios, color: Colors.white70, size: 16),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       );
 
   // ── Search overlay ────────────────────────────────────────────────────────
