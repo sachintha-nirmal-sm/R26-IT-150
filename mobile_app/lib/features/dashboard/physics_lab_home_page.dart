@@ -199,8 +199,11 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
   // ── Search bar (static) ───────────────────────────────────────────────────
   Widget _searchBarWidget() => GestureDetector(
         onTap: () {
-          setState(() => _isSearching = true);
-          Future.delayed(const Duration(milliseconds: 50), () => _searchFocus.requestFocus());
+          Navigator.pushNamed(
+            context,
+            '/search',
+            arguments: {'grade': _grade},
+          );
         },
         child: Container(
           height: 50,
