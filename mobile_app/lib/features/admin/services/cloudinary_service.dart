@@ -8,20 +8,27 @@ class CloudinaryService {
   static const String uploadPreset = 'physics_lab'; // Already configured in Cloudinary
   static const String uploadUrl = 'https://api.cloudinary.com/v1_1/$cloudName/auto/upload';
 
-  /// Upload file to Cloudinary
+  /// Upload file to Cloudinary (supports both File and bytes)
   /// Returns map with: {success, url, publicId, error}
   static Future<Map<String, dynamic>> uploadFile({
-    required File file,
+    required dynamic file, // File or Uint8List for web
     required String fileName,
     String? folder,
   }) async {
     try {
       final request = http.MultipartRequest('POST', Uri.parse(uploadUrl));
 
-      // Add file
-      request.files.add(
-        await http.MultipartFile.fromPath('file', file.path),
-      );
+      // Add file (handle both File and bytes)
+      if (file is File) {
+        request.files.add(
+          await http.MultipartFile.fromPath('file', file.path),
+        );
+      } else {
+        // For web - bytes
+        request.files.add(
+          http.MultipartFile.fromBytes('file', file, filename: fileName),
+        );
+      }
 
       // Add upload preset
       request.fields['upload_preset'] = uploadPreset;

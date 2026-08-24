@@ -18,6 +18,7 @@ class _UploadMaterialsScreenState extends State<UploadMaterialsScreen> {
   final _formKey = GlobalKey<FormState>();
 
   String? _selectedFile;
+  List<int>? _selectedFileBytes; // For web
   String? _fileName;
   int? _fileSize;
   bool _isUploading = false;
@@ -61,6 +62,7 @@ class _UploadMaterialsScreenState extends State<UploadMaterialsScreen> {
       if (result != null && result.files.isNotEmpty) {
         setState(() {
           _selectedFile = result.files.single.path;
+          _selectedFileBytes = result.files.single.bytes;
           _fileName = result.files.single.name;
           _fileSize = result.files.single.size;
           _materialNameCtrl.text = _fileName ?? '';
@@ -82,9 +84,9 @@ class _UploadMaterialsScreenState extends State<UploadMaterialsScreen> {
     try {
       setState(() => _uploadProgress = 'Uploading to Cloudinary...');
 
-      // Upload to Cloudinary
+      // Upload to Cloudinary (handle web bytes or mobile file)
       final uploadResult = await CloudinaryService.uploadFile(
-        file: File(_selectedFile!),
+        file: _selectedFileBytes ?? File(_selectedFile!),
         fileName: _fileName ?? 'material',
         folder: _selectedGrade,
       );
@@ -134,6 +136,7 @@ class _UploadMaterialsScreenState extends State<UploadMaterialsScreen> {
     _formKey.currentState?.reset();
     setState(() {
       _selectedFile = null;
+      _selectedFileBytes = null;
       _fileName = null;
       _fileSize = null;
       _lessonIdCtrl.clear();
