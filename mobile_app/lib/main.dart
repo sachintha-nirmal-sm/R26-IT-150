@@ -21,7 +21,6 @@ import 'features/scenario-Based Question/scenario_question_screen.dart';
 import 'features/upload-image/upload_image_screen.dart';
 import 'features/games/vector_quest/presentation/pages/vector_quest_game_screen.dart';
 import 'features/admin/admin_dashboard.dart';
-import 'features/dashboard/screens/search_page.dart';
 import 'features/dashboard/screens/student_materials_screen.dart';
 
 void main() async {
@@ -98,7 +97,6 @@ class MyApp extends StatelessWidget {
         "/chatbot": (context) => const ChatbotScreen(),
         "/game-intro": (context) => const VectorQuestGameScreen(),
         "/admin-dashboard": (context) => const AdminDashboard(),
-        "/search": (context) => const SearchPage(),
         "/student/materials": (context) => const StudentMaterialsScreen(
           grade: 'Grade 10',
         ),

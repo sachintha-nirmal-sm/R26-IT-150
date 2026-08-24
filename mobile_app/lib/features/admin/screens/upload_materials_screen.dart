@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -83,7 +84,7 @@ class _UploadMaterialsScreenState extends State<UploadMaterialsScreen> {
 
       // Upload to Cloudinary
       final uploadResult = await CloudinaryService.uploadFile(
-        file: (await _getFile(_selectedFile!)),
+        file: File(_selectedFile!),
         fileName: _fileName ?? 'material',
         folder: _selectedGrade,
       );
@@ -127,12 +128,6 @@ class _UploadMaterialsScreenState extends State<UploadMaterialsScreen> {
     } finally {
       setState(() => _isUploading = false);
     }
-  }
-
-  Future<Object> _getFile(String path) async {
-    // Convert file path to File object
-    // This is a placeholder - actual implementation depends on your file handling
-    return Future.value(path);
   }
 
   void _resetForm() {
