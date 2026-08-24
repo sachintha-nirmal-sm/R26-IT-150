@@ -26,12 +26,13 @@ class MaterialsService {
       final snapshot = await _firestore
           .collection(materialsCollection)
           .where('lessonId', isEqualTo: lessonId)
-          .orderBy('uploadedAt', descending: true)
           .get();
 
-      return snapshot.docs
+      final results = snapshot.docs
           .map((doc) => LessonMaterial.fromMap(doc.id, doc.data()))
           .toList();
+      results.sort((a, b) => b.uploadedAt.compareTo(a.uploadedAt));
+      return results;
     } catch (e) {
       print('Error getting lesson materials: $e');
       return [];
@@ -44,13 +45,14 @@ class MaterialsService {
       final snapshot = await _firestore
           .collection(materialsCollection)
           .where('grade', isEqualTo: grade)
-          .orderBy('uploadedAt', descending: true)
           .limit(100)
           .get();
 
-      return snapshot.docs
+      final results = snapshot.docs
           .map((doc) => LessonMaterial.fromMap(doc.id, doc.data()))
           .toList();
+      results.sort((a, b) => b.uploadedAt.compareTo(a.uploadedAt));
+      return results;
     } catch (e) {
       print('Error getting grade materials: $e');
       return [];

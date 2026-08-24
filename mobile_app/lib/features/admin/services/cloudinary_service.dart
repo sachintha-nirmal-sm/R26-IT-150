@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as path;
 
@@ -6,7 +7,7 @@ class CloudinaryService {
   // Cloudinary credentials (from backend .env)
   static const String cloudName = 'qn0ba57q';
   static const String uploadPreset = 'physics_lab'; // Already configured in Cloudinary
-  static const String uploadUrl = 'https://api.cloudinary.com/v1_1/$cloudName/auto/upload';
+  static const String uploadUrl = 'https://api.cloudinary.com/v1_1/$cloudName/raw/upload';
 
   /// Upload file to Cloudinary (supports both File and bytes)
   /// Returns map with: {success, url, publicId, error}
@@ -54,21 +55,25 @@ class CloudinaryService {
       );
 
       final responseBody = await response.stream.bytesToString();
+      print('CLOUDINARY RESPONSE [${response.statusCode}]: $responseBody');
 
       if (response.statusCode == 200) {
-        final Map<String, dynamic> data = _parseJsonResponse(responseBody);
+        final Map<String, dynamic> data = jsonDecode(responseBody);
+        final url = data['secure_url'] ?? data['url'];
+        print('CLOUDINARY URL STORED: $url');
 
         return {
           'success': true,
-          'url': data['secure_url'] ?? data['url'],
+          'url': url,
           'publicId': data['public_id'],
           'fileSize': data['bytes'],
           'resourceType': data['resource_type'],
         };
       } else {
+        final error = jsonDecode(responseBody);
         return {
           'success': false,
-          'error': 'Upload failed: ${response.statusCode}',
+          'error': error['error']?['message'] ?? 'Upload failed: ${response.statusCode}',
         };
       }
     } catch (e) {
@@ -135,22 +140,21 @@ class CloudinaryService {
   /// Parse JSON response safely
   static Map<String, dynamic> _parseJsonResponse(String response) {
     try {
-      // Simple JSON parsing - consider using json package for production
-      if (response.contains('"secure_url"')) {
-        final urlMatch = RegExp(r'"secure_url":"([^"]+)"').firstMatch(response);
-        final publicIdMatch = RegExp(r'"public_id":"([^"]+)"').firstMatch(response);
-        final bytesMatch = RegExp(r'"bytes":(\d+)').firstMatch(response);
-        final typeMatch = RegExp(r'"resource_type":"([^"]+)"').firstMatch(response);
+      final secureUrlMatch = RegExp(r'"secure_url":"([^"]+)"').firstMatch(response);
+      final urlMatch = RegExp(r'"url":"([^"]+)"').firstMatch(response);
+      final publicIdMatch = RegExp(r'"public_id":"([^"]+)"').firstMatch(response);
+      final bytesMatch = RegExp(r'"bytes":(\d+)').firstMatch(response);
+      final typeMatch = RegExp(r'"resource_type":"([^"]+)"').firstMatch(response);
 
-        return {
-          'secure_url': urlMatch?.group(1),
-          'url': urlMatch?.group(1),
-          'public_id': publicIdMatch?.group(1),
-          'bytes': int.tryParse(bytesMatch?.group(1) ?? '0') ?? 0,
-          'resource_type': typeMatch?.group(1),
-        };
-      }
-      return {};
+      final resolvedUrl = secureUrlMatch?.group(1) ?? urlMatch?.group(1);
+
+      return {
+        'secure_url': resolvedUrl,
+        'url': resolvedUrl,
+        'public_id': publicIdMatch?.group(1),
+        'bytes': int.tryParse(bytesMatch?.group(1) ?? '0') ?? 0,
+        'resource_type': typeMatch?.group(1),
+      };
     } catch (e) {
       print('Error parsing response: $e');
       return {};

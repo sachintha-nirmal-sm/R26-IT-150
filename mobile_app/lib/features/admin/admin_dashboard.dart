@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'admin_lessons_screen.dart';
 import 'admin_students_screen.dart';
 import 'admin_analytics_screen.dart';
-import 'screens/materials_hub_screen.dart';
+import 'screens/materials_hub_screen_v2.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -20,7 +20,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     const _AdminHomeOverview(),
     const AdminLessonsScreen(),
     const AdminStudentsScreen(),
-    const MaterialsHubScreen(),
+    const MaterialsHubScreenV2(),
     const AdminAnalyticsScreen(),
   ];
 
@@ -37,10 +37,15 @@ class _AdminDashboardState extends State<AdminDashboard> {
     return Scaffold(
       appBar: AppBar(
         title: const Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.admin_panel_settings, color: Color(0xFF1A3CBA)),
             SizedBox(width: 8),
-            Text('PhysicsLab Admin', style: TextStyle(fontWeight: FontWeight.bold)),
+            Flexible(
+              child: Text('PhysicsLab Admin',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                  overflow: TextOverflow.ellipsis),
+            ),
           ],
         ),
         actions: [

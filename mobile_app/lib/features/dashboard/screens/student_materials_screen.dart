@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../admin/models/lesson_material.dart';
 import '../../admin/services/materials_service.dart';
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:html' as html;
 
 class StudentMaterialsScreen extends StatefulWidget {
   final String grade;
@@ -42,17 +45,25 @@ class _StudentMaterialsScreenState extends State<StudentMaterialsScreen> {
 
   Future<void> _openMaterial(LessonMaterial material) async {
     try {
-      // Increment download count
       await _materialsService.incrementDownloadCount(material.id);
+      final url = material.cloudinaryUrl;
+      final fileName = '${material.lessonTitle}.pdf';
 
-      // Open URL
-      if (await canLaunchUrl(Uri.parse(material.cloudinaryUrl))) {
-        await launchUrl(
-          Uri.parse(material.cloudinaryUrl),
-          mode: LaunchMode.externalApplication,
-        );
+      if (kIsWeb) {
+        html.HttpRequest.request(url, responseType: 'blob').then((req) {
+          final blob = req.response as html.Blob;
+          final blobUrl = html.Url.createObjectUrlFromBlob(blob);
+          final anchor = html.AnchorElement(href: blobUrl)
+            ..setAttribute('download', fileName.endsWith('.pdf') ? fileName : '$fileName.pdf');
+          html.document.body?.append(anchor);
+          anchor.click();
+          anchor.remove();
+          html.Url.revokeObjectUrl(blobUrl);
+        }).catchError((_) {
+          html.window.open(url, '_blank');
+        });
       } else {
-        _showError('Could not open material');
+        await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
       }
     } catch (e) {
       _showError('Error: $e');
