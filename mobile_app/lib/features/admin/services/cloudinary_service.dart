@@ -1,0 +1,152 @@
+import 'dart:io';
+import 'package:http/http.dart' as http;
+import 'package:path/path.dart' as path;
+
+class CloudinaryService {
+  // ⚠️ IMPORTANT: Replace with your actual Cloudinary credentials
+  static const String cloudName = 'YOUR_CLOUD_NAME';
+  static const String uploadPreset = 'YOUR_UPLOAD_PRESET';
+  static const String uploadUrl = 'https://api.cloudinary.com/v1_1/$cloudName/auto/upload';
+
+  /// Upload file to Cloudinary
+  /// Returns map with: {success, url, publicId, error}
+  static Future<Map<String, dynamic>> uploadFile({
+    required File file,
+    required String fileName,
+    String? folder,
+  }) async {
+    try {
+      final request = http.MultipartRequest('POST', Uri.parse(uploadUrl));
+
+      // Add file
+      request.files.add(
+        await http.MultipartFile.fromPath('file', file.path),
+      );
+
+      // Add upload preset
+      request.fields['upload_preset'] = uploadPreset;
+
+      // Add folder (optional - organizes files in Cloudinary)
+      if (folder != null) {
+        request.fields['folder'] = 'physics_lab/$folder';
+      }
+
+      // Add public ID for easier management
+      final publicId = fileName.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
+      request.fields['public_id'] = publicId;
+
+      // Add tags for filtering
+      request.fields['tags'] = 'physics_lab,lesson_material';
+
+      // Send request
+      final response = await request.send().timeout(
+        const Duration(minutes: 5),
+        onTimeout: () {
+          throw Exception('Upload timeout - file too large or slow connection');
+        },
+      );
+
+      final responseBody = await response.stream.bytesToString();
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = _parseJsonResponse(responseBody);
+
+        return {
+          'success': true,
+          'url': data['secure_url'] ?? data['url'],
+          'publicId': data['public_id'],
+          'fileSize': data['bytes'],
+          'resourceType': data['resource_type'],
+        };
+      } else {
+        return {
+          'success': false,
+          'error': 'Upload failed: ${response.statusCode}',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'error': 'Upload error: $e',
+      };
+    }
+  }
+
+  /// Delete file from Cloudinary
+  static Future<bool> deleteFile(String publicId) async {
+    try {
+      // Note: This requires API key authentication
+      // For now, files should be managed via Cloudinary dashboard
+      print('Deletion via API requires API key - manage files in Cloudinary dashboard');
+      return false;
+    } catch (e) {
+      print('Error deleting file: $e');
+      return false;
+    }
+  }
+
+  /// Get file type from extension
+  static String getFileType(String fileName) {
+    final ext = path.extension(fileName).toLowerCase();
+    switch (ext) {
+      case '.pdf':
+        return 'pdf';
+      case '.jpg':
+      case '.jpeg':
+      case '.png':
+      case '.gif':
+      case '.webp':
+        return 'image';
+      case '.mp4':
+      case '.avi':
+      case '.mov':
+      case '.mkv':
+        return 'video';
+      case '.doc':
+      case '.docx':
+        return 'doc';
+      case '.ppt':
+      case '.pptx':
+        return 'ppt';
+      default:
+        return 'file';
+    }
+  }
+
+  /// Check if file is supported
+  static bool isSupportedFile(String fileName) {
+    final supported = [
+      '.pdf', '.jpg', '.jpeg', '.png', '.gif', '.webp',
+      '.mp4', '.avi', '.mov', '.mkv',
+      '.doc', '.docx', '.ppt', '.pptx',
+    ];
+
+    final ext = path.extension(fileName).toLowerCase();
+    return supported.contains(ext);
+  }
+
+  /// Parse JSON response safely
+  static Map<String, dynamic> _parseJsonResponse(String response) {
+    try {
+      // Simple JSON parsing - consider using json package for production
+      if (response.contains('"secure_url"')) {
+        final urlMatch = RegExp(r'"secure_url":"([^"]+)"').firstMatch(response);
+        final publicIdMatch = RegExp(r'"public_id":"([^"]+)"').firstMatch(response);
+        final bytesMatch = RegExp(r'"bytes":(\d+)').firstMatch(response);
+        final typeMatch = RegExp(r'"resource_type":"([^"]+)"').firstMatch(response);
+
+        return {
+          'secure_url': urlMatch?.group(1),
+          'url': urlMatch?.group(1),
+          'public_id': publicIdMatch?.group(1),
+          'bytes': int.tryParse(bytesMatch?.group(1) ?? '0') ?? 0,
+          'resource_type': typeMatch?.group(1),
+        };
+      }
+      return {};
+    } catch (e) {
+      print('Error parsing response: $e');
+      return {};
+    }
+  }
+}
