@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'admin_lessons_screen.dart';
 import 'admin_students_screen.dart';
 import 'admin_analytics_screen.dart';
+import 'screens/upload_materials_screen.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -19,6 +20,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     const _AdminHomeOverview(),
     const AdminLessonsScreen(),
     const AdminStudentsScreen(),
+    const UploadMaterialsScreen(),
     const AdminAnalyticsScreen(),
   ];
 
@@ -26,6 +28,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     NavigationDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard), label: 'Dashboard'),
     NavigationDestination(icon: Icon(Icons.menu_book_outlined), selectedIcon: Icon(Icons.menu_book), label: 'Lessons'),
     NavigationDestination(icon: Icon(Icons.people_outline), selectedIcon: Icon(Icons.people), label: 'Students'),
+    NavigationDestination(icon: Icon(Icons.cloud_upload_outlined), selectedIcon: Icon(Icons.cloud_upload), label: 'Materials'),
     NavigationDestination(icon: Icon(Icons.bar_chart_outlined), selectedIcon: Icon(Icons.bar_chart), label: 'Analytics'),
   ];
 
