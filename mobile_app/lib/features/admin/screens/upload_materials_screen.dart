@@ -76,7 +76,7 @@ class _UploadMaterialsScreenState extends State<UploadMaterialsScreen> {
   }
 
   Future<void> _uploadMaterial() async {
-    if (!_formKey.currentState!.validate() || _selectedFile == null) {
+    if (!_formKey.currentState!.validate() || _selectedFileBytes == null) {
       _showError('Please fill all fields and select a file');
       return;
     }
