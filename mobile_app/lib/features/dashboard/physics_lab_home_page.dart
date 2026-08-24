@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'search_data.dart';
 
 class PhysicsLabHomePage extends StatefulWidget {
@@ -29,6 +31,25 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
     _searchFocus.addListener(() {
       if (_searchFocus.hasFocus) setState(() => _isSearching = true);
     });
+    _loadStudentGrade();
+  }
+
+  Future<void> _loadStudentGrade() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
+        final grade = userDoc.data()?['grade'] ?? 'Grade 10';
+        if (mounted) {
+          setState(() => _grade = grade);
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading student grade: $e');
+    }
   }
 
   @override
