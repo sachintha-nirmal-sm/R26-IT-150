@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/lesson_material.dart';
@@ -61,7 +62,8 @@ class _UploadMaterialsScreenState extends State<UploadMaterialsScreen> {
 
       if (result != null && result.files.isNotEmpty) {
         setState(() {
-          _selectedFile = result.files.single.path;
+          // On web, path is unavailable - only use bytes
+          _selectedFile = kIsWeb ? null : result.files.single.path;
           _selectedFileBytes = result.files.single.bytes;
           _fileName = result.files.single.name;
           _fileSize = result.files.single.size;
@@ -86,7 +88,7 @@ class _UploadMaterialsScreenState extends State<UploadMaterialsScreen> {
 
       // Upload to Cloudinary (handle web bytes or mobile file)
       final uploadResult = await CloudinaryService.uploadFile(
-        file: _selectedFileBytes ?? File(_selectedFile!),
+        file: _selectedFileBytes != null ? _selectedFileBytes : File(_selectedFile!),
         fileName: _fileName ?? 'material',
         folder: _selectedGrade,
       );
