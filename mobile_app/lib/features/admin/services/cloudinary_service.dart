@@ -3,9 +3,9 @@ import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as path;
 
 class CloudinaryService {
-  // ⚠️ IMPORTANT: Replace with your actual Cloudinary credentials
-  static const String cloudName = 'YOUR_CLOUD_NAME';
-  static const String uploadPreset = 'YOUR_UPLOAD_PRESET';
+  // Cloudinary credentials (from backend .env)
+  static const String cloudName = 'qn0ba57q';
+  static const String uploadPreset = 'physics_lab'; // Already configured in Cloudinary
   static const String uploadUrl = 'https://api.cloudinary.com/v1_1/$cloudName/auto/upload';
 
   /// Upload file to Cloudinary
