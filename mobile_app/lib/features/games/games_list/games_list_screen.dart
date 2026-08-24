@@ -92,37 +92,6 @@ class _GamesListScreenState extends State<GamesListScreen> {
                 fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 16),
-            // Grade Selector
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: ['Grade 9', 'Grade 10', 'Grade 11']
-                    .map((grade) => GestureDetector(
-                          onTap: () => setState(() => _grade = grade),
-                          child: Container(
-                            margin: const EdgeInsets.only(right: 10),
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                            decoration: BoxDecoration(
-                              color: _grade == grade ? _primaryBlue : Colors.white,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: _primaryBlue.withValues(alpha: 0.3),
-                              ),
-                            ),
-                            child: Text(
-                              grade,
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: _grade == grade ? Colors.white : _primaryBlue,
-                              ),
-                            ),
-                          ),
-                        ))
-                    .toList(),
-              ),
-            ),
             const SizedBox(height: 20),
             Expanded(
               child: _games.isEmpty
