@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../LessonList/lesson_list_page.dart';
-import '../quizzes/lesson_quizzes_page.dart';
+import '../quizzes/student_quiz_screen.dart';
 import '../experiments/presentation/screens/experiment_execution_screen.dart';
+import '../games/vector_quest/presentation/pages/vector_quest_game_screen.dart';
+import 'sub_lessons_screen.dart';
 
 class LessonsDashboard extends StatefulWidget {
+  final String lessonId;
   final String lessonTitle;
   final String grade;
   final String? lessonDescription;
 
   const LessonsDashboard({
     super.key,
+    required this.lessonId,
     this.lessonTitle = 'Linear Motion',
     this.grade = 'Grade 9 Physics',
     this.lessonDescription,
@@ -26,43 +31,62 @@ class _LessonsDashboardState extends State<LessonsDashboard> {
   int _selectedIndex = 1; // Lessons tab selected by default
 
   late String _currentLessonDescription;
+  bool? _hasSubLessons; // null = still checking
 
   @override
   void initState() {
     super.initState();
     _currentLessonDescription = widget.lessonDescription ??
         _getDescriptionForLesson(widget.lessonTitle);
+    _checkSubLessons();
+  }
+
+  Future<void> _checkSubLessons() async {
+    try {
+      final snap = await FirebaseFirestore.instance
+          .collection('lessons')
+          .doc(widget.lessonId)
+          .collection('subLessons')
+          .limit(1)
+          .get();
+      if (mounted) setState(() => _hasSubLessons = snap.docs.isNotEmpty);
+    } catch (_) {
+      if (mounted) setState(() => _hasSubLessons = false);
+    }
+  }
+
+  void _navigateToQuiz() {
+    if (_hasSubLessons == true) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => SubLessonsScreen(
+            lessonId: widget.lessonId,
+            lessonTitle: widget.lessonTitle,
+            grade: widget.grade,
+          ),
+        ),
+      );
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => StudentQuizScreen(
+            lessonId: widget.lessonId,
+            lessonTitle: widget.lessonTitle,
+          ),
+        ),
+      );
+    }
   }
 
   String _getDescriptionForLesson(String title) {
     final descriptions = {
       'Introduction to Physics': 'Learn the basics of physics and explore fundamental principles that govern the universe.',
-      'Basic Concepts Associated with Force': 'Understand the fundamental concepts of force, types of forces, and their effects.',
-      'Pressure Exerted by Solid': 'Learn about pressure in solids, thrust, and practical applications of pressure in everyday life.',
-      'Density': 'Explore mass, volume, and density calculations for various solids and liquids.',
-      'Reflection and Refraction of Waves': 'Study wave properties, behavior, reflection, and refraction through different media.',
-      'Simple Machines': 'Discover levers, pulleys, inclined planes, mechanical advantage, and efficiency of simple machines.',
-      'Nanotechnology and its Applications': 'An introduction to nanoscience, nanomaterials, and futuristic applications of nanotechnology.',
       'Linear Motion': 'Master the fundamental concepts of push, pull, and the laws governing motion.',
-      'Motion in a straight line': 'Master the fundamental concepts of displacement, velocity, acceleration, and motion graphs.',
       "Forces and Newton's Laws": 'Understand the three laws of motion and how forces affect objects.',
-      "Newton's laws of motion": 'Understand the three laws of motion and how forces affect objects.',
-      'Friction': 'Explore static and dynamic friction, advantages, disadvantages, and ways to modify friction.',
-      'Resultant force': 'Learn how to determine the resultant of concurrent forces acting on a body.',
-      'Turning effect of a force': 'Understand moments, torque, principle of moments, and equilibrium in rotation.',
-      'Turning Effect of Forces': 'Understand moments, torque, principle of moments, and equilibrium in rotation.',
-      'Equilibrium of Forces': 'Study stable, unstable, and neutral equilibrium under coplanar forces.',
-      'Hydrostatic pressure and its applications': 'Understand liquid pressure, Pascal\'s law, hydraulic systems, and atmospheric pressure.',
       'Work, Energy, and Power': 'Discover the concepts of work, energy transformation, and power in physical systems.',
-      'Work, energy and power': 'Discover the concepts of work, energy transformation, and power in physical systems.',
-      'Current electricity': 'Learn about electric current, voltage, resistance, Ohm\'s law, and simple circuits.',
       'Waves and Sound': 'Explore the properties of waves and how sound travels through different media.',
-      'Waves and their applications': 'Explore wave characteristics, sound waves, electromagnetic waves, and applications.',
-      'Geometrical Optics': 'Study reflection, refraction, lenses, mirrors, and optical instruments.',
-      'Heat': 'Understand temperature, thermal expansion, specific heat capacity, and heat transfer.',
-      'Power and Energy of Electric Appliances': 'Calculate electrical power, energy consumption, and electrical safety in appliances.',
-      'Electronics': 'Discover semiconductors, diodes, transistors, and logic gates in electronic circuits.',
-      'Electromagnetism and Electromagnetic Induction': 'Understand magnetic fields, electromagnetic induction, transformers, and generators.',
     };
     return descriptions[title] ?? 'Master the fundamental concepts of this lesson.';
   }
@@ -82,7 +106,7 @@ class _LessonsDashboardState extends State<LessonsDashboard> {
       backgroundColor: const Color(0xFFF5F6FA),
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF2196F3)),
+          icon: const Icon(Icons.arrow_back, color:  const Color(0xFF2196F3)),
           onPressed: () => Navigator.pushReplacement(
             context,
             MaterialPageRoute(
@@ -166,82 +190,18 @@ class _LessonsDashboardState extends State<LessonsDashboard> {
                 physics: const NeverScrollableScrollPhysics(),
                 children: [
                   GestureDetector(
-  onTap: () {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const LessonQuizzesPage(),
-      ),
-    );
-  },
-
-  child: _buildGridCard(
-    icon: Icons.quiz_outlined,
-    label: 'Quizzes',
-    iconColor: const Color(0xFF2196F3),
-    bgColor: const Color.fromARGB(255, 210, 235, 255),
-  ),
-),
+                    onTap: _hasSubLessons == null ? null : _navigateToQuiz,
+                    child: _buildGridCard(
+                      icon: Icons.quiz_outlined,
+                      label: 'Quizzes',
+                      iconColor: _hasSubLessons == null
+                          ? Colors.grey
+                          : const Color(0xFF2196F3),
+                      bgColor: const Color.fromARGB(255, 210, 235, 255),
+                    ),
+                  ),
                   GestureDetector(
-                    onTap: () {
-                      // ── Grade 9 Topics ──────────────────────────────────
-                      if (widget.lessonTitle == 'Basic Concepts Associated with Force') {
-                        Navigator.pushNamed(context, '/force-game');
-                      } else if (widget.lessonTitle == 'Pressure Exerted by Solid') {
-                        Navigator.pushNamed(context, '/pressure-puzzle');
-                      } else if (widget.lessonTitle == 'Density') {
-                        Navigator.pushNamed(context, '/density-puzzle');
-                      } else if (widget.lessonTitle == 'Simple Machines' ||
-                          widget.lessonTitle == 'Turning Effect of Forces') {
-                        Navigator.pushNamed(context, '/simple-machines-game');
-                      } else if (widget.lessonTitle == 'Nanotechnology and its Applications') {
-                        Navigator.pushNamed(context, '/nano-shield');
-                      } else if (widget.lessonTitle == 'Reflection and Refraction of Waves') {
-                        Navigator.pushNamed(context, '/waves-game');
-
-                      // ── Grade 10 Topics ─────────────────────────────────
-                      } else if (widget.lessonTitle == 'Motion in a straight line' ||
-                          widget.lessonTitle == 'Linear Motion') {
-                        Navigator.pushNamed(context, '/motion-quest');
-                      } else if (widget.lessonTitle == "Newton's laws of motion" ||
-                          widget.lessonTitle == "Forces and Newton's Laws") {
-                        Navigator.pushNamed(context, '/newton-game');
-                      } else if (widget.lessonTitle == 'Friction') {
-                        Navigator.pushNamed(context, '/friction-game');
-                      } else if (widget.lessonTitle == 'Resultant force') {
-                        Navigator.pushNamed(context, '/resultant-force');
-                      } else if (widget.lessonTitle == 'Turning effect of a force') {
-                        Navigator.pushNamed(context, '/turning-effect');
-                      } else if (widget.lessonTitle == 'Equilibrium of Forces') {
-                        Navigator.pushNamed(context, '/equilibrium-forces');
-                      } else if (widget.lessonTitle == 'Hydrostatic pressure and its applications') {
-                        Navigator.pushNamed(context, '/hydrostatic-pressure');
-                      } else if (widget.lessonTitle == 'Work, energy and power' ||
-                          widget.lessonTitle == 'Work, Energy, and Power') {
-                        Navigator.pushNamed(context, '/work-power-game');
-                      } else if (widget.lessonTitle == 'Current electricity') {
-                        Navigator.pushNamed(context, '/current-electricity-game');
-
-                      // ── Grade 11 Topics ─────────────────────────────────
-                      } else if (widget.lessonTitle == 'Waves and their applications' ||
-                          widget.lessonTitle == 'Waves and Sound') {
-                        Navigator.pushNamed(context, '/waves-game');
-                      } else if (widget.lessonTitle == 'Geometrical Optics') {
-                        Navigator.pushNamed(context, '/geometrical-optics-game');
-                      } else if (widget.lessonTitle == 'Heat') {
-                        Navigator.pushNamed(context, '/heat-game');
-                      } else if (widget.lessonTitle == 'Power and Energy of Electric Appliances') {
-                        Navigator.pushNamed(context, '/power-energy-game');
-                      } else if (widget.lessonTitle == 'Electronics') {
-                        Navigator.pushNamed(context, '/electronics-game');
-                      } else if (widget.lessonTitle == 'Electromagnetism and Electromagnetic Induction') {
-                        Navigator.pushNamed(context, '/electromagnetism-game');
-
-                      // ── Fallback ─────────────────────────────────────────
-                      } else {
-                        Navigator.pushNamed(context, '/game-intro');
-                      }
-                    },
+                    onTap: () => Navigator.pushNamed(context, '/game-intro'),
                     child: _buildGridCard(
                       icon: Icons.sports_esports_outlined,
                       label: 'Games',
@@ -301,7 +261,7 @@ class _LessonsDashboardState extends State<LessonsDashboard> {
                           padding: const EdgeInsets.all(12),
                           child: const Icon(
                             Icons.menu_book_outlined,
-                            color: Color(0xFF2196F3),
+                            color: const Color(0xFF2196F3),
                             size: 28,
                           ),
                         ),

@@ -42,10 +42,13 @@ class QuizResultScreen extends StatelessWidget {
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
-            child: CircleAvatar(
-              radius: 18,
-              backgroundColor: const Color(0xFFCCCCCC),
-              child: const Icon(Icons.person, color: Colors.white, size: 22),
+            child: GestureDetector(
+              onTap: () => Navigator.pushNamed(context, "/profile"),
+              child: CircleAvatar(
+                radius: 18,
+                backgroundColor: const Color(0xFFCCCCCC),
+                child: const Icon(Icons.person, color: Colors.white, size: 22),
+              ),
             ),
           )
         ],

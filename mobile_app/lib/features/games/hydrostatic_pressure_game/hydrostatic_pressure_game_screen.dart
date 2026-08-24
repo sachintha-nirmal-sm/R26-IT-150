@@ -1,3 +1,4 @@
+import '../lesson_id_helper.dart';
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flame/game.dart';
@@ -1000,7 +1001,8 @@ class _HydrostaticPressureGameScreenState extends State<HydrostaticPressureGameS
     _game.resetGame();
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(
-        builder: (_) => const LessonsDashboard(
+        builder: (_) => LessonsDashboard(
+          lessonId: LessonIdHelper.getLessonId('Hydrostatic pressure'),
           lessonTitle: 'Hydrostatic pressure and its applications',
           grade: 'Grade 10 Physics',
         ),

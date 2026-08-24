@@ -14,11 +14,12 @@ class ExperimentInProgressScreen extends StatefulWidget {
 
 class _ExperimentInProgressScreenState extends State<ExperimentInProgressScreen>
     with TickerProviderStateMixin {
-  late Timer _timer;
+  Timer? _timer;
   late AnimationController _progressController;
   int _elapsedSeconds = 0;
   int _elapsedMilliseconds = 0;
   bool _isPaused = false;
+  bool _hasStarted = false;
   int _selectedBottomNavIndex = 1;
 
   final int _totalDurationSeconds = 20 * 60; // 20 minutes
@@ -26,15 +27,19 @@ class _ExperimentInProgressScreenState extends State<ExperimentInProgressScreen>
   @override
   void initState() {
     super.initState();
-    _startTimer();
     _progressController = AnimationController(
       duration: const Duration(seconds: 20 * 60),
       vsync: this,
     );
-    _progressController.forward();
   }
 
   void _startTimer() {
+    if (_hasStarted) {
+      return;
+    }
+
+    _hasStarted = true;
+    _progressController.forward();
     _timer = Timer.periodic(const Duration(milliseconds: 10), (timer) {
       if (!_isPaused) {
         setState(() {
@@ -46,7 +51,7 @@ class _ExperimentInProgressScreenState extends State<ExperimentInProgressScreen>
 
           // Stop timer at 20 minutes
           if (_elapsedSeconds >= _totalDurationSeconds) {
-            _timer.cancel();
+            _timer?.cancel();
           }
         });
       }
@@ -54,6 +59,10 @@ class _ExperimentInProgressScreenState extends State<ExperimentInProgressScreen>
   }
 
   void _pauseTimer() {
+    if (!_hasStarted) {
+      return;
+    }
+
     setState(() {
       _isPaused = !_isPaused;
       if (_isPaused) {
@@ -69,14 +78,15 @@ class _ExperimentInProgressScreenState extends State<ExperimentInProgressScreen>
       _elapsedSeconds = 0;
       _elapsedMilliseconds = 0;
       _isPaused = false;
+      _hasStarted = false;
     });
+    _timer?.cancel();
     _progressController.reset();
-    _progressController.forward();
   }
 
   @override
   void dispose() {
-    _timer.cancel();
+    _timer?.cancel();
     _progressController.dispose();
     super.dispose();
   }
@@ -152,33 +162,14 @@ class _ExperimentInProgressScreenState extends State<ExperimentInProgressScreen>
       ),
       centerTitle: false,
       actions: [
-        Container(
-          margin: const EdgeInsets.all(12),
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: const LinearGradient(
-              colors: [Color(0xFF2F80ED), Color(0xFF1C5ED6)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF2F80ED).withValues(alpha: 0.3),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: const Center(
-            child: Text(
-              'A',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
+        Padding(
+          padding: const EdgeInsets.only(right: 16),
+          child: GestureDetector(
+            onTap: () => Navigator.pushNamed(context, "/profile"),
+            child: const CircleAvatar(
+              radius: 18,
+              backgroundColor: Color(0xFFCCCCCC),
+              child: Icon(Icons.person, color: Colors.white, size: 22),
             ),
           ),
         ),
@@ -187,45 +178,48 @@ class _ExperimentInProgressScreenState extends State<ExperimentInProgressScreen>
   }
 
   Widget _buildVideoCard() {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Container(
-        height: 200,
-        decoration: BoxDecoration(
+    return GestureDetector(
+      onTap: _startTimer,
+      child: Card(
+        elevation: 4,
+        shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          color: const Color(0xFF2C3E50),
-          image: const DecorationImage(
-            image: AssetImage('assets/images/experiment_setup.png'),
-            fit: BoxFit.cover,
-          ),
         ),
         child: Container(
+          height: 200,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            color: Colors.black.withValues(alpha: 0.3),
+            color: const Color(0xFF2C3E50),
+            image: const DecorationImage(
+              image: AssetImage('assets/images/experiment_setup.png'),
+              fit: BoxFit.cover,
+            ),
           ),
-          child: Center(
-            child: Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.9),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.2),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.play_arrow,
-                color: Color(0xFF2F80ED),
-                size: 32,
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              color: Colors.black.withValues(alpha: 0.3),
+            ),
+            child: Center(
+              child: Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.9),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.2),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.play_arrow,
+                  color: Color(0xFF2F80ED),
+                  size: 32,
+                ),
               ),
             ),
           ),
@@ -414,16 +408,17 @@ class _ExperimentInProgressScreenState extends State<ExperimentInProgressScreen>
       width: double.infinity,
       child: ElevatedButton.icon(
         onPressed: () {
-          _timer.cancel();
+          _timer?.cancel();
           int finalMinutes = _elapsedSeconds ~/ 60;
           int finalSeconds = _elapsedSeconds % 60;
+          String durationStr = "${finalMinutes} min ${finalSeconds} sec";
 
           Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => ExperimentResultsScreen(
-                durationMinutes: finalMinutes,
-                durationSeconds: finalSeconds,
+                score: 0, // Practical not uploaded yet
+                finalDuration: durationStr,
               ),
             ),
           );
@@ -521,6 +516,9 @@ class _ExperimentInProgressScreenState extends State<ExperimentInProgressScreen>
         setState(() {
           _selectedBottomNavIndex = index;
         });
+        if (index == 3) {
+          Navigator.pushNamed(context, '/profile');
+        }
       },
       type: BottomNavigationBarType.fixed,
       backgroundColor: Colors.white,

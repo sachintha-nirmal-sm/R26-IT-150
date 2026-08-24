@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 
 class ExperimentResultsScreen extends StatefulWidget {
-  final int durationMinutes;
-  final int durationSeconds;
+  final int? score; // The score passed from the practical (0-100)
+  final String? finalDuration; // e.g., "12 min 30 sec"
+  final String? topicName; // e.g., "Force"
 
   const ExperimentResultsScreen({
     super.key,
-    this.durationMinutes = 14,
-    this.durationSeconds = 32,
+    this.score,
+    this.finalDuration,
+    this.topicName = "Force",
   });
 
   @override
@@ -18,451 +20,193 @@ class ExperimentResultsScreen extends StatefulWidget {
 class _ExperimentResultsScreenState extends State<ExperimentResultsScreen> {
   int _selectedBottomNavIndex = 1;
 
-  final List<Map<String, dynamic>> _performanceDetails = [
-    {
-      'icon': Icons.precision_manufacturing,
-      'title': 'Accuracy',
-      'subtitle': 'Calculation precision',
-      'label': 'High',
-      'color': const Color(0xFF4CAF50),
-    },
-    {
-      'icon': Icons.speed,
-      'title': 'Completion speed',
-      'subtitle': 'Ahead of average',
-      'label': '+2:15',
-      'color': const Color(0xFF2F80ED),
-    },
-    {
-      'icon': Icons.miscellaneous_services,
-      'title': 'Equipment handling',
-      'subtitle': 'Equipment management',
-      'label': 'Optimal',
-      'color': const Color(0xFF00897B),
-    },
-  ];
+  // Logic for Performance Level based on score
+  String _getPerformanceLabel(int score) {
+    if (score == 0) return "-";
+    if (score < 35) return 'Low';
+    if (score < 65) return 'Medium';
+    return 'High';
+  }
+
+  Color _getPerformanceColor(int score) {
+    if (score == 0) return Colors.grey;
+    if (score < 35) return const Color(0xFFEB5757);
+    return const Color(0xFF27AE60);
+  }
 
   @override
   Widget build(BuildContext context) {
+    // Extract arguments if passed via named route
+    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final displayScore = widget.score ?? args?['score'] ?? 0;
+    final displayDuration = widget.finalDuration ?? args?['finalDuration'] ?? "0 min 0 sec";
+    final displayTopic = widget.topicName ?? args?['topicName'] ?? "Force";
+
+    final label = _getPerformanceLabel(displayScore);
+    final color = _getPerformanceColor(displayScore);
+
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: _buildAppBar(),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Success Banner
-              _buildSuccessBanner(),
-              const SizedBox(height: 32),
+      appBar: AppBar(
+        title: const Text('Experiment Results'),
+        centerTitle: true,
+        backgroundColor: Colors.white,
+        foregroundColor: const Color(0xFF2F80ED),
+        elevation: 0,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24.0),
+        child: Column(
+          children: [
+            const Spacer(),
+            
+            // Final Duration Card
+            _buildInfoCard("FINAL DURATION", displayDuration),
+            const SizedBox(height: 24),
 
-              // Final Duration Card
-              _buildFinalDurationCard(),
-              const SizedBox(height: 24),
+            // Performance Score Card (Progress Bar)
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 15,
+                    offset: const Offset(0, 5),
+                  )
+                ],
+              ),
+              child: Column(
+                children: [
+                  const Text(
+                    "PERFORMANCE SCORE",
+                    style: TextStyle(
+                      color: Colors.grey, 
+                      fontSize: 12, 
+                      fontWeight: FontWeight.bold, 
+                      letterSpacing: 1.2
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    "$displayScore%",
+                    style: const TextStyle(
+                      fontSize: 48, 
+                      fontWeight: FontWeight.bold, 
+                      color: Color(0xFF2F80ED)
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: LinearProgressIndicator(
+                      value: displayScore / 100,
+                      backgroundColor: const Color(0xFFF0F4F8),
+                      color: const Color(0xFF2F80ED),
+                      minHeight: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
 
-              // Performance Overview
-              _buildPerformanceOverview(),
-              const SizedBox(height: 24),
+            // Performance Level Tile
+            _buildPerformanceTile(label, color),
 
-              // Performance Details
-              _buildPerformanceDetails(),
-              const SizedBox(height: 24),
+            const Spacer(),
 
-              // Visual Analytics
-              _buildVisualAnalytics(),
-              const SizedBox(height: 24),
-
-              // Action Buttons
-              _buildActionButtons(),
-              const SizedBox(height: 32),
-            ],
-          ),
+            // Save Result Button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.pushNamed(
+                    context, 
+                    '/profile', 
+                    arguments: {
+                      'view': 'recent_progress',
+                      'topic': displayTopic,
+                      'status': 'Completed',
+                      'score': displayScore,
+                    },
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2F80ED),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  elevation: 5,
+                ),
+                child: const Text(
+                  "Save Result", 
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)
+                ),
+              ),
+            ),
+            const SizedBox(height: 40),
+          ],
         ),
       ),
       bottomNavigationBar: _buildBottomNavigationBar(),
     );
   }
 
-  PreferredSizeWidget _buildAppBar() {
-    return AppBar(
-      elevation: 0,
-      backgroundColor: Colors.white,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back, color: Color(0xFF2F80ED), size: 28),
-        onPressed: () => Navigator.pop(context),
+  Widget _buildInfoCard(String title, String value) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF5F9FF),
+        borderRadius: BorderRadius.circular(16),
       ),
-      title: const Text(
-        'Level 04: Kinematics',
-        style: TextStyle(
-          color: Color(0xFF2F80ED),
-          fontSize: 18,
-          fontWeight: FontWeight.w700,
-          fontFamily: 'Poppins',
-        ),
-      ),
-      centerTitle: true,
-      actions: const [
-        Padding(
-          padding: EdgeInsets.all(16),
-          child: Center(
-            child: Text(
-              '00:45',
-              style: TextStyle(
-                color: Color(0xFF2F80ED),
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                fontFamily: 'Courier New',
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSuccessBanner() {
-    return Center(
       child: Column(
         children: [
-          Container(
-            width: 100,
-            height: 100,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: const LinearGradient(
-                colors: [Color(0xFF2F80ED), Color(0xFF1C5ED6)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF2F80ED).withValues(alpha: 0.4),
-                  blurRadius: 24,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
-            child: const Icon(
-              Icons.check_circle,
-              color: Colors.white,
-              size: 60,
-            ),
-          ),
-          const SizedBox(height: 20),
-          const Text(
-            'Experiment Completed',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.w700,
-              color: Colors.black87,
-              fontFamily: 'Poppins',
-            ),
+          Text(
+            title, 
+            style: const TextStyle(
+              color: Colors.grey, 
+              fontSize: 11, 
+              fontWeight: FontWeight.bold, 
+              letterSpacing: 1.1
+            )
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Excellent work! You\'ve successfully\nfinished the Kinematics simulation.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 14,
-              color: Color(0xFF666666),
-              height: 1.6,
-              fontFamily: 'Poppins',
-            ),
+          Text(
+            value, 
+            style: const TextStyle(
+              fontSize: 24, 
+              fontWeight: FontWeight.bold, 
+              color: Color(0xFF2F80ED)
+            )
           ),
         ],
       ),
     );
   }
 
-  Widget _buildFinalDurationCard() {
+  Widget _buildPerformanceTile(String label, Color color) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFFF5F7FB),
+        border: Border.all(color: const Color(0xFFE0E7FF)),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFFE0E5EC),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          const Text(
-            'FINAL DURATION',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF999999),
-              letterSpacing: 0.5,
-              fontFamily: 'Poppins',
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            '${widget.durationMinutes} min ${widget.durationSeconds} sec',
-            style: const TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF2F80ED),
-              fontFamily: 'Poppins',
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPerformanceOverview() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 12,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'PERFORMANCE SCORE',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF999999),
-              letterSpacing: 0.5,
-              fontFamily: 'Poppins',
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              const Text(
-                '87%',
-                style: TextStyle(
-                  fontSize: 40,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF2F80ED),
-                  fontFamily: 'Poppins',
-                ),
-              ),
-              const SizedBox(width: 24),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: const LinearProgressIndicator(
-                        value: 0.87,
-                        minHeight: 8,
-                        backgroundColor: Color(0xFFE0E5EC),
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          Color(0xFF2F80ED),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      '✓ Excellent Timing! Great Accuracy!',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF4CAF50),
-                        fontFamily: 'Poppins',
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPerformanceDetails() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Performance Details',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: Colors.black87,
-            fontFamily: 'Poppins',
-          ),
-        ),
-        const SizedBox(height: 16),
-        Column(
-          children: List.generate(
-            _performanceDetails.length,
-            (index) => Padding(
-              padding: EdgeInsets.only(
-                bottom: index < _performanceDetails.length - 1 ? 12 : 0,
-              ),
-              child: _buildPerformanceDetailItem(
-                _performanceDetails[index],
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPerformanceDetailItem(Map<String, dynamic> detail) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: const Color(0xFFE0E5EC),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 1),
-          ),
-        ],
       ),
       child: Row(
         children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: (detail['color'] as Color).withValues(alpha: 0.1),
-            ),
-            child: Icon(
-              detail['icon'],
-              color: detail['color'],
-              size: 24,
-            ),
-          ),
+          Icon(Icons.speed, color: color, size: 28),
           const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  detail['title'],
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
-                    fontFamily: 'Poppins',
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  detail['subtitle'],
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF999999),
-                    fontFamily: 'Poppins',
-                  ),
-                ),
-              ],
-            ),
+          const Text(
+            "Performance", 
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF1E293B))
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: (detail['color'] as Color).withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              detail['label'],
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: detail['color'],
-                fontFamily: 'Poppins',
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildVisualAnalytics() {
-    return Container(
-      height: 180,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1A237E), Color(0xFF283593)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF2F80ED).withValues(alpha: 0.2),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Decorative circles (radar effect)
-          Container(
-            width: 150,
-            height: 150,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.1),
-                width: 1,
-              ),
-            ),
-          ),
-          Container(
-            width: 100,
-            height: 100,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.15),
-                width: 1,
-              ),
-            ),
-          ),
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white.withValues(alpha: 0.1),
-            ),
-          ),
-          // Center icon
-          Icon(
-            Icons.analytics,
-            color: Colors.white.withValues(alpha: 0.8),
-            size: 48,
+          const Spacer(),
+          Text(
+            label,
+            style: TextStyle(color: color, fontSize: 18, fontWeight: FontWeight.bold),
           ),
         ],
       ),
@@ -567,6 +311,9 @@ class _ExperimentResultsScreenState extends State<ExperimentResultsScreen> {
         setState(() {
           _selectedBottomNavIndex = index;
         });
+        if (index == 3) {
+          Navigator.pushNamed(context, '/profile');
+        }
       },
       type: BottomNavigationBarType.fixed,
       backgroundColor: Colors.white,
@@ -594,3 +341,4 @@ class _ExperimentResultsScreenState extends State<ExperimentResultsScreen> {
     );
   }
 }
+

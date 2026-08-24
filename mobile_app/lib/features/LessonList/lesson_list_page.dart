@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../lessons/Lessons_Dashboard.dart';
-import 'lesson_list_data.dart';
 
 class PhysicsLessonsScreen extends StatefulWidget {
-  const PhysicsLessonsScreen({super.key});
+  final String? grade; // e.g. "Grade 9" — optional override from nav args
+
+  const PhysicsLessonsScreen({super.key, this.grade});
 
   @override
   State<PhysicsLessonsScreen> createState() => _PhysicsLessonsScreenState();
@@ -14,36 +17,75 @@ class _PhysicsLessonsScreenState extends State<PhysicsLessonsScreen> {
   static const Color _navInactive = Color(0xFFB0BEC5);
 
   int _currentIndex = 1;
-  String _selectedLessonTitle = '';
-  String _grade = 'Grade 10';
+  int? _studentGrade; // loaded from Firestore users/{uid}.grade
+  bool _loadingGrade = true;
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final args = ModalRoute.of(context)?.settings.arguments;
-    if (args is Map) {
-      final incoming = args['grade'] as String? ?? 'Grade 10';
-      if (_grade != incoming) {
-        setState(() {
-          _grade = incoming;
-          _selectedLessonTitle = '';
-        });
-      }
+  void initState() {
+    super.initState();
+    _loadStudentGrade();
+  }
+
+  Future<void> _loadStudentGrade() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      setState(() => _loadingGrade = false);
+      return;
     }
+    final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+    final grade = doc.data()?['grade'];
+    final parsed = (grade is int) ? grade : int.tryParse(grade?.toString() ?? '');
+
+    if (parsed == null) {
+      // Grade missing — show picker and save it
+      final picked = await _pickGradeDialog();
+      if (picked != null) {
+        await FirebaseFirestore.instance.collection('users').doc(user.uid).set(
+          {'grade': picked, 'role': 'student'},
+          SetOptions(merge: true),
+        );
+        setState(() { _studentGrade = picked; _loadingGrade = false; });
+      } else {
+        setState(() => _loadingGrade = false);
+      }
+    } else {
+      setState(() { _studentGrade = parsed; _loadingGrade = false; });
+    }
+  }
+
+  Future<int?> _pickGradeDialog() async {
+    return showDialog<int>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Select Your Grade'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [9, 10, 11].map((g) => ListTile(
+            title: Text('Grade $g'),
+            leading: const Icon(Icons.school, color: Color(0xFF2196F3)),
+            onTap: () => Navigator.of(ctx).pop(g),
+          )).toList(),
+        ),
+      ),
+    );
   }
 
   void _onNavTap(int index) {
     setState(() => _currentIndex = index);
-    if (index == 3) {
-      Navigator.pushNamed(context, '/profile');
-    }
+    if (index == 0) Navigator.pushReplacementNamed(context, '/home');
+    if (index == 3) Navigator.pushNamed(context, '/profile');
   }
-
-  List<LessonItem> get _lessons => getLessonsForGrade(_grade);
-  String get _subtitle => gradeSubtitles[_grade] ?? 'Physics Lessons';
 
   @override
   Widget build(BuildContext context) {
+    if (_loadingGrade) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    final gradeInt = _studentGrade;
+    final gradeLabel = gradeInt != null ? 'Grade $gradeInt' : 'My Lessons';
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FE),
       appBar: AppBar(
@@ -55,10 +97,7 @@ class _PhysicsLessonsScreenState extends State<PhysicsLessonsScreen> {
         ),
         title: const Text(
           'Physics Lab',
-          style: TextStyle(
-            color: Color(0xFF1A1C1E),
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(color: Color(0xFF1A1C1E), fontWeight: FontWeight.bold),
         ),
         actions: [
           Padding(
@@ -73,68 +112,9 @@ class _PhysicsLessonsScreenState extends State<PhysicsLessonsScreen> {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Grade badge
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(
-                color: _primaryBlue.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                _grade,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: _primaryBlue,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '$_grade Physics',
-              style: const TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF1A1C1E),
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              _subtitle,
-              style: const TextStyle(fontSize: 16, color: Colors.grey),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '${_lessons.length} lessons available',
-              style: TextStyle(
-                fontSize: 13,
-                color: _primaryBlue,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 20),
-            Expanded(
-              child: ListView.builder(
-                itemCount: _lessons.length,
-                itemBuilder: (context, index) {
-                  final lesson = _lessons[index];
-                  return _buildLessonCard(
-                    index: index,
-                    title: lesson.title,
-                    subtitle: lesson.subtitle,
-                    duration: lesson.duration,
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
+      body: gradeInt == null
+          ? const Center(child: CircularProgressIndicator())
+          : _LessonListBody(grade: gradeInt, gradeLabel: gradeLabel),
       bottomNavigationBar: _buildBottomNav(),
     );
   }
@@ -143,13 +123,7 @@ class _PhysicsLessonsScreenState extends State<PhysicsLessonsScreen> {
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 8,
-            offset: Offset(0, -2),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, -2))],
       ),
       child: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
@@ -159,123 +133,148 @@ class _PhysicsLessonsScreenState extends State<PhysicsLessonsScreen> {
         unselectedItemColor: _navInactive,
         backgroundColor: Colors.transparent,
         elevation: 0,
-        selectedLabelStyle: const TextStyle(
-          fontWeight: FontWeight.w700,
-          fontSize: 12,
-        ),
-        unselectedLabelStyle: const TextStyle(
-          fontWeight: FontWeight.w500,
-          fontSize: 12,
-        ),
+        selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+        unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
         items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.menu_book_outlined),
-            activeIcon: Icon(Icons.menu_book),
-            label: 'Lessons',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.science_outlined),
-            activeIcon: Icon(Icons.science),
-            label: 'Labs',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
-            label: 'Profile',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.menu_book_outlined), activeIcon: Icon(Icons.menu_book), label: 'Lessons'),
+          BottomNavigationBarItem(icon: Icon(Icons.science_outlined), activeIcon: Icon(Icons.science), label: 'Labs'),
+          BottomNavigationBarItem(icon: Icon(Icons.person_outline), activeIcon: Icon(Icons.person), label: 'Profile'),
         ],
       ),
     );
   }
+}
 
-  Widget _buildLessonCard({
-    required int index,
-    required String title,
-    required String subtitle,
-    required String duration,
-  }) {
-    final isSelected = title == _selectedLessonTitle;
+// ── Body: streams lessons from Firestore for the student's grade ─────────────
 
-    // Icon per index cycling through meaningful icons
-    final icons = [
-      Icons.science,
-      Icons.speed,
-      Icons.fitness_center,
-      Icons.bolt,
-      Icons.graphic_eq,
-      Icons.thermostat,
-      Icons.lightbulb_outline,
-      Icons.electric_bolt,
-      Icons.waves,
-      Icons.memory,
-    ];
-    final icon = icons[index % icons.length];
+class _LessonListBody extends StatelessWidget {
+  final int grade;
+  final String gradeLabel;
 
-    return GestureDetector(
-      onTap: () {
-        setState(() => _selectedLessonTitle = title);
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => LessonsDashboard(
-              lessonTitle: title,
-              grade: '$_grade Physics',
-            ),
+  const _LessonListBody({required this.grade, required this.gradeLabel});
+
+  static const Color _primaryBlue = Color(0xFF2196F3);
+
+  @override
+  Widget build(BuildContext context) {
+    final query = FirebaseFirestore.instance
+        .collection('lessons')
+        .where('grade', isEqualTo: grade)
+        .where('status', isEqualTo: 'published')
+        .orderBy('order');
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: query.snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        }
+
+        final docs = snapshot.data?.docs ?? [];
+
+        return Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                decoration: BoxDecoration(
+                  color: _primaryBlue.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(gradeLabel,
+                    style: const TextStyle(fontSize: 12, color: _primaryBlue, fontWeight: FontWeight.w700)),
+              ),
+              const SizedBox(height: 8),
+              Text('$gradeLabel Physics',
+                  style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF1A1C1E))),
+              const SizedBox(height: 4),
+              Text('${docs.length} lesson${docs.length == 1 ? '' : 's'} available',
+                  style: const TextStyle(fontSize: 13, color: _primaryBlue, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 20),
+              Expanded(
+                child: docs.isEmpty
+                    ? const Center(
+                        child: Text('No lessons published yet.\nCheck back soon!',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Colors.grey, fontSize: 16)))
+                    : ListView.builder(
+                        itemCount: docs.length,
+                        itemBuilder: (context, index) {
+                          final doc = docs[index];
+                          final data = doc.data() as Map<String, dynamic>;
+                          final title = data['title'] as String? ?? 'Lesson ${index + 1}';
+                          return _LessonCard(
+                            index: index,
+                            lessonId: doc.id,
+                            title: title,
+                            gradeLabel: gradeLabel,
+                          );
+                        },
+                      ),
+              ),
+            ],
           ),
         );
       },
+    );
+  }
+}
+
+class _LessonCard extends StatelessWidget {
+  final int index;
+  final String lessonId;
+  final String title;
+  final String gradeLabel;
+
+  const _LessonCard({
+    required this.index,
+    required this.lessonId,
+    required this.title,
+    required this.gradeLabel,
+  });
+
+  static const _icons = [
+    Icons.science, Icons.speed, Icons.fitness_center, Icons.bolt,
+    Icons.graphic_eq, Icons.thermostat, Icons.lightbulb_outline,
+    Icons.electric_bolt, Icons.waves, Icons.memory,
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final icon = _icons[index % _icons.length];
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => LessonsDashboard(
+            lessonId: lessonId,
+            lessonTitle: title,
+            grade: '$gradeLabel Physics',
+          ),
+        ),
+      ),
       child: Container(
         margin: const EdgeInsets.only(bottom: 15),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? Colors.blue : Colors.grey.shade200,
-            width: isSelected ? 2 : 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          border: Border.all(color: Colors.grey.shade200),
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6, offset: const Offset(0, 2))],
         ),
         child: ListTile(
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 8,
-          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           leading: Container(
             padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: const Color(0xFFE8F1FF),
-              borderRadius: BorderRadius.circular(50),
-            ),
+            decoration: BoxDecoration(color: const Color(0xFFE8F1FF), borderRadius: BorderRadius.circular(50)),
             child: Icon(icon, color: const Color(0xFF2196F3)),
           ),
-          title: Text(
-            title,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-            ),
-          ),
-          subtitle: Row(
-            children: [
-              const Icon(Icons.access_time, size: 13, color: Colors.grey),
-              const SizedBox(width: 4),
-              Text(
-                duration,
-                style: const TextStyle(color: Colors.grey, fontSize: 12),
-              ),
-            ],
-          ),
+          title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           trailing: const Icon(Icons.chevron_right, color: Colors.grey),
         ),
       ),

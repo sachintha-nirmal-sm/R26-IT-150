@@ -1,3 +1,4 @@
+import '../lesson_id_helper.dart';
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flame/game.dart';
@@ -1006,7 +1007,8 @@ class _HeatGameScreenState extends State<HeatGameScreen> {
     _game.resetGame();
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(
-        builder: (_) => const LessonsDashboard(
+        builder: (_) => LessonsDashboard(
+          lessonId: LessonIdHelper.getLessonId('Heat & Temperature'),
           lessonTitle: 'Heat',
           grade: 'Grade 11 Physics',
         ),

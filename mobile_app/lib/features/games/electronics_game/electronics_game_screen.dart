@@ -1,3 +1,4 @@
+import '../lesson_id_helper.dart';
 import 'dart:math';
 import 'dart:ui';
 import 'package:flame/components.dart';
@@ -1086,7 +1087,8 @@ class _ElectronicsGameScreenState extends State<ElectronicsGameScreen> {
     _game.resetGame();
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(
-        builder: (_) => const LessonsDashboard(
+        builder: (_) => LessonsDashboard(
+          lessonId: LessonIdHelper.getLessonId('Electronics & Logic Gates'),
           lessonTitle: 'Electronics',
           grade: 'Grade 11 Physics',
         ),

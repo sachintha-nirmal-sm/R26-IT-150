@@ -1,3 +1,4 @@
+import '../lesson_id_helper.dart';
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flame/game.dart';
@@ -915,7 +916,8 @@ class _WavesGameScreenState extends State<WavesGameScreen> {
     _game.resetGame();
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(
-        builder: (_) => const LessonsDashboard(
+        builder: (_) => LessonsDashboard(
+          lessonId: LessonIdHelper.getLessonId('Waves'),
           lessonTitle: 'Reflection and Refraction of Waves',
           grade: 'Grade 9 Physics',
         ),

@@ -1,3 +1,4 @@
+import '../lesson_id_helper.dart';
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flame/game.dart';
@@ -905,7 +906,8 @@ class _WorkPowerGameScreenState extends State<WorkPowerGameScreen> {
     _game.resetGame();
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(
-        builder: (_) => const LessonsDashboard(
+        builder: (_) => LessonsDashboard(
+          lessonId: LessonIdHelper.getLessonId('Work, energy and power'),
           lessonTitle: 'Work, energy and power',
           grade: 'Grade 10 Physics',
         ),

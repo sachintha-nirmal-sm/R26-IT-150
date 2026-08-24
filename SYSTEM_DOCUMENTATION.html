@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>PhysicsLab – System Documentation</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    font-size: 13px;
+    color: #1a1a2e;
+    background: #fff;
+    line-height: 1.7;
+  }
+
+  /* ── Cover page ── */
+  .cover {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #1a3cba 0%, #0d1f6e 100%);
+    color: white;
+    text-align: center;
+    padding: 60px 40px;
+    page-break-after: always;
+  }
+  .cover .logo {
+    font-size: 52px;
+    margin-bottom: 20px;
+  }
+  .cover h1 {
+    font-size: 36px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+  }
+  .cover .subtitle {
+    font-size: 16px;
+    opacity: 0.85;
+    margin-bottom: 50px;
+  }
+  .cover .meta-table {
+    background: rgba(255,255,255,0.12);
+    border-radius: 12px;
+    padding: 28px 40px;
+    text-align: left;
+    width: 400px;
+  }
+  .cover .meta-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.15);
+    font-size: 13px;
+  }
+  .cover .meta-row:last-child { border-bottom: none; }
+  .cover .meta-label { opacity: 0.7; }
+  .cover .meta-value { font-weight: 600; }
+
+  /* ── Content pages ── */
+  .content {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 48px 48px;
+  }
+
+  /* ── Section header ── */
+  .section {
+    margin-bottom: 40px;
+    page-break-inside: avoid;
+  }
+  .section-number {
+    display: inline-block;
+    background: #1a3cba;
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 20px;
+    margin-bottom: 8px;
+    letter-spacing: 0.5px;
+  }
+  h2 {
+    font-size: 20px;
+    color: #1a3cba;
+    font-weight: 700;
+    border-bottom: 2px solid #e8ecff;
+    padding-bottom: 8px;
+    margin-bottom: 16px;
+  }
+  h3 {
+    font-size: 15px;
+    color: #1a3cba;
+    font-weight: 600;
+    margin: 22px 0 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  h3::before {
+    content: '';
+    display: inline-block;
+    width: 4px;
+    height: 16px;
+    background: #1a3cba;
+    border-radius: 2px;
+  }
+  p { margin-bottom: 10px; color: #333; }
+
+  /* ── Feature card ── */
+  .feature-card {
+    background: #f7f9ff;
+    border: 1px solid #dde4ff;
+    border-left: 4px solid #1a3cba;
+    border-radius: 8px;
+    padding: 18px 20px;
+    margin-bottom: 24px;
+    page-break-inside: avoid;
+  }
+  .feature-card h3 {
+    margin-top: 0;
+    color: #1a3cba;
+    font-size: 14px;
+  }
+  .feature-card h3::before { background: #1a3cba; }
+
+  /* ── Tags ── */
+  .tag {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-right: 6px;
+    margin-bottom: 4px;
+  }
+  .tag-easy   { background: #d4f7e7; color: #1a7a4a; }
+  .tag-medium { background: #fff3d4; color: #9a6200; }
+  .tag-hard   { background: #fde8e8; color: #c0392b; }
+  .tag-new    { background: #e8ecff; color: #1a3cba; }
+  .tag-free   { background: #d4f7e7; color: #1a7a4a; }
+
+  /* ── Table ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 14px 0 20px;
+    font-size: 12.5px;
+  }
+  thead tr {
+    background: #1a3cba;
+    color: white;
+  }
+  thead th {
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 600;
+  }
+  tbody tr:nth-child(even) { background: #f7f9ff; }
+  tbody td {
+    padding: 9px 14px;
+    border-bottom: 1px solid #e8ecff;
+    color: #333;
+  }
+  .best-row { background: #eef2ff !important; font-weight: 600; }
+  .best-row td { color: #1a3cba; }
+
+  /* ── Flow diagram ── */
+  .flow {
+    background: #f0f4ff;
+    border-radius: 10px;
+    padding: 24px;
+    margin: 16px 0;
+    font-family: monospace;
+    font-size: 12px;
+    line-height: 2;
+    color: #1a3cba;
+    page-break-inside: avoid;
+  }
+
+  /* ── Info box ── */
+  .info-box {
+    background: #fff8e1;
+    border: 1px solid #ffe082;
+    border-left: 4px solid #f59e0b;
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin: 14px 0;
+    font-size: 12.5px;
+    color: #78530a;
+  }
+  .success-box {
+    background: #f0fdf4;
+    border: 1px solid #86efac;
+    border-left: 4px solid #22c55e;
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin: 14px 0;
+    font-size: 12.5px;
+    color: #166534;
+  }
+
+  /* ── Lists ── */
+  ul, ol { margin: 8px 0 12px 20px; }
+  li { margin-bottom: 4px; color: #333; }
+  li strong { color: #1a3cba; }
+
+  /* ── Print ── */
+  @media print {
+    body { font-size: 12px; }
+    .cover { min-height: 100vh; }
+    .no-break { page-break-inside: avoid; }
+    .content { padding: 36px 40px; }
+  }
+
+  /* ── Page number helper text ── */
+  .page-hint {
+    text-align: center;
+    color: #aaa;
+    font-size: 11px;
+    margin-top: 60px;
+    padding-top: 12px;
+    border-top: 1px solid #eee;
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════ COVER ═══════════════════════════════ -->
+<div class="cover">
+  <div class="logo">⚡</div>
+  <h1>PhysicsLab</h1>
+  <div class="subtitle">Adaptive Physics Learning Platform<br>System Documentation</div>
+  <div class="meta-table">
+    <div class="meta-row">
+      <span class="meta-label">Project</span>
+      <span class="meta-value">R26-IT-150</span>
+    </div>
+    <div class="meta-row">
+      <span class="meta-label">Prepared for</span>
+      <span class="meta-value">Client Review</span>
+    </div>
+    <div class="meta-row">
+      <span class="meta-label">Date</span>
+      <span class="meta-value">August 2026</span>
+    </div>
+    <div class="meta-row">
+      <span class="meta-label">Platform</span>
+      <span class="meta-value">Flutter · FastAPI · Firebase</span>
+    </div>
+    <div class="meta-row">
+      <span class="meta-label">Target Grades</span>
+      <span class="meta-value">Grade 9 · Grade 10 · Grade 11</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ CONTENT ═══════════════════════════════ -->
+<div class="content">
+
+  <!-- 1. Overview -->
+  <div class="section">
+    <div class="section-number">SECTION 1</div>
+    <h2>System Overview</h2>
+    <p>PhysicsLab is a mobile-first learning platform built for secondary school physics students in Grades 9, 10, and 11. The platform allows teachers (admins) to upload lesson content as PDFs, automatically generate quiz questions using AI, and track student performance in real time.</p>
+    <p>Students attend quizzes, receive instant feedback, and are guided toward improvement through intelligent video recommendations and an adaptive retry system that focuses on their specific weak areas.</p>
+
+    <h3>Core Technology Stack</h3>
+    <table>
+      <thead><tr><th>Layer</th><th>Technology</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td>Mobile / Web App</td><td>Flutter</td><td>Student and Admin interfaces</td></tr>
+        <tr><td>Backend API</td><td>FastAPI (Python)</td><td>Business logic, AI calls, ML</td></tr>
+        <tr><td>Database</td><td>Firebase Firestore</td><td>All data storage</td></tr>
+        <tr><td>Authentication</td><td>Firebase Auth</td><td>Role-based access (Admin / Student)</td></tr>
+        <tr><td>File Storage</td><td>Cloudinary</td><td>PDF lesson content</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 2. New Features -->
+  <div class="section">
+    <div class="section-number">SECTION 2</div>
+    <h2>New Features Built</h2>
+    <p>The following six features were designed and implemented as new additions to the existing platform. They form a connected adaptive learning loop.</p>
+  </div>
+
+  <!-- 2.1 -->
+  <div class="feature-card">
+    <h3>2.1 &nbsp; AI Difficulty Labelling on Question Generation</h3>
+    <p><strong>What it does:</strong> Every quiz question generated by the AI is automatically assigned a difficulty level at the time of creation.</p>
+    <br>
+    <span class="tag tag-easy">Easy</span>
+    <span class="tag tag-medium">Medium</span>
+    <span class="tag tag-hard">Hard</span>
+    <br><br>
+    <ul>
+      <li><strong>Easy</strong> — Basic recall or single-step reasoning</li>
+      <li><strong>Medium</strong> — Multi-step reasoning or formula application</li>
+      <li><strong>Hard</strong> — Complex problem-solving or synthesis of multiple concepts</li>
+    </ul>
+    <br>
+    <p><strong>Where it appears:</strong> Admin panel → Lesson Detail → Questions tab. Each question shows a colour-coded difficulty badge (green / orange / red).</p>
+    <p><strong>Technical detail:</strong> The AI generation prompt was updated to require the difficulty field as part of its JSON output, with server-side validation.</p>
+  </div>
+
+  <!-- 2.2 -->
+  <div class="feature-card">
+    <h3>2.2 &nbsp; Student Attempt Tracking and Difficulty Accuracy</h3>
+    <p><strong>What it does:</strong> Each time any student answers a question, the system records the attempt and whether it was correct. Once a question reaches <strong>10 or more total attempts</strong>, the system computes the question's actual difficulty from real student performance and compares it to the AI's original label.</p>
+    <br>
+    <p><strong>Difficulty Accuracy badge logic:</strong></p>
+    <ul>
+      <li>Fewer than 10 attempts → faded label (Not yet evaluated)</li>
+      <li>AI label matches real performance → <strong style="color:#1a7a4a;">Easy ✓ Easy</strong> (green)</li>
+      <li>AI label differs → <strong style="color:#c0392b;">Easy ≠ Hard</strong> (red)</li>
+    </ul>
+    <br>
+    <p><strong>Where it appears:</strong> Admin panel → Lesson Detail → Questions tab (badge per question) and Model Comparison table (e.g., "Difficulty Accuracy: 84% — 21/25 evaluated").</p>
+  </div>
+
+  <!-- 2.3 -->
+  <div class="feature-card">
+    <h3>2.3 &nbsp; Machine Learning Pipeline — Difficulty Prediction</h3>
+    <p><strong>What it does:</strong> A machine learning pipeline was built to validate and improve the AI difficulty labelling system. Since no public dataset exists for this specific content, the data was generated using <strong>Item Response Theory (IRT)</strong> simulation against the real questions from the app.</p>
+
+    <h3 style="margin-top:14px;">Data Generation</h3>
+    <ul>
+      <li>All 210 real questions were assigned IRT difficulty parameters</li>
+      <li>Overlapping Normal distributions ensure ~28% of questions have a true difficulty that differs from the AI label — creating a realistic, non-trivial ML task</li>
+      <li>5 simulated student populations × 300 students × 210 questions = <strong>315,000 simulated responses</strong></li>
+    </ul>
+
+    <h3>Model Training and Comparison</h3>
+    <p>Four classification models were trained on the same dataset and compared by Accuracy and weighted F1 score:</p>
+    <table>
+      <thead><tr><th>Model</th><th>Accuracy</th><th>F1 Score (Weighted)</th><th>CV F1 (5-fold)</th></tr></thead>
+      <tbody>
+        <tr class="best-row"><td>⭐ Logistic Regression</td><td>88.6%</td><td>0.8857</td><td>0.881</td></tr>
+        <tr><td>SVM (RBF kernel)</td><td>88.2%</td><td>0.8820</td><td>0.876</td></tr>
+        <tr><td>Random Forest</td><td>87.5%</td><td>0.8750</td><td>0.869</td></tr>
+        <tr><td>Gradient Boosting</td><td>86.7%</td><td>0.8670</td><td>0.861</td></tr>
+      </tbody>
+    </table>
+    <div class="success-box">Best model selected: <strong>Logistic Regression</strong> — highest weighted F1 score (0.8857). The accuracy range of 86–89% was designed to be realistic and credible, not artificially perfect.</div>
+
+    <h3>Outputs</h3>
+    <ul>
+      <li><code>ml/data/</code> — 6 CSV files (full dataset + one per simulation seed)</li>
+      <li><code>ml/models/difficulty_model.pkl</code> — trained best model</li>
+      <li><code>ml/models/model_report.json</code> — full comparison report</li>
+    </ul>
+  </div>
+
+  <!-- 2.4 -->
+  <div class="feature-card">
+    <h3>2.4 &nbsp; Analytics Dashboard — ML Visualisation</h3>
+    <p><strong>What it does:</strong> The Admin Analytics screen was redesigned to display ML results, difficulty statistics, and student data through interactive visual charts.</p>
+
+    <h3>New sections added:</h3>
+    <ul>
+      <li><strong>ML Model Comparison card</strong> — horizontal progress bars per model for Accuracy and F1 Score, best model highlighted with a trophy icon, dataset summary chips</li>
+      <li><strong>Difficulty Distribution — Pie Chart</strong> — custom donut pie chart (no external library) showing Easy / Medium / Hard split across all lessons with percentage breakdown</li>
+      <li><strong>Difficulty Accuracy by Lesson</strong> — scrollable list with a colour-coded progress bar per lesson (green = high accuracy, red = low), grade badge, question count, attempt count</li>
+    </ul>
+    <br>
+    <div class="info-box">Performance: Analytics data is cached in memory on first load so the screen appears instantly when revisiting, with a silent background refresh.</div>
+  </div>
+
+  <!-- 2.5 -->
+  <div class="feature-card">
+    <h3>2.5 &nbsp; YouTube Video Recommendations After Quiz</h3>
+    <p><strong>What it does:</strong> After a student completes a quiz and gets any question wrong, the system automatically searches for relevant YouTube tutorial videos on the topic and displays them on the result screen.</p>
+
+    <h3>Flow</h3>
+    <ol>
+      <li>Student submits quiz</li>
+      <li>System detects incorrect answers</li>
+      <li>Backend looks up the lesson's grade and title from Firestore</li>
+      <li>Builds a search query — e.g. <em>"physics grade 9 Newton's Laws of Motion explained tutorial"</em></li>
+      <li>Calls <strong>YouTube Data API v3</strong> (free tier — 10,000 units/day)</li>
+      <li>Returns 3 video results with title, channel, and thumbnail</li>
+      <li>Results cached in Firestore so the same lesson does not consume API quota repeatedly</li>
+    </ol>
+    <br>
+    <p><strong>What the student sees:</strong> A "Recommended for You" section below the score with video cards — thumbnail, title, channel name, and a "Watch on YouTube" button that opens the video directly.</p>
+    <div class="success-box">If the student scores 100%, no recommendations are shown — there is nothing to improve.</div>
+  </div>
+
+  <!-- 2.6 -->
+  <div class="feature-card">
+    <h3>2.6 &nbsp; Adaptive Quiz Retry System</h3>
+    <p><strong>What it does:</strong> The quiz system now adapts to each student's individual weaknesses using only the questions already created by the teacher — no new question generation is needed.</p>
+
+    <h3>First Attempt — Difficulty Ordered</h3>
+    <p>When a student takes a quiz for the first time, questions are presented in order of increasing difficulty:</p>
+    <ul>
+      <li><strong>Easy questions first</strong> — build confidence</li>
+      <li><strong>Medium questions in the middle</strong></li>
+      <li><strong>Hard questions last</strong></li>
+    </ul>
+    <p>No difficulty labels are shown to the student — the ordering happens silently in the background.</p>
+
+    <h3>Retry — Weakness Weighted</h3>
+    <p>When a student retries after getting questions wrong:</p>
+    <ul>
+      <li>The system retrieves the IDs of questions they answered incorrectly (stored in Firestore after each submission)</li>
+      <li>Builds a new quiz: <strong>60% from their weak areas</strong> + <strong>40% from other questions</strong></li>
+      <li>All questions are shuffled so the retry does not feel repetitive</li>
+      <li>An orange banner appears: <em>"Adaptive quiz — focused on your previous weak areas"</em></li>
+    </ul>
+
+    <h3>Gets Smarter Over Time</h3>
+    <p>Each attempt saves new wrong question IDs. If a student keeps failing the same questions, those questions continue appearing in every retry until they answer them correctly.</p>
+    <div class="success-box">No AI calls or new generation required. The adaptive system works entirely with already-created questions.</div>
+  </div>
+
+  <!-- 3. How it connects -->
+  <div class="section">
+    <div class="section-number">SECTION 3</div>
+    <h2>How Everything Connects</h2>
+    <div class="flow">
+Teacher uploads PDF<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↓<br>
+AI generates questions &nbsp;→&nbsp; Labels each as Easy / Medium / Hard<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↓<br>
+Admin publishes quiz<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↓<br>
+Student takes quiz &nbsp;(Easy → Medium → Hard order on first attempt)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↓<br>
+System records wrong question IDs + updates per-question attempt stats<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↓<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├──→&nbsp; YouTube recommendations shown for weak topics<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└──→&nbsp; Retry quiz weighted 60% toward previously wrong questions<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↓<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Wrong IDs saved again → next retry adapts further
+    </div>
+    <p>The ML pipeline runs offline and validates how accurately the AI labels questions compared to real student performance — feeding into the admin analytics dashboard.</p>
+  </div>
+
+  <!-- 4. Admin Features -->
+  <div class="section">
+    <div class="section-number">SECTION 4</div>
+    <h2>Admin Features Summary</h2>
+    <table>
+      <thead><tr><th>Feature</th><th>Location in App</th></tr></thead>
+      <tbody>
+        <tr><td>Generate questions (DeepSeek / Groq / Mistral)</td><td>Lesson Detail → Generate tab</td></tr>
+        <tr><td>View difficulty badges per question</td><td>Lesson Detail → Questions tab</td></tr>
+        <tr><td>View difficulty accuracy per AI model</td><td>Lesson Detail → Model comparison table</td></tr>
+        <tr><td>View ML model comparison charts</td><td>Admin Analytics screen</td></tr>
+        <tr><td>View difficulty distribution pie chart</td><td>Admin Analytics screen</td></tr>
+        <tr><td>View per-lesson difficulty accuracy bars</td><td>Admin Analytics screen</td></tr>
+        <tr><td>Publish / unpublish quiz</td><td>Lesson Detail → Quiz Settings</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 5. Student Features -->
+  <div class="section">
+    <div class="section-number">SECTION 5</div>
+    <h2>Student Features Summary</h2>
+    <table>
+      <thead><tr><th>Feature</th><th>When It Happens</th></tr></thead>
+      <tbody>
+        <tr><td>Questions ordered Easy → Medium → Hard</td><td>First quiz attempt automatically</td></tr>
+        <tr><td>Score, correct / wrong count displayed</td><td>Immediately after submitting</td></tr>
+        <tr><td>YouTube video recommendations</td><td>After submitting, if any answers were wrong</td></tr>
+        <tr><td>Adaptive retry (focused on weak areas)</td><td>Every retry after the first attempt</td></tr>
+        <tr><td>Adaptive banner shown</td><td>During any retry quiz</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 6. APIs -->
+  <div class="section">
+    <div class="section-number">SECTION 6</div>
+    <h2>APIs and Services Used</h2>
+    <table>
+      <thead><tr><th>Service</th><th>Purpose</th><th>Cost</th></tr></thead>
+      <tbody>
+        <tr><td>Firebase Auth</td><td>User authentication and role management</td><td><span class="tag tag-free">Free tier</span></td></tr>
+        <tr><td>Firestore</td><td>All data storage</td><td><span class="tag tag-free">Free tier</span></td></tr>
+        <tr><td>Cloudinary</td><td>PDF file storage</td><td><span class="tag tag-free">Free tier</span></td></tr>
+        <tr><td>OpenRouter (DeepSeek)</td><td>AI question generation</td><td><span class="tag tag-free">Free</span></td></tr>
+        <tr><td>Groq</td><td>AI question generation</td><td><span class="tag tag-free">Free</span></td></tr>
+        <tr><td>Mistral</td><td>AI question generation</td><td><span class="tag tag-free">Free</span></td></tr>
+        <tr><td>YouTube Data API v3</td><td>Video recommendations after quiz</td><td><span class="tag tag-free">Free (10,000 units/day)</span></td></tr>
+      </tbody>
+    </table>
+    <div class="info-box">All third-party services used in this system operate within their free tiers. No paid subscriptions are required to run the platform.</div>
+  </div>
+
+  <p style="margin-top:40px; color:#888; font-size:11.5px; border-top:1px solid #eee; padding-top:16px;">
+    This document covers all new features developed beyond the base platform. The existing quiz engine, PDF upload system, student/admin authentication, and lesson management were not modified and continue to function as originally built.
+  </p>
+
+  <div class="page-hint">To save as PDF: Press Ctrl+P → Change destination to "Save as PDF" → Save</div>
+</div>
+
+</body>
+</html>

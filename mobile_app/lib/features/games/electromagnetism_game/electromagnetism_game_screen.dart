@@ -1,3 +1,4 @@
+import '../lesson_id_helper.dart';
 import 'dart:math';
 import 'dart:ui';
 import 'package:flame/components.dart';
@@ -800,7 +801,8 @@ class _ElectromagnetismGameScreenState extends State<ElectromagnetismGameScreen>
     _game.resetGame();
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(
-        builder: (_) => const LessonsDashboard(
+        builder: (_) => LessonsDashboard(
+          lessonId: LessonIdHelper.getLessonId('Electromagnetism & Induction'),
           lessonTitle: 'Electromagnetism and Electromagnetic Induction',
           grade: 'Grade 11 Physics',
         ),
