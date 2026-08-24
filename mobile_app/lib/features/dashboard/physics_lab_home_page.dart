@@ -42,7 +42,16 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
             .collection('users')
             .doc(user.uid)
             .get();
-        final grade = userDoc.data()?['grade'] ?? 'Grade 10';
+        final gradeData = userDoc.data()?['grade'];
+
+        // Handle both integer (9, 10, 11) and string ('Grade 9', 'Grade 10') formats
+        String grade = 'Grade 10'; // default
+        if (gradeData is int) {
+          grade = 'Grade $gradeData';
+        } else if (gradeData is String) {
+          grade = gradeData.startsWith('Grade ') ? gradeData : 'Grade $gradeData';
+        }
+
         if (mounted) {
           setState(() => _grade = grade);
         }
