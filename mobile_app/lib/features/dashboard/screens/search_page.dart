@@ -27,7 +27,7 @@ class _SearchPageState extends State<SearchPage> {
   void initState() {
     super.initState();
     _searchService = IntegratedSearchService();
-    _userGrade = grade ?? 'Grade 10';
+    _userGrade = widget.grade ?? 'Grade 10';
   }
 
   Future<void> _performSearch(String query, String category) async {

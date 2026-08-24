@@ -83,11 +83,15 @@ class IntegratedSearchService {
     final diverseResults =
         _rankingEngine.applyDiversityFilter(finalResults, maxPerType: 5);
 
-    // Save search analytics
-    await _searchService.saveRecentSearch(
-      query: query,
-      category: category,
-    );
+    // Save search analytics (optional - don't block if fails)
+    try {
+      await _searchService.saveRecentSearch(
+        query: query,
+        category: category,
+      );
+    } catch (e) {
+      print('Note: Could not save search to history');
+    }
 
     return diverseResults;
   }
@@ -101,8 +105,13 @@ class IntegratedSearchService {
 
     final suggestions = <SearchSuggestion>[];
 
-    // Get from recent searches
-    final recentSearches = await _searchService.getRecentSearches();
+    // Get from recent searches (with error handling)
+    List<RecentSearch> recentSearches = [];
+    try {
+      recentSearches = await _searchService.getRecentSearches();
+    } catch (e) {
+      print('Note: Recent searches unavailable');
+    }
     for (final recent in recentSearches.take(5)) {
       if (recent.query.toLowerCase().startsWith(query.toLowerCase())) {
         suggestions.add(
@@ -116,8 +125,13 @@ class IntegratedSearchService {
       }
     }
 
-    // Get from popular searches
-    final trending = await _searchService.getTrendingSearches(grade);
+    // Get from popular searches (with error handling)
+    List<SearchSuggestion> trending = [];
+    try {
+      trending = await _searchService.getTrendingSearches(grade);
+    } catch (e) {
+      print('Note: Trending searches unavailable');
+    }
     for (final trend in trending.take(3)) {
       if (trend.text.toLowerCase().startsWith(query.toLowerCase())) {
         suggestions.add(
@@ -234,7 +248,7 @@ class IntegratedSearchService {
 
       return analytics;
     } catch (e) {
-      print('Error getting analytics: $e');
+      print('Note: Search analytics unavailable (needs Firestore index). Basic search will still work.');
       return {};
     }
   }
