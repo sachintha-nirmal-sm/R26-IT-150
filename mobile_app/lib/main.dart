@@ -21,6 +21,7 @@ import 'features/scenario-Based Question/scenario_question_screen.dart';
 import 'features/upload-image/upload_image_screen.dart';
 import 'features/games/vector_quest/presentation/pages/vector_quest_game_screen.dart';
 import 'features/admin/admin_dashboard.dart';
+import 'features/games/games_list/games_list_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -96,6 +97,7 @@ class MyApp extends StatelessWidget {
         "/chatbot": (context) => const ChatbotScreen(),
         "/game-intro": (context) => const VectorQuestGameScreen(),
         "/admin-dashboard": (context) => const AdminDashboard(),
+        "/games": (context) => const GamesListScreen(),
       },
     );
   }

@@ -90,6 +90,8 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
                   _recommendedRow(),
                   const SizedBox(height: 16),
                   _virtualLabsBanner(),
+                  const SizedBox(height: 16),
+                  _gamesBanner(),
                 ],
               ),
             ),
@@ -335,6 +337,74 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
                 ]),
           ),
         ]),
+      );
+
+  // ── Games Banner ──────────────────────────────────────────────────────────
+  Widget _gamesBanner() => GestureDetector(
+        onTap: () => Navigator.pushNamed(context, '/games', arguments: {'grade': _grade}),
+        child: Container(
+          height: 160,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFFFF6B6B), Color(0xFFEE5A6F), Color(0xFFC44569)],
+            ),
+            boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 2))],
+          ),
+          child: Stack(children: [
+            Positioned(
+              top: -20,
+              right: -20,
+              child: Container(
+                width: 120,
+                height: 120,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.07),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 15,
+              right: 40,
+              child: Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.07),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    '🎮 Play Physics Games',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const Text(
+                    'Learn through interactive gameplay',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.white70,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ]),
+        ),
       );
 
   // ── Search overlay ────────────────────────────────────────────────────────
