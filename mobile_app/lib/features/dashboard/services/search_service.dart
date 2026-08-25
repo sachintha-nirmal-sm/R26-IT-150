@@ -181,9 +181,10 @@ class SearchService {
       final analyticsQuery = await _firestore
           .collection('search_analytics')
           .where('grade', isEqualTo: grade)
-          .orderBy('count', descending: true)
           .limit(20)
           .get();
+      analyticsQuery.docs.sort((a, b) =>
+          ((b['count'] ?? 0) as num).compareTo((a['count'] ?? 0) as num));
 
       for (final doc in analyticsQuery.docs) {
         final searchTerm = doc['query'] as String;
@@ -248,13 +249,14 @@ class SearchService {
       final snapshot = await _firestore
           .collection(_recentSearchesCollection)
           .where('userId', isEqualTo: user.uid)
-          .orderBy('timestamp', descending: true)
           .limit(_maxRecentSearches)
           .get();
 
-      return snapshot.docs
+      final results = snapshot.docs
           .map((doc) => RecentSearch.fromMap(doc.data()))
           .toList();
+      results.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+      return results;
     } catch (e) {
       print('Error getting recent searches: $e');
       return [];
@@ -338,9 +340,10 @@ class SearchService {
       final snapshot = await _firestore
           .collection('search_analytics')
           .where('grade', isEqualTo: grade)
-          .orderBy('count', descending: true)
           .limit(10)
           .get();
+      snapshot.docs.sort((a, b) =>
+          ((b['count'] ?? 0) as num).compareTo((a['count'] ?? 0) as num));
 
       return snapshot.docs
           .map((doc) {

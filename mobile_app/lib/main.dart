@@ -21,7 +21,7 @@ import 'features/scenario-Based Question/scenario_question_screen.dart';
 import 'features/upload-image/upload_image_screen.dart';
 import 'features/games/vector_quest/presentation/pages/vector_quest_game_screen.dart';
 import 'features/admin/admin_dashboard.dart';
-import 'features/dashboard/screens/search_page.dart';
+import 'features/dashboard/screens/simple_search_page.dart';
 import 'features/games/games_list/games_list_screen.dart';
 import 'features/games/nano_shield_game/nano_shield_screen.dart';
 import 'features/games/simple_machines_game/simple_machines_screen.dart';
@@ -99,7 +99,11 @@ class MyApp extends StatelessWidget {
         "/lesson-list": (context) => const PhysicsLessonsScreen(),
         "/force-motion": (context) => const ForceLinearMotionPage(),
         "/lesson-quizzes": (context) => const LessonQuizzesPage(),
-        "/search": (context) => const SearchPage(),
+        "/search": (context) {
+          final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+          final grade = args?['grade'] as String? ?? 'Grade 10';
+          return SimpleSearchPage(grade: grade);
+        },
 
         "/deep-learn": (context) => const DeepLearningScreen(),
         "/profile": (context) => const ProfileScreen(),

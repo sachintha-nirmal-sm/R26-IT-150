@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 // Search data models
 
 class SearchResult {
@@ -63,7 +65,9 @@ class RecentSearch {
   factory RecentSearch.fromMap(Map<String, dynamic> map) {
     return RecentSearch(
       query: map['query'] as String,
-      timestamp: (map['timestamp'] as DateTime),
+      timestamp: (map['timestamp'] is Timestamp)
+          ? (map['timestamp'] as Timestamp).toDate()
+          : (map['timestamp'] as DateTime),
       category: map['category'] as String,
       userId: map['userId'] as String,
     );
