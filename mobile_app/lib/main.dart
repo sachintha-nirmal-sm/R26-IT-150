@@ -20,6 +20,7 @@ import 'features/quiz-complete/quiz_complete_screen.dart';
 import 'features/scenario-Based Question/scenario_question_screen.dart';
 import 'features/upload-image/upload_image_screen.dart';
 import 'features/games/vector_quest/presentation/pages/vector_quest_game_screen.dart';
+import 'features/games/lesson_games_screen.dart';
 import 'features/admin/admin_dashboard.dart';
 import 'features/dashboard/screens/simple_search_page.dart';
 import 'features/games/games_list/games_list_screen.dart';

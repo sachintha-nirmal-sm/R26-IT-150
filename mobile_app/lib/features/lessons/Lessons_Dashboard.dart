@@ -4,6 +4,7 @@ import '../LessonList/lesson_list_page.dart';
 import '../quizzes/student_quiz_screen.dart';
 import '../experiments/presentation/screens/experiment_execution_screen.dart';
 import '../games/vector_quest/presentation/pages/vector_quest_game_screen.dart';
+import '../games/lesson_games_screen.dart';
 import 'sub_lessons_screen.dart';
 
 class LessonsDashboard extends StatefulWidget {
@@ -201,7 +202,18 @@ class _LessonsDashboardState extends State<LessonsDashboard> {
                     ),
                   ),
                   GestureDetector(
-                    onTap: () => Navigator.pushNamed(context, '/game-intro'),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => LessonGamesScreen(
+                            lessonTitle: widget.lessonTitle,
+                            lessonTopic: widget.lessonTitle,
+                            grade: widget.grade,
+                          ),
+                        ),
+                      );
+                    },
                     child: _buildGridCard(
                       icon: Icons.sports_esports_outlined,
                       label: 'Games',
