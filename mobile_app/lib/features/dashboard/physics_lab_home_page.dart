@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'search_data.dart';
+import 'screens/simple_search_page.dart';
+import 'services/simple_search_service.dart';
 
 class PhysicsLabHomePage extends StatefulWidget {
   const PhysicsLabHomePage({super.key});
@@ -231,10 +233,22 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
           children: _keywords.map((kw) {
             return GestureDetector(
               onTap: () {
-                setState(() => _isSearching = true);
-                _searchCtrl.text = kw;
-                _onSearchChanged();
-                Future.delayed(const Duration(milliseconds: 50), () => _searchFocus.requestFocus());
+                // Navigate to search page with keyword pre-filled
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => SimpleSearchPage(grade: _grade),
+                    settings: RouteSettings(
+                      arguments: {'searchQuery': kw},
+                    ),
+                  ),
+                ).then((query) {
+                  // If a search query is returned, update the search box
+                  if (query != null && query is String) {
+                    setState(() => _searchCtrl.text = query);
+                    _onSearchChanged();
+                  }
+                });
               },
               child: Container(
                 margin: const EdgeInsets.only(right: 8),

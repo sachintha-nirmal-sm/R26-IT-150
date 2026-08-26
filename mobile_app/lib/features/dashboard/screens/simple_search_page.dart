@@ -42,6 +42,17 @@ class _SimpleSearchPageState extends State<SimpleSearchPage> {
   void initState() {
     super.initState();
     _controller.addListener(_onQueryChanged);
+
+    // Check if a search query was passed (from keyword chips)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+      if (args != null && args['searchQuery'] != null) {
+        _controller.text = args['searchQuery'];
+        Future.delayed(const Duration(milliseconds: 100), () {
+          _performSearch();
+        });
+      }
+    });
   }
 
   Future<void> _onQueryChanged() async {
