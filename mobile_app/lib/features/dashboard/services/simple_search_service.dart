@@ -1,16 +1,29 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:string_similarity/string_similarity.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../games/games_list/game_list_data.dart';
 
 class SimpleSearchService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
   // Cache lessons and sub-lessons in memory
   static Map<int, List<Map<String, dynamic>>> _lessonsCache = {};
   static Map<String, List<Map<String, dynamic>>> _subLessonsCache = {}; // key: lessonId
   static DateTime? _lastCacheTime;
   static const Duration _cacheDuration = Duration(hours: 1);
+
+  /// Get user-specific search history key
+  /// Format: search_history_[userId] for logged-in users
+  /// Format: search_history_guest for guests
+  String _getSearchHistoryKey() {
+    final userId = _auth.currentUser?.uid;
+    if (userId != null) {
+      return 'search_history_$userId';
+    }
+    return 'search_history_guest'; // Fallback for guest users
+  }
 
   /// Fast search - queries lessons, sub-lessons, games, and learning materials
   Future<List<Map<String, dynamic>>> search(
@@ -347,13 +360,14 @@ class SimpleSearchService {
     print('🗑️ Cache cleared');
   }
 
-  /// Get autocomplete suggestions from recent searches
+  /// Get autocomplete suggestions from recent searches (user-specific)
   Future<List<String>> getAutocompleteSuggestions(String query) async {
     if (query.isEmpty) return [];
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      final history = prefs.getStringList('search_history') ?? [];
+      final historyKey = _getSearchHistoryKey();
+      final history = prefs.getStringList(historyKey) ?? [];
 
       final lowerQuery = query.toLowerCase();
       return history
@@ -366,22 +380,26 @@ class SimpleSearchService {
     }
   }
 
-  /// Get recent searches
+  /// Get recent searches (user-specific)
   Future<List<String>> getRecentSearches() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      return prefs.getStringList('search_history') ?? [];
+      final historyKey = _getSearchHistoryKey();
+      return prefs.getStringList(historyKey) ?? [];
     } catch (e) {
       print('Error getting recent searches: $e');
       return [];
     }
   }
 
-  /// Save search to history
+  /// Save search to history (user-specific)
   Future<void> _saveSearchHistory(String query) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final history = prefs.getStringList('search_history') ?? [];
+      final historyKey = _getSearchHistoryKey();
+      final userId = _auth.currentUser?.uid;
+
+      final history = prefs.getStringList(historyKey) ?? [];
 
       // Remove if already exists
       history.removeWhere((item) => item.toLowerCase() == query.toLowerCase());
@@ -394,17 +412,26 @@ class SimpleSearchService {
         history.removeRange(20, history.length);
       }
 
-      await prefs.setStringList('search_history', history);
+      await prefs.setStringList(historyKey, history);
+
+      final userTag = userId != null ? userId : 'guest';
+      print('✅ Search history saved for user: $userTag');
     } catch (e) {
       print('Error saving search history: $e');
     }
   }
 
-  /// Clear search history
+  /// Clear search history (user-specific)
   Future<void> clearSearchHistory() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('search_history');
+      final historyKey = _getSearchHistoryKey();
+      final userId = _auth.currentUser?.uid;
+
+      await prefs.remove(historyKey);
+
+      final userTag = userId != null ? userId : 'guest';
+      print('🗑️ Search history cleared for user: $userTag');
     } catch (e) {
       print('Error clearing search history: $e');
     }

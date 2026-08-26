@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../services/simple_search_service.dart';
 import '../../lessons/Lessons_Dashboard.dart';
 
@@ -123,10 +124,12 @@ class _SimpleSearchPageState extends State<SimpleSearchPage> {
   Future<void> _deleteRecentSearch(String query) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final history = prefs.getStringList('search_history') ?? [];
+      final historyKey = _getSearchHistoryKey();
+      final history = prefs.getStringList(historyKey) ?? [];
       history.removeWhere((item) => item.toLowerCase() == query.toLowerCase());
-      await prefs.setStringList('search_history', history);
+      await prefs.setStringList(historyKey, history);
       setState(() => _suggestions = history.take(5).toList());
+      print('❌ Deleted search: "$query"');
     } catch (e) {
       print('Error deleting search: $e');
     }
@@ -135,11 +138,22 @@ class _SimpleSearchPageState extends State<SimpleSearchPage> {
   Future<void> _clearAllSearchHistory() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('search_history');
+      final historyKey = _getSearchHistoryKey();
+      await prefs.remove(historyKey);
       setState(() => _suggestions = []);
+      print('🗑️ Cleared all search history');
     } catch (e) {
       print('Error clearing history: $e');
     }
+  }
+
+  /// Get user-specific search history key
+  String _getSearchHistoryKey() {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId != null) {
+      return 'search_history_$userId';
+    }
+    return 'search_history_guest';
   }
 
   void _filterResults() {
