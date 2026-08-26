@@ -118,47 +118,45 @@ const Map<String, List<String>> gradeKeywords = {
 // Maps what users type (chip labels / partial words) → actual topic title
 // Optimized for high-match keywords
 const Map<String, String> _keywordAliases = {
-  // Grade 9
+  // Grade 9 & General
   'simple machines'   : 'simple machines',
-  'pressure'          : 'pressure',
   'density'           : 'density',
   'archimedes'        : 'archimedes',
-  'work & energy'     : 'work, energy',
-  'work'              : 'work, energy',
-  'energy'            : 'work, energy',
-  'power'             : 'work, energy',
   'static electricity': 'static electricity',
-  'moments'           : 'turning effect',
-  'friction'          : 'friction',
 
-  // Grade 10 – Motion (high-match keywords)
+  // Motion & Kinematics (Grade 10)
   'motion'            : 'motion in a straight line',
   'kinematics'        : 'motion in a straight line',
   'graphs'            : 'motion in a straight line',
 
-  // Grade 10 – Forces (high-match keywords)
+  // Forces & Moments (Grade 10)
   'force'             : 'resultant force',
   'newton'            : "newton's laws of motion",
   'friction'          : 'friction',
   'equilibrium'       : 'equilibrium of forces',
+  'moments'           : 'turning effect of a force',
 
-  // Grade 10 – Energy & Work
+  // Energy, Work & Power (Grade 10)
   'energy'            : 'work, energy and power',
   'work'              : 'work, energy and power',
   'power'             : 'work, energy and power',
+  'work & energy'     : 'work, energy and power',
 
-  // Grade 10 – Electricity & Others
-  'electricity'       : 'current electricity',
+  // Pressure & Electricity (Grade 10)
   'pressure'          : 'hydrostatic pressure and its applications',
+  'electricity'       : 'current electricity',
   'vectors'           : 'vectors',
-  'moments'           : 'turning effect of a force',
 
-  // Grade 11 – High-match keywords
+  // Grade 11 – Waves & Heat
   'waves'             : 'waves and their applications',
   'heat'              : 'heat & temperature changes',
   'temperature'       : 'heat & temperature changes',
+
+  // Grade 11 – Optics
   'optics'            : 'light and optics',
   'light'             : 'light and optics',
+
+  // Grade 11 – Electromagnetism & Electronics
   'electromagnetism'  : 'electromagnetism & induction',
   'induction'         : 'electromagnetism & induction',
   'electronics'       : 'electronics & logic gates',
