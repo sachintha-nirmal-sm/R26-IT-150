@@ -1,4 +1,7 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import '../experiments/data/practical.dart';
+import '../experiments/data/practicals_repository.dart';
 import 'lesson_progress.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -10,6 +13,22 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   int _selectedIndex = 3;
+  StudentPracticalProgress? _progress;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProgress();
+  }
+
+  Future<void> _loadProgress() async {
+    try {
+      final progress = await PracticalsRepository().fetchMyProgress();
+      if (mounted) setState(() => _progress = progress);
+    } catch (_) {
+      // Keep the existing profile layout if the API is unreachable.
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -75,13 +94,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Text(
-                          'Alex Johnson',
-                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                        Text(
+                          FirebaseAuth.instance.currentUser?.displayName ??
+                              'Student',
+                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                         ),
-                        const Text(
-                          'alex.j@example.edu',
-                          style: TextStyle(color: Colors.grey, fontSize: 14),
+                        Text(
+                          FirebaseAuth.instance.currentUser?.email ?? '',
+                          style: const TextStyle(color: Colors.grey, fontSize: 14),
                         ),
                         const SizedBox(height: 8),
                         Container(
@@ -90,9 +110,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             color: const Color(0xFFE8F1FF),
                             borderRadius: BorderRadius.circular(20),
                           ),
-                          child: const Text(
-                            'Grade 9',
-                            style: TextStyle(color: Color(0xFF2196F3), fontSize: 12, fontWeight: FontWeight.bold),
+                          child: Text(
+                            _progress == null
+                                ? 'Student'
+                                : 'Grade ${_progress!.grade}',
+                            style: const TextStyle(color: Color(0xFF2196F3), fontSize: 12, fontWeight: FontWeight.bold),
                           ),
                         ),
                       ],
@@ -107,11 +129,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
             // Lesson Stats Cards
             Row(
               children: [
-                Expanded(child: _buildStatCard('Completed', '1', Icons.check_circle, Colors.blue)),
+                Expanded(
+                  child: _buildStatCard(
+                    'Completed',
+                    '${_progress?.completedPracticals ?? 1}',
+                    Icons.check_circle,
+                    Colors.blue,
+                  ),
+                ),
                 const SizedBox(width: 12),
-                Expanded(child: _buildStatCard('In Progress', '2', Icons.play_circle_filled, Colors.blue)),
+                Expanded(
+                  child: _buildStatCard(
+                    'Total labs',
+                    '${_progress?.totalPracticals ?? 6}',
+                    Icons.science,
+                    Colors.blue,
+                  ),
+                ),
                 const SizedBox(width: 12),
-                Expanded(child: _buildStatCard('Incomplete', '3', Icons.pause_circle_filled, Colors.blue)),
+                Expanded(
+                  child: _buildStatCard(
+                    'Average',
+                    _progress == null
+                        ? '-'
+                        : '${_progress!.averagePercentage.round()}%',
+                    Icons.insights,
+                    Colors.blue,
+                  ),
+                ),
               ],
             ),
 

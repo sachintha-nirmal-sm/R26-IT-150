@@ -5,12 +5,16 @@ class LessonItem {
   final String grade;
   final String duration;
   final String subtitle;
+  final String? practicalId;
+  final String? lessonId;
 
   const LessonItem({
     required this.title,
     required this.grade,
     required this.duration,
     this.subtitle = 'Start Lesson',
+    this.practicalId,
+    this.lessonId,
   });
 }
 
@@ -21,6 +25,8 @@ const Map<String, List<LessonItem>> gradeLessons = {
       grade: 'Grade 9',
       duration: '20 mins',
       subtitle: 'Start Lesson',
+      lessonId: 'phy-g9-force-doc',
+      practicalId: 'grade9_force_basic',
     ),
     LessonItem(
       title: 'Pressure Exerted by Solid',
@@ -33,6 +39,8 @@ const Map<String, List<LessonItem>> gradeLessons = {
       grade: 'Grade 9',
       duration: '15 mins',
       subtitle: 'Start Lesson',
+      lessonId: 'phy-g9-density-doc',
+      practicalId: 'grade9_density_water',
     ),
     LessonItem(
       title: 'Reflection and Refraction of Waves',
@@ -54,6 +62,12 @@ const Map<String, List<LessonItem>> gradeLessons = {
     ),
   ],
   'Grade 10': [
+    LessonItem(
+      title: 'Density',
+      grade: 'Grade 10',
+      duration: '15 mins',
+      subtitle: 'Start Lesson',
+    ),
     LessonItem(
       title: 'Motion in a straight line',
       grade: 'Grade 10',

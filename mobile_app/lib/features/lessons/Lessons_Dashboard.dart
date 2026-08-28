@@ -6,12 +6,16 @@ class LessonsDashboard extends StatefulWidget {
   final String lessonTitle;
   final String grade;
   final String? lessonDescription;
+  final String? practicalId;
+  final String? lessonId;
 
   const LessonsDashboard({
     super.key,
     this.lessonTitle = 'Linear Motion',
     this.grade = 'Grade 9 Physics',
     this.lessonDescription,
+    this.practicalId,
+    this.lessonId,
   });
 
   @override
@@ -39,9 +43,21 @@ class _LessonsDashboardState extends State<LessonsDashboard> {
       'Linear Motion': 'Master the fundamental concepts of push, pull, and the laws governing motion.',
       "Forces and Newton's Laws": 'Understand the three laws of motion and how forces affect objects.',
       'Work, Energy, and Power': 'Discover the concepts of work, energy transformation, and power in physical systems.',
-      'Waves and Sound': 'Explore the properties of waves and how sound travels through different media.',
+      'Density': 'Measure mass and volume to calculate the density of water.',
+      'Basic Concepts Associated with Force': 'See how a push changes the motion of an object and check a = F / m.',
     };
     return descriptions[title] ?? 'Master the fundamental concepts of this lesson.';
+  }
+
+  void _openLinkedPractical() {
+    Navigator.pushNamed(
+      context,
+      '/practical-home',
+      arguments: {
+        if (widget.lessonId != null) 'lessonId': widget.lessonId,
+        'lessonTitle': widget.lessonTitle,
+      },
+    );
   }
 
   void _onItemTapped(int index) {
@@ -49,7 +65,7 @@ class _LessonsDashboardState extends State<LessonsDashboard> {
       _selectedIndex = index;
     });
     if (index == 0) Navigator.pushNamed(context, '/home');
-    if (index == 2) Navigator.pushNamed(context, '/practical-home');
+    if (index == 2) _openLinkedPractical();
     if (index == 3) {
       Navigator.pushNamed(context, '/profile');
     }
@@ -171,9 +187,7 @@ class _LessonsDashboardState extends State<LessonsDashboard> {
                     ),
                   ),
                   GestureDetector(
-                    onTap: () {
-                      Navigator.pushNamed(context, '/practical-home');
-                    },
+                    onTap: _openLinkedPractical,
                     child: _buildGridCard(
                       icon: Icons.science_outlined,
                       label: 'Practicals',

@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../lessons/Lessons_Dashboard.dart';
 import 'lesson_list_data.dart';
@@ -16,6 +18,50 @@ class _PhysicsLessonsScreenState extends State<PhysicsLessonsScreen> {
   int _currentIndex = 1;
   String _selectedLessonTitle = '';
   String _grade = 'Grade 10';
+  late Future<List<LessonItem>> _lessonsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _lessonsFuture = _loadLessons();
+  }
+
+  Future<List<LessonItem>> _loadLessons() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      return getLessonsForGrade(_grade);
+    }
+
+    final userDoc =
+        await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+    final gradeNum = (userDoc.data()?['currentGrade'] as num?)?.toInt();
+    if (gradeNum == null) {
+      return getLessonsForGrade(_grade);
+    }
+
+    _grade = 'Grade $gradeNum';
+    final snap = await FirebaseFirestore.instance
+        .collection('lessons')
+        .where('grade', isEqualTo: gradeNum)
+        .where('status', isEqualTo: 'published')
+        .orderBy('order')
+        .get();
+
+    if (snap.docs.isEmpty) {
+      return getLessonsForGrade(_grade);
+    }
+
+    return snap.docs.map((doc) {
+      final data = doc.data();
+      return LessonItem(
+        title: data['title'] as String? ?? 'Untitled lesson',
+        grade: 'Grade $gradeNum',
+        duration: 'Start',
+        subtitle: data['description'] as String? ?? 'Start Lesson',
+        lessonId: doc.id,
+      );
+    }).toList();
+  }
 
   @override
   void didChangeDependencies() {
@@ -41,7 +87,6 @@ class _PhysicsLessonsScreenState extends State<PhysicsLessonsScreen> {
     }
   }
 
-  List<LessonItem> get _lessons => getLessonsForGrade(_grade);
   String get _subtitle => gradeSubtitles[_grade] ?? 'Physics Lessons';
 
   @override
@@ -111,25 +156,39 @@ class _PhysicsLessonsScreenState extends State<PhysicsLessonsScreen> {
               style: const TextStyle(fontSize: 16, color: Colors.grey),
             ),
             const SizedBox(height: 8),
-            Text(
-              '${_lessons.length} lessons available',
-              style: TextStyle(
-                fontSize: 13,
-                color: _primaryBlue,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 20),
             Expanded(
-              child: ListView.builder(
-                itemCount: _lessons.length,
-                itemBuilder: (context, index) {
-                  final lesson = _lessons[index];
-                  return _buildLessonCard(
-                    index: index,
-                    title: lesson.title,
-                    subtitle: lesson.subtitle,
-                    duration: lesson.duration,
+              child: FutureBuilder<List<LessonItem>>(
+                future: _lessonsFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  final lessons = snapshot.data ?? getLessonsForGrade(_grade);
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${lessons.length} lessons available',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: _primaryBlue,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: lessons.length,
+                          itemBuilder: (context, index) {
+                            final lesson = lessons[index];
+                            return _buildLessonCard(
+                              index: index,
+                              lesson: lesson,
+                            );
+                          },
+                        ),
+                      ),
+                    ],
                   );
                 },
               ),
@@ -197,10 +256,10 @@ class _PhysicsLessonsScreenState extends State<PhysicsLessonsScreen> {
 
   Widget _buildLessonCard({
     required int index,
-    required String title,
-    required String subtitle,
-    required String duration,
+    required LessonItem lesson,
   }) {
+    final title = lesson.title;
+    final duration = lesson.duration;
     final isSelected = title == _selectedLessonTitle;
 
     // Icon per index cycling through meaningful icons
@@ -227,6 +286,8 @@ class _PhysicsLessonsScreenState extends State<PhysicsLessonsScreen> {
             builder: (context) => LessonsDashboard(
               lessonTitle: title,
               grade: '$_grade Physics',
+              practicalId: lesson.practicalId,
+              lessonId: lesson.lessonId,
             ),
           ),
         );
