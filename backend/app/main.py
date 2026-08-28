@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from app.core import db
 from app.api import auth as auth_router
 
@@ -23,12 +24,22 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # --- Routers ---
 from app.api import auth as auth_router
 from app.api import admin_lessons
+from app.api import practicals
 
 app.include_router(auth_router.router)
 app.include_router(admin_lessons.router)
+app.include_router(practicals.router)
 
 @app.get("/health", tags=["Health"])
 def health_check():
