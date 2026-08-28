@@ -118,12 +118,22 @@ class _ExperimentExecutionScreenState extends State<ExperimentExecutionScreen> {
       return demo
           ? await _repo.startDemo(practical.id)
           : await _repo.startPractical(practical.id);
-    } on ApiException catch (error) {
-      if (error.statusCode != 503 && error.statusCode != 404) rethrow;
-      return PracticalSession.local(
-        practical: practical,
-        mode: demo ? 'demo' : 'practical',
-      );
+    } catch (error) {
+      final localIds = LocalPracticals.all.map((item) => item.id).toSet();
+      if (localIds.contains(practical.id)) {
+        return PracticalSession.local(
+          practical: practical,
+          mode: demo ? 'demo' : 'practical',
+        );
+      }
+      if (error is ApiException &&
+          (error.statusCode == 503 || error.statusCode == 404)) {
+        return PracticalSession.local(
+          practical: practical,
+          mode: demo ? 'demo' : 'practical',
+        );
+      }
+      rethrow;
     }
   }
 

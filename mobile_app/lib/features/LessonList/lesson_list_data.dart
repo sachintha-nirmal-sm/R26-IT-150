@@ -33,6 +33,8 @@ const Map<String, List<LessonItem>> gradeLessons = {
       grade: 'Grade 9',
       duration: '18 mins',
       subtitle: 'Start Lesson',
+      lessonId: 'phy-g9-pressure-solid-doc',
+      practicalId: 'grade9_pressure_solid',
     ),
     LessonItem(
       title: 'Density',

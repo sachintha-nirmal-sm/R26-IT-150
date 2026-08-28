@@ -276,7 +276,8 @@ service cloud.firestore {
             && resource.data.isActive == true
             && (resource.data.grade == getUserGrade(request.auth.uid)
                 || practicalId == "grade9_density_water"
-                || practicalId == "grade9_force_basic"));
+                || practicalId == "grade9_force_basic"
+                || practicalId == "grade9_pressure_solid"));
       allow write: if isAdmin();
     }
 

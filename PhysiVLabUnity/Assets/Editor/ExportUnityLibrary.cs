@@ -49,6 +49,7 @@ public static class PhysiVLabExport
     private static readonly string[] KnownScenes =
     {
         "Assets/Scenes/ForceBasicConcepts.unity",
+        "Assets/Scenes/PressureExertedBySolid.unity",
     };
 
     private static string ExportFolder =>
@@ -69,22 +70,37 @@ public static class PhysiVLabExport
     {
         if (EditorApplication.isCompiling || EditorApplication.isUpdating)
         {
-            EditorUtility.DisplayDialog(
-                "PhysiVLab",
-                "Unity is still compiling. Wait until it finishes, then run this again.",
-                "OK");
+            if (exitWhenDone)
+            {
+                Debug.LogError("Unity is still compiling. Retry export after it finishes.");
+                EditorApplication.Exit(1);
+            }
+            else
+            {
+                EditorUtility.DisplayDialog(
+                    "PhysiVLab",
+                    "Unity is still compiling. Wait until it finishes, then run this again.",
+                    "OK");
+            }
             return;
         }
 
         if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.Android)
         {
-            EditorUtility.DisplayDialog(
-                "Switch to Android first",
-                "File → Build Settings → Android → Switch Platform.\n\n"
-                + "Wait until compiling finishes. Then run:\n"
-                + "Tools → PhysiVLab → Export Android Library",
-                "OK");
-            if (exitWhenDone) EditorApplication.Exit(1);
+            if (exitWhenDone)
+            {
+                Debug.LogError("Switch to Android first: File → Build Settings → Android → Switch Platform.");
+                EditorApplication.Exit(1);
+            }
+            else
+            {
+                EditorUtility.DisplayDialog(
+                    "Switch to Android first",
+                    "File → Build Settings → Android → Switch Platform.\n\n"
+                    + "Wait until compiling finishes. Then run:\n"
+                    + "Tools → PhysiVLab → Export Android Library",
+                    "OK");
+            }
             return;
         }
 
@@ -142,7 +158,10 @@ public static class PhysiVLabExport
 
         CopyDirectory(unityLibrary, dest);
         Debug.Log("PhysiVLab unityLibrary copied to " + dest);
-        EditorUtility.DisplayDialog("PhysiVLab", "unityLibrary exported to:\n" + dest, "OK");
+        if (!exitWhenDone)
+        {
+            EditorUtility.DisplayDialog("PhysiVLab", "unityLibrary exported to:\n" + dest, "OK");
+        }
         if (exitWhenDone) EditorApplication.Exit(0);
     }
 

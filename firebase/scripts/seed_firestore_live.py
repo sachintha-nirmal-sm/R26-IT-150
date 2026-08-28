@@ -182,6 +182,12 @@ def seed():
             "description": "Force as a push or pull, and how force changes the motion of an object.",
             "order": 1, "status": "published",
         }),
+        ("phy-g9-pressure-solid-doc", {
+            "title": "Pressure Exerted by Solid", "subject": "Physics", "grade": 9,
+            "lessonTag": "phy-g9-pressure-solid",
+            "description": "Pressure of solids, a wire cutting soap, and how force changes cutting time.",
+            "order": 2, "status": "published",
+        }),
         ("phy-g9-density-doc", {
             "title": "Density", "subject": "Physics", "grade": 9,
             "lessonTag": "phy-g9-density",
@@ -236,6 +242,11 @@ def seed():
             "description": "Apply a force to a block and relate force, mass, and acceleration.",
             "order": 1, "isActive": True,
         }),
+        ("topic-g9-pressure-solid", {
+            "grade": 9, "lessonId": "phy-g9-pressure-solid-doc", "name": "Pressure Exerted by Solids",
+            "description": "Hang sandbags on a thin wire and relate force to the time to cut through soap.",
+            "order": 2, "isActive": True,
+        }),
         ("topic-g9-density", {
             "grade": 9, "lessonId": "phy-g9-density-doc", "name": "Density",
             "description": "Measure mass and volume to calculate density of water.",
@@ -274,6 +285,14 @@ def seed():
             "unitySceneId": "ForceBasicConcepts",
             "unityBuildUrl": "",
             "maxScore": 100, "durationSeconds": 600, "order": 1,
+        }),
+        ("grade9_pressure_solid", {
+            "title": "Pressure Exerted by Solids", "grade": 9,
+            "lessonId": "phy-g9-pressure-solid-doc", "topicId": "topic-g9-pressure-solid",
+            "description": "Hang sandbags on a thin wire and time how fast it cuts through a cake of soap.",
+            "unitySceneId": "PressureExertedBySolid",
+            "unityBuildUrl": "",
+            "maxScore": 100, "durationSeconds": 600, "order": 2,
         }),
         ("grade9_density_water", {
             "title": "Density of Water 1", "grade": 9,
@@ -325,8 +344,8 @@ def seed():
             "unityBuildUrl": data.get("unityBuildUrl")
             or f"gs://{STORAGE_BUCKET}/practicals/{practical_id}/build",
             "demoAllowed": True,
-            "demoMaxAttempts": 10 if practical_id in ("grade9_density_water", "grade9_force_basic") else 1,
-            "practicalMaxAttempts": 3 if practical_id in ("grade9_density_water", "grade9_force_basic") else 1,
+            "demoMaxAttempts": 10 if practical_id in ("grade9_density_water", "grade9_force_basic", "grade9_pressure_solid") else 1,
+            "practicalMaxAttempts": 3 if practical_id in ("grade9_density_water", "grade9_force_basic", "grade9_pressure_solid") else 1,
             "isActive": True,
             "createdAt": ts,
             "updatedAt": ts,

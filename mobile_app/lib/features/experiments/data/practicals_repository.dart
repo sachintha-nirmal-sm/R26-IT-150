@@ -20,15 +20,16 @@ class PracticalsRepository {
   /// Hub list is read from Firestore so Practical Hub opens without FastAPI.
   /// An empty Firestore result is not treated as success — try API, then local.
   Future<List<Practical>> fetchActiveForCurrentStudent({String? lessonId}) async {
+    List<Practical> items = const [];
     try {
-      final items = await _fetchActiveFromFirestore(lessonId: lessonId);
-      if (items.isNotEmpty) return items;
+      items = await _fetchActiveFromFirestore(lessonId: lessonId);
     } catch (_) {}
-    try {
-      final items = await _fetchActiveFromApi(lessonId: lessonId);
-      if (items.isNotEmpty) return items;
-    } catch (_) {}
-    return LocalPracticals.forLesson(lessonId);
+    if (items.isEmpty) {
+      try {
+        items = await _fetchActiveFromApi(lessonId: lessonId);
+      } catch (_) {}
+    }
+    return _withLocalFallbacks(items, lessonId);
   }
 
   Future<Practical> fetchById(String practicalId) async {
@@ -163,6 +164,15 @@ class PracticalsRepository {
       throw ApiException('Practical "$practicalId" was not found in Firestore.');
     }
     return _fromDoc(snap);
+  }
+
+  List<Practical> _withLocalFallbacks(List<Practical> items, String? lessonId) {
+    final locals = LocalPracticals.forLesson(lessonId);
+    if (items.isEmpty) return locals;
+    final ids = items.map((item) => item.id).toSet();
+    final extra = locals.where((item) => !ids.contains(item.id)).toList();
+    if (extra.isEmpty) return items;
+    return [...items, ...extra]..sort((a, b) => a.order.compareTo(b.order));
   }
 
   Future<int> _currentGrade() async {

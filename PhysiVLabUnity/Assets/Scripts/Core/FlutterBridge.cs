@@ -38,13 +38,13 @@ public class FlutterBridge : MonoBehaviour
     }
 
     public string StudentId { get; private set; } = "";
-    public string PracticalId { get; private set; } = "grade9_density_water";
-    public string LessonId { get; private set; } = "phy-g9-density-doc";
+    public string PracticalId { get; private set; } = "";
+    public string LessonId { get; private set; } = "";
     public string Mode { get; private set; } = "trial";
     public string ResultId { get; private set; } = "";
     public int AttemptNumber { get; private set; } = 1;
     public int DurationSeconds { get; private set; } = 600;
-    public string UnitySceneId { get; private set; } = "DensityWaterExperiment";
+    public string UnitySceneId { get; private set; } = "";
 
     public bool HasSession { get; private set; }
 
@@ -69,10 +69,26 @@ public class FlutterBridge : MonoBehaviour
         PracticalManager.EnsureLoaded();
     }
 
+    private void Start()
+    {
+        OpenMappedScene();
+    }
+
     /// <summary>Called from Android via UnitySendMessage("FlutterBridge", "ReceiveSession", json).</summary>
     public void ReceiveSession(string json)
     {
         ApplySessionJson(json);
+        PracticalManager.EnsureLoaded();
+        OpenMappedScene();
+    }
+
+    private void OpenMappedScene()
+    {
+        if (!HasSession)
+        {
+            return;
+        }
+
         PracticalManager.EnsureLoaded();
         PracticalManager.Instance?.OpenPractical(PracticalId, UnitySceneId);
     }

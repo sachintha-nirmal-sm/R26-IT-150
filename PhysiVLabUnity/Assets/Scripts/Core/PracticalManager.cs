@@ -46,6 +46,11 @@ public class PracticalManager : MonoBehaviour
             return "ForceBasicConcepts";
         }
 
+        if (id.Contains("pressure"))
+        {
+            return "PressureExertedBySolid";
+        }
+
         return SceneManager.GetActiveScene().name;
     }
 

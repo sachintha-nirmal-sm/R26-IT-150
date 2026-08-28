@@ -47,6 +47,7 @@ class MainActivity : FlutterActivity() {
             addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
         }
         startActivity(intent)
+        UnityBridge.deliverSession(sessionJson)
         return true
     }
 

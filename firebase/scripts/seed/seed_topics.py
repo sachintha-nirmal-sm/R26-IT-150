@@ -50,6 +50,18 @@ PRACTICAL_LESSONS = [
         },
     },
     {
+        "id": "phy-g9-pressure-solid-doc",
+        "data": {
+            "title": "Pressure Exerted by Solid",
+            "subject": "Physics",
+            "grade": 9,
+            "lessonTag": "phy-g9-pressure-solid",
+            "description": "Pressure of solids, a wire cutting soap, and how force changes cutting time.",
+            "order": 2,
+            "status": "published",
+        },
+    },
+    {
         "id": "phy-g9-density-doc",
         "data": {
             "title": "Density",
@@ -96,6 +108,17 @@ TOPICS = [
             "name": "Basic Concepts Associated with Force",
             "description": "Apply a force to a block and relate force, mass, and acceleration.",
             "order": 1,
+            "isActive": True,
+        },
+    },
+    {
+        "id": "topic-g9-pressure-solid",
+        "data": {
+            "grade": 9,
+            "lessonId": "phy-g9-pressure-solid-doc",
+            "name": "Pressure Exerted by Solids",
+            "description": "Hang sandbags on a thin wire and relate force to the time to cut through soap.",
+            "order": 2,
             "isActive": True,
         },
     },

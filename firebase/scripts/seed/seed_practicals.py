@@ -47,6 +47,25 @@ PRACTICALS = [
         },
     },
     {
+        "id": "grade9_pressure_solid",
+        "data": {
+            "title": "Pressure Exerted by Solids",
+            "grade": 9,
+            "lessonId": "phy-g9-pressure-solid-doc",
+            "topicId": "topic-g9-pressure-solid",
+            "description": "Hang sandbags on a thin wire and time how fast it cuts through a cake of soap.",
+            "unitySceneId": "PressureExertedBySolid",
+            "unityBuildUrl": "",
+            "maxScore": 100,
+            "durationSeconds": 600,
+            "demoAllowed": True,
+            "demoMaxAttempts": 10,
+            "practicalMaxAttempts": 3,
+            "isActive": True,
+            "order": 1,
+        },
+    },
+    {
         "id": "grade9_density_water",
         "data": {
             "title": "Density of Water 1",

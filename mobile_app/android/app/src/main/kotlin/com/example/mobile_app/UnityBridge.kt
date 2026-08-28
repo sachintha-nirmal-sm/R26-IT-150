@@ -25,6 +25,23 @@ object UnityBridge {
     private val main = Handler(Looper.getMainLooper())
 
     @JvmStatic
+    fun deliverSession(sessionJson: String) {
+        main.postDelayed({
+            try {
+                val unityPlayer = Class.forName("com.unity3d.player.UnityPlayer")
+                val send = unityPlayer.getMethod(
+                    "UnitySendMessage",
+                    String::class.java,
+                    String::class.java,
+                    String::class.java,
+                )
+                send.invoke(null, "FlutterBridge", "ReceiveSession", sessionJson)
+            } catch (_: Exception) {
+            }
+        }, 1200)
+    }
+
+    @JvmStatic
     fun takePendingSession(): String? {
         val json = pendingSession
         pendingSession = null

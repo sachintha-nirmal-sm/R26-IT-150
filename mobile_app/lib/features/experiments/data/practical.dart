@@ -340,10 +340,31 @@ class LocalPracticals {
     isActive: true,
   );
 
-  static const all = [forceBasic, densityWater];
+  static const pressureSolid = Practical(
+    id: 'grade9_pressure_solid',
+    title: 'Pressure Exerted by Solids',
+    description:
+        'Use a thin wire and sandbags to cut through soap and record Table 5.1.',
+    grade: 9,
+    lessonId: 'phy-g9-pressure-solid-doc',
+    topicId: 'topic-g9-pressure-solid',
+    unitySceneId: 'PressureExertedBySolid',
+    unityBuildUrl: '',
+    maxScore: 100,
+    durationSeconds: 600,
+    demoAllowed: true,
+    demoMaxAttempts: 10,
+    practicalMaxAttempts: 3,
+    order: 1,
+    isActive: true,
+  );
+
+  static const all = [forceBasic, pressureSolid, densityWater];
 
   static List<Practical> forLesson(String? lessonId) {
-    if (lessonId == null || lessonId.isEmpty) return List<Practical>.from(all);
+    if (lessonId == null || lessonId.isEmpty) {
+      return const [forceBasic, pressureSolid];
+    }
     return all.where((item) => item.lessonId == lessonId).toList();
   }
 }

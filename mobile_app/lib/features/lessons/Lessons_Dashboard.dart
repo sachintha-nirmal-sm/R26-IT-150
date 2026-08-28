@@ -45,6 +45,7 @@ class _LessonsDashboardState extends State<LessonsDashboard> {
       'Work, Energy, and Power': 'Discover the concepts of work, energy transformation, and power in physical systems.',
       'Density': 'Measure mass and volume to calculate the density of water.',
       'Basic Concepts Associated with Force': 'See how a push changes the motion of an object and check a = F / m.',
+      'Pressure Exerted by Solid': 'Hang sandbags on a thin wire and time how fast it cuts through soap.',
     };
     return descriptions[title] ?? 'Master the fundamental concepts of this lesson.';
   }
