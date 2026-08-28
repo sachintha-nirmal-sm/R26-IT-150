@@ -17,6 +17,7 @@ class _PracticeExperienceScreenState extends State<PracticeExperienceScreen> {
   int _practiceSeconds = 0;
   int _practiceMilliseconds = 0;
   int _attemptsRemaining = 2;
+  bool _practiceTimerStarted = false;
 
   final List<Map<String, String>> _parameters = [
     {'label': 'Mass', 'value': '2kg', 'icon': '⚖️'},
@@ -28,7 +29,6 @@ class _PracticeExperienceScreenState extends State<PracticeExperienceScreen> {
   void initState() {
     super.initState();
     _startSessionTimer();
-    _startPracticeTimer();
   }
 
   void _startSessionTimer() {
@@ -40,15 +40,18 @@ class _PracticeExperienceScreenState extends State<PracticeExperienceScreen> {
   }
 
   void _startPracticeTimer() {
-    _practiceTimer = Timer.periodic(const Duration(milliseconds: 10), (timer) {
-      setState(() {
-        _practiceMilliseconds += 10;
-        if (_practiceMilliseconds >= 1000) {
-          _practiceSeconds += 1;
-          _practiceMilliseconds = 0;
-        }
+    if (!_practiceTimerStarted) {
+      _practiceTimerStarted = true;
+      _practiceTimer = Timer.periodic(const Duration(milliseconds: 10), (timer) {
+        setState(() {
+          _practiceMilliseconds += 10;
+          if (_practiceMilliseconds >= 1000) {
+            _practiceSeconds += 1;
+            _practiceMilliseconds = 0;
+          }
+        });
       });
-    });
+    }
   }
 
   void _resetPracticeTimer() {
@@ -56,6 +59,10 @@ class _PracticeExperienceScreenState extends State<PracticeExperienceScreen> {
       _practiceSeconds = 0;
       _practiceMilliseconds = 0;
     });
+    if (_practiceTimerStarted) {
+      _practiceTimer.cancel();
+      _practiceTimerStarted = false;
+    }
   }
 
   void _finishPractice() {
@@ -158,7 +165,9 @@ class _PracticeExperienceScreenState extends State<PracticeExperienceScreen> {
   @override
   void dispose() {
     _sessionTimer.cancel();
-    _practiceTimer.cancel();
+    if (_practiceTimerStarted) {
+      _practiceTimer.cancel();
+    }
     super.dispose();
   }
 
@@ -219,7 +228,7 @@ class _PracticeExperienceScreenState extends State<PracticeExperienceScreen> {
       centerTitle: true,
       actions: [
         Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.only(right: 16),
           child: Center(
             child: Text(
               _getSessionTime(),
@@ -229,6 +238,17 @@ class _PracticeExperienceScreenState extends State<PracticeExperienceScreen> {
                 fontWeight: FontWeight.w600,
                 fontFamily: 'Courier New',
               ),
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(right: 16),
+          child: GestureDetector(
+            onTap: () => Navigator.pushNamed(context, "/profile"),
+            child: const CircleAvatar(
+              radius: 18,
+              backgroundColor: Color(0xFFCCCCCC),
+              child: Icon(Icons.person, color: Colors.white, size: 22),
             ),
           ),
         ),
@@ -474,7 +494,7 @@ class _PracticeExperienceScreenState extends State<PracticeExperienceScreen> {
             Expanded(
               flex: 2,
               child: ElevatedButton.icon(
-                onPressed: () {},
+                onPressed: _startPracticeTimer,
                 icon: const Icon(Icons.play_arrow, size: 20),
                 label: const Text('Start Practice'),
                 style: ElevatedButton.styleFrom(
