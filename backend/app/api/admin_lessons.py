@@ -10,7 +10,6 @@ Implements Admin Workflow (Section 3) and Firestore Schema (Section 3.3):
 Restricted to role == "admin" using the require_admin dependency.
 """
 
-import asyncio
 import uuid
 from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, BackgroundTasks
@@ -19,6 +18,7 @@ from pydantic import BaseModel, Field
 
 from app.core.dependencies import VerifiedUser, require_admin
 from app.core.firebase import db, bucket
+from app.rag.ingest import ingest_material
 
 router = APIRouter(prefix="/admin/lessons", tags=["Admin - Lessons"])
 
@@ -284,30 +284,6 @@ async def delete_lesson(
 
 
 # ---------------------------------------------------------------------------
-# Background Task Stub
-# ---------------------------------------------------------------------------
-
-async def stub_rag_ingestion_pipeline(lesson_id: str, material_id: str):
-    """
-    Stub background task that mimics the RAG ingestion pipeline.
-    Later, this will actually chunk the PDF, call the embedding model, and store vectors.
-    """
-    material_ref = db.collection("lessons").document(lesson_id).collection("materials").document(material_id)
-    
-    # Simulate processing time
-    await asyncio.sleep(2)
-    material_ref.update({"ingestionStatus": "chunking"})
-    print(f"[RAG Stub] Material {material_id} status -> chunking")
-    
-    await asyncio.sleep(3)
-    material_ref.update({
-        "ingestionStatus": "embedded",
-        "chunkCount": 12  # Stub chunk count
-    })
-    print(f"[RAG Stub] Material {material_id} status -> embedded")
-
-
-# ---------------------------------------------------------------------------
 # Materials Endpoint
 # ---------------------------------------------------------------------------
 
@@ -371,6 +347,9 @@ async def upload_material(
         "fileSizeBytes": file_size_bytes,
         "ingestionStatus": "uploaded",
         "chunkCount": 0,
+        "uploadedBy": admin.uid,
+        "uploadedAt": now,
+        "lastProcessedAt": None,
         "createdAt": now,
     }
     
@@ -383,7 +362,7 @@ async def upload_material(
     })
     
     # 3. Queue the background RAG ingestion task
-    background_tasks.add_task(stub_rag_ingestion_pipeline, lesson_id, material_id)
+    background_tasks.add_task(ingest_material, lesson_id, material_id)
     
     # Read back to get timestamp
     created_doc = material_ref.get().to_dict()
@@ -397,4 +376,37 @@ async def upload_material(
         ingestionStatus=created_doc["ingestionStatus"],
         chunkCount=created_doc["chunkCount"],
         createdAt=created_doc["createdAt"].isoformat(),
+    )
+
+
+@router.get(
+    "/{lesson_id}/materials/{material_id}/status",
+    response_model=MaterialResponse,
+    summary="Poll RAG ingestion status for a material",
+)
+async def get_material_status(
+    lesson_id: str,
+    material_id: str,
+    admin: VerifiedUser = Depends(require_admin),
+) -> MaterialResponse:
+    material_ref = (
+        db.collection("lessons").document(lesson_id)
+        .collection("materials").document(material_id)
+    )
+    snap = material_ref.get()
+    if not snap.exists:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Material not found.",
+        )
+    data = snap.to_dict() or {}
+    return MaterialResponse(
+        id=material_id,
+        fileName=data.get("fileName", ""),
+        materialType=data.get("materialType", ""),
+        storagePath=data.get("storagePath", ""),
+        fileSizeBytes=data.get("fileSizeBytes", 0),
+        ingestionStatus=data.get("ingestionStatus", "uploaded"),
+        chunkCount=data.get("chunkCount", 0),
+        createdAt=data["createdAt"].isoformat() if data.get("createdAt") else "",
     )

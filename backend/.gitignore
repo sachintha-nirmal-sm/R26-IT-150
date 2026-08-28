@@ -6,3 +6,7 @@ __pycache__/
 venv/
 .env
 .env.*
+serviceAccountKey.json
+**/serviceAccountKey.json
+data/
+*.npy
