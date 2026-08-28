@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "855512404287",
+    "project_id": "physics-learning-platform",
+    "storage_bucket": "physics-learning-platform.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:855512404287:web:c6bec4384f307154a1038a",
+        "android_client_info": {
+          "package_name": "com.example.mobile_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB9PuIPzqUAFxa0N3OQ6te5p33RkL2aaY0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

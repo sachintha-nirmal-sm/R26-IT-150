@@ -1,0 +1,73 @@
+using UnityEngine;
+using UnityEngine.SceneManagement;
+
+/// <summary>
+/// Maps practicalId → Unity scene. Only the selected practical scene is loaded.
+/// </summary>
+[DefaultExecutionOrder(-700)]
+public class PracticalManager : MonoBehaviour
+{
+    public static PracticalManager Instance { get; private set; }
+
+    public static void EnsureLoaded()
+    {
+        if (Instance != null)
+        {
+            return;
+        }
+
+        var go = new GameObject("PracticalManager");
+        go.AddComponent<PracticalManager>();
+        DontDestroyOnLoad(go);
+    }
+
+    private void Awake()
+    {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        Instance = this;
+        DontDestroyOnLoad(gameObject);
+    }
+
+    public string SceneFor(string practicalId, string unitySceneId)
+    {
+        if (!string.IsNullOrEmpty(unitySceneId))
+        {
+            return unitySceneId;
+        }
+
+        string id = (practicalId ?? "").ToLowerInvariant();
+        if (id.Contains("force"))
+        {
+            return "ForceBasicConcepts";
+        }
+
+        return SceneManager.GetActiveScene().name;
+    }
+
+    public void OpenPractical(string practicalId, string unitySceneId)
+    {
+        string scene = SceneFor(practicalId, unitySceneId);
+        if (string.IsNullOrEmpty(scene))
+        {
+            return;
+        }
+
+        if (SceneManager.GetActiveScene().name == scene)
+        {
+            return;
+        }
+
+        Debug.Log("[PracticalManager] loading scene " + scene + " for " + practicalId);
+        SceneManager.LoadScene(scene, LoadSceneMode.Single);
+    }
+
+    public void UnloadToIdle()
+    {
+        // Future practicals can return to a blank bootstrap scene here.
+    }
+}
