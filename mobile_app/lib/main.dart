@@ -1,5 +1,8 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'firebase_options.dart';
 import 'features/experiments/experiments.dart';
+import 'features/experiments/data/practical.dart';
 import 'features/experiments/presentation/screens/practical_home_page.dart';
 import 'features/LessonList/lesson_list_page.dart';
 import 'features/auth/presentation/get_started_page.dart';
@@ -20,7 +23,11 @@ import 'features/scenario-Based Question/scenario_question_screen.dart';
 import 'features/upload-image/upload_image_screen.dart';
 import 'features/games/vector_quest/presentation/pages/vector_quest_game_screen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(const MyApp());
 }
 
@@ -48,9 +55,8 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-    home: const GetStartedPage(),
-    initialRoute: "/get-started",
-    routes: {
+      initialRoute: '/get-started',
+      routes: {
     "/get-started": (context) => const GetStartedPage(),
     "/login": (context) => const LoginPage(),
     "/home": (context) => const PhysicsLabHomePage(),
@@ -65,10 +71,24 @@ class MyApp extends StatelessWidget {
       const ExperimentResultsScreen(),
     "/experiment-execution": (context) =>
       const ExperimentExecutionScreen(),
-    "/experiment-in-progress": (context) =>
-      const ExperimentInProgressScreen(),
-    "/practice-experience": (context) =>
-      const PracticeExperienceScreen(),
+    "/experiment-in-progress": (context) {
+      final args = ModalRoute.of(context)?.settings.arguments;
+      if (args is PracticalRunArgs) {
+        return UnityPlayerScreen(args: args);
+      }
+      return const Scaffold(
+        body: Center(child: Text('Start this practical from Practical Hub.')),
+      );
+    },
+    "/practice-experience": (context) {
+      final args = ModalRoute.of(context)?.settings.arguments;
+      if (args is PracticalRunArgs) {
+        return UnityPlayerScreen(args: args);
+      }
+      return const Scaffold(
+        body: Center(child: Text('Start the trial from Practical Hub.')),
+      );
+    },
     "/scenario-question": (context) => const ScenarioQuestionScreen(),
     "/quiz-complete": (context) => const QuizCompleteScreen(
       completionSeconds: 0,

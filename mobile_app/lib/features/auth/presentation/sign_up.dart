@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/api/api_client.dart';
+import '../data/auth_repository.dart';
+
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
 
@@ -11,8 +14,84 @@ class _SignupScreenState extends State<SignupScreen> {
   static const Color _primaryBlue = Color(0xFF2196F3);
   static const Color _fieldBorder = Color(0xFFE0E0E0);
 
+  final _repo = AuthRepository();
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmController = TextEditingController();
+
   bool _agreedToTerms = false;
+  bool _isLoading = false;
   String? _selectedGrade;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmController.dispose();
+    super.dispose();
+  }
+
+  int? _gradeNumber() {
+    if (_selectedGrade == null) return null;
+    return int.tryParse(_selectedGrade!.replaceAll(RegExp(r'[^0-9]'), ''));
+  }
+
+  Future<void> _signUp() async {
+    final fullName = _nameController.text.trim();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+    final confirm = _confirmController.text;
+    final grade = _gradeNumber();
+
+    if (fullName.isEmpty || email.isEmpty || password.isEmpty) {
+      _showError('Please fill in name, email, and password.');
+      return;
+    }
+    if (password.length < 6) {
+      _showError('Password must be at least 6 characters.');
+      return;
+    }
+    if (password != confirm) {
+      _showError('Passwords do not match.');
+      return;
+    }
+    if (grade == null) {
+      _showError('Please select your grade.');
+      return;
+    }
+    if (!_agreedToTerms) {
+      _showError('Please agree to the Terms and Privacy Policy.');
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      await _repo.signUp(
+        fullName: fullName,
+        email: email,
+        password: password,
+        currentGrade: grade,
+      );
+      if (!mounted) return;
+      Navigator.of(context).pushReplacementNamed('/home');
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      _showError(error.message);
+    } catch (error) {
+      if (!mounted) return;
+      _showError(error.toString());
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -58,20 +137,30 @@ class _SignupScreenState extends State<SignupScreen> {
                 style: TextStyle(color: Colors.grey, fontSize: 16),
               ),
               const SizedBox(height: 40),
-              _buildTextField(Icons.person_outline, 'Full Name'),
+              _buildTextField(
+                Icons.person_outline,
+                'Full Name',
+                controller: _nameController,
+              ),
               const SizedBox(height: 15),
-              _buildTextField(Icons.email_outlined, 'Email Address'),
+              _buildTextField(
+                Icons.email_outlined,
+                'Email Address',
+                controller: _emailController,
+              ),
               const SizedBox(height: 15),
               _buildTextField(
                 Icons.lock_outline,
                 'Password',
                 isPassword: true,
+                controller: _passwordController,
               ),
               const SizedBox(height: 15),
               _buildTextField(
                 Icons.lock_outline,
                 'Confirm Password',
                 isPassword: true,
+                controller: _confirmController,
               ),
               const SizedBox(height: 15),
               _buildDropdownField(),
@@ -115,23 +204,26 @@ class _SignupScreenState extends State<SignupScreen> {
                 width: double.infinity,
                 height: 55,
                 child: ElevatedButton(
-                  onPressed: () {
-                    // Pass selected grade to home page
-                    Navigator.of(context).pushReplacementNamed(
-                      '/home',
-                      arguments: {'grade': _selectedGrade ?? 'Grade 10'},
-                    );
-                  },
+                  onPressed: _isLoading ? null : _signUp,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _primaryBlue,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30),
                     ),
                   ),
-                  child: const Text(
-                    'Sign Up',
-                    style: TextStyle(fontSize: 18, color: Colors.white),
-                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text(
+                          'Sign Up',
+                          style: TextStyle(fontSize: 18, color: Colors.white),
+                        ),
                 ),
               ),
               const SizedBox(height: 30),
@@ -163,8 +255,10 @@ class _SignupScreenState extends State<SignupScreen> {
     IconData icon,
     String hint, {
     bool isPassword = false,
+    required TextEditingController controller,
   }) {
     return TextFormField(
+      controller: controller,
       obscureText: isPassword,
       cursorColor: _primaryBlue,
       decoration: InputDecoration(

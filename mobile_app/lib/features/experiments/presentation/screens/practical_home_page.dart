@@ -1,7 +1,59 @@
 import 'package:flutter/material.dart';
 
-class PracticalHomePage extends StatelessWidget {
-  const PracticalHomePage({super.key});
+import '../../data/practical.dart';
+import '../../data/practicals_repository.dart';
+
+class PracticalHomePage extends StatefulWidget {
+  const PracticalHomePage({super.key, this.lessonId, this.lessonTitle});
+
+  final String? lessonId;
+  final String? lessonTitle;
+
+  @override
+  State<PracticalHomePage> createState() => _PracticalHomePageState();
+}
+
+class _PracticalHomePageState extends State<PracticalHomePage> {
+  final _repo = PracticalsRepository();
+  late Future<List<Practical>> _practicalsFuture;
+  String? _lessonId;
+  String? _lessonTitle;
+  bool _readRouteArgs = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _lessonId = widget.lessonId;
+    _lessonTitle = widget.lessonTitle;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_readRouteArgs) return;
+    _readRouteArgs = true;
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args is Map) {
+      _lessonId = args['lessonId'] as String? ?? _lessonId;
+      _lessonTitle = args['lessonTitle'] as String? ?? _lessonTitle;
+    }
+    _practicalsFuture = _load();
+  }
+
+  Future<List<Practical>> _load() async {
+    final items = await _repo.fetchActiveForCurrentStudent(lessonId: _lessonId);
+    if (items.isNotEmpty) return items;
+    final title = (_lessonTitle ?? '').toLowerCase();
+    if (title.contains('density')) return const [LocalPracticals.densityWater];
+    if (title.contains('force')) return const [LocalPracticals.forceBasic];
+    return LocalPracticals.forLesson(_lessonId);
+  }
+
+  void _reload() {
+    setState(() {
+      _practicalsFuture = _load();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -14,55 +66,89 @@ class PracticalHomePage extends StatelessWidget {
           icon: const Icon(Icons.arrow_back, color: Color(0xFF2196F3)),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Practical Hub',
+        title: Text(
+          _lessonTitle == null || _lessonTitle!.isEmpty
+              ? 'Practical Hub'
+              : '$_lessonTitle practicals',
           style: TextStyle(color: Color(0xFF1A1C1E), fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Interactive Experiments',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1A1C1E)),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Select an experiment to start your virtual lab',
-              style: TextStyle(fontSize: 14, color: Colors.grey),
-            ),
-            const SizedBox(height: 24),
-            _buildVideoCard(
-              context,
-              'Newton\'s Laws of Motion',
-              'Explore the fundamental laws governing the motion of objects.',
-              'assets/images/newton_lab.png',
-              '12:45',
-            ),
-            _buildVideoCard(
-              context,
-              'Friction & Surfaces',
-              'Analyze how different surfaces affect the movement of blocks.',
-              'assets/images/friction_lab.png',
-              '08:30',
-            ),
-            _buildVideoCard(
-              context,
-              'Pendulum Oscillations',
-              'Study the relationship between length and time period.',
-              'assets/images/pendulum_lab.png',
-              '10:15',
-            ),
-          ],
-        ),
+      body: FutureBuilder<List<Practical>>(
+        future: _practicalsFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            final message = snapshot.error.toString();
+            final notSignedIn = message.contains('Sign in required');
+            return _MessageState(
+              icon: notSignedIn ? Icons.lock_outline : Icons.cloud_off,
+              title: notSignedIn ? 'Sign in required' : 'Could not load practicals',
+              subtitle: notSignedIn
+                  ? 'Log in so the backend can load practicals for your grade.'
+                  : message,
+              actionLabel: notSignedIn ? 'Go to login' : 'Retry',
+              onAction: notSignedIn
+                  ? () => Navigator.pushReplacementNamed(context, '/login')
+                  : _reload,
+            );
+          }
+          final practicals = snapshot.data ?? const <Practical>[];
+          if (practicals.isEmpty) {
+            return _MessageState(
+              icon: Icons.science_outlined,
+              title: 'No practicals yet',
+              subtitle: 'No active practicals are published for your grade.',
+              actionLabel: 'Retry',
+              onAction: _reload,
+            );
+          }
+          return ListView(
+            padding: const EdgeInsets.all(20),
+            children: [
+              const Text(
+                'Interactive Experiments',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1A1C1E),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _lessonId == null
+                    ? 'Select an experiment to start your virtual lab'
+                    : 'Related practicals for this lesson',
+                style: const TextStyle(fontSize: 14, color: Colors.grey),
+              ),
+              const SizedBox(height: 24),
+              for (final practical in practicals)
+                _PracticalCard(
+                  practical: practical,
+                  onStart: () => Navigator.pushNamed(
+                    context,
+                    '/experiment-execution',
+                    arguments: practical,
+                  ),
+                ),
+            ],
+          );
+        },
       ),
     );
   }
+}
 
-  Widget _buildVideoCard(BuildContext context, String title, String description, String imagePath, String duration) {
+class _PracticalCard extends StatelessWidget {
+  const _PracticalCard({required this.practical, required this.onStart});
+
+  final Practical practical;
+  final VoidCallback onStart;
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: 24),
       decoration: BoxDecoration(
@@ -70,14 +156,14 @@ class PracticalHomePage extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
         ],
       ),
       child: InkWell(
-        onTap: () => Navigator.pushNamed(context, '/experiment-execution'),
+        onTap: onStart,
         borderRadius: BorderRadius.circular(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -101,19 +187,23 @@ class PracticalHomePage extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.7),
+                      color: Colors.black.withValues(alpha: 0.7),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      duration,
-                      style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                      practical.durationLabel,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
               ],
             ),
             Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
                   Expanded(
@@ -121,12 +211,16 @@ class PracticalHomePage extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          title,
-                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1A1C1E)),
+                          practical.title,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1A1C1E),
+                          ),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          description,
+                          practical.description,
                           style: const TextStyle(fontSize: 13, color: Colors.grey),
                         ),
                       ],
@@ -141,12 +235,62 @@ class PracticalHomePage extends StatelessWidget {
                     ),
                     child: const Text(
                       'Start',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MessageState extends StatelessWidget {
+  const _MessageState({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    this.actionLabel,
+    this.onAction,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 48, color: Colors.grey),
+            const SizedBox(height: 16),
+            Text(
+              title,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.grey),
+            ),
+            if (actionLabel != null && onAction != null) ...[
+              const SizedBox(height: 20),
+              ElevatedButton(onPressed: onAction, child: Text(actionLabel!)),
+            ],
           ],
         ),
       ),

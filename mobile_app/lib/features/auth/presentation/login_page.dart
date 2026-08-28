@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class LoginPage extends StatefulWidget {
@@ -11,6 +12,7 @@ class _LoginPageState extends State<LoginPage> {
   late TextEditingController _emailController;
   late TextEditingController _passwordController;
   bool _obscurePassword = true;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -24,6 +26,66 @@ class _LoginPageState extends State<LoginPage> {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _login() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+    if (email.isEmpty || password.isEmpty) {
+      _showError('Please enter your email and password.');
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      final cred = await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      try {
+        await cred.user?.getIdToken(true);
+      } catch (_) {
+        // Sign-in already succeeded; continue even if token refresh fails.
+      }
+      if (mounted) {
+        Navigator.of(context).pushReplacementNamed('/home');
+      }
+    } on FirebaseAuthException catch (e) {
+      _showError(_friendlyError(e));
+    } catch (error) {
+      _showError(error.toString());
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  String _friendlyError(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'user-not-found':
+        return 'No account found with this email.';
+      case 'wrong-password':
+      case 'invalid-credential':
+      case 'INVALID_LOGIN_CREDENTIALS':
+        return 'Incorrect email or password.';
+      case 'invalid-email':
+        return 'Please enter a valid email address.';
+      case 'user-disabled':
+        return 'This account has been disabled.';
+      case 'too-many-requests':
+        return 'Too many attempts. Please try again later.';
+      case 'network-request-failed':
+        return 'No internet connection. Check Wi-Fi or mobile data.';
+      default:
+        final detail = e.message?.trim();
+        if (detail != null && detail.isNotEmpty) return detail;
+        return 'Login failed (${e.code}).';
+    }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
+    );
   }
 
   @override
@@ -108,7 +170,7 @@ class _LoginPageState extends State<LoginPage> {
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(25),
                           borderSide: BorderSide(
-                            color: const Color.from(alpha: 1, red: 0.129, green: 0.588, blue: 0.953),
+                            color: Colors.blue.shade500,
                             width: 2,
                           ),
                         ),
@@ -201,9 +263,7 @@ class _LoginPageState extends State<LoginPage> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.of(context).pushReplacementNamed('/home');
-                        },
+                        onPressed: _isLoading ? null : _login,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.blue.shade500,
                           padding: const EdgeInsets.symmetric(vertical: 14),
@@ -213,7 +273,7 @@ class _LoginPageState extends State<LoginPage> {
                           elevation: 2,
                         ),
                         child: Text(
-                          'Sign in',
+                          _isLoading ? 'Signing in...' : 'Sign in',
                           style: Theme.of(context).textTheme.labelLarge?.copyWith(
                                 color: Colors.white,
                                 fontSize: 16,
@@ -260,7 +320,9 @@ class _LoginPageState extends State<LoginPage> {
                         onPressed: () {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('Google Sign In...'),
+                              content: Text(
+                                'Google Sign-In is not available. Use email and password.',
+                              ),
                             ),
                           );
                         },
