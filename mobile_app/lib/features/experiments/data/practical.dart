@@ -530,6 +530,82 @@ class LocalPracticals {
     isActive: true,
   );
 
+  static const turningEffect = Practical(
+    id: 'grade10_turning_effect',
+    title: 'Turning effect of a force',
+    description:
+        'Investigate the moment of a force with a clamped stick, newton balance and pivot screw.',
+    grade: 10,
+    lessonId: 'phy-g10-turning-effect-doc',
+    topicId: 'topic-g10-turning-effect',
+    unitySceneId: 'TurningEffectExperiment',
+    unityBuildUrl: '',
+    maxScore: 100,
+    durationSeconds: 600,
+    demoAllowed: true,
+    demoMaxAttempts: 10,
+    practicalMaxAttempts: 3,
+    order: 13,
+    isActive: true,
+  );
+
+  static const equilibriumOfForces = Practical(
+    id: 'grade10_equilibrium',
+    title: 'Equilibrium of Forces',
+    description:
+        'Balance a meter ruler under three coplanar parallel forces and compare F1 + F2 with weight W.',
+    grade: 10,
+    lessonId: 'phy-g10-equilibrium-doc',
+    topicId: 'topic-g10-equilibrium',
+    unitySceneId: 'EquilibriumOfForcesExperiment',
+    unityBuildUrl: '',
+    maxScore: 100,
+    durationSeconds: 600,
+    demoAllowed: true,
+    demoMaxAttempts: 10,
+    practicalMaxAttempts: 3,
+    order: 14,
+    isActive: true,
+  );
+
+  static const wavesApplications = Practical(
+    id: 'grade11_waves',
+    title: 'Waves and their applications',
+    description:
+        'Demonstrate formation of a transverse wave with a slinky and observe ribbon motion.',
+    grade: 11,
+    lessonId: 'phy-g11-waves-doc',
+    topicId: 'topic-g11-waves',
+    unitySceneId: 'WavesApplicationsExperiment',
+    unityBuildUrl: '',
+    maxScore: 100,
+    durationSeconds: 600,
+    demoAllowed: true,
+    demoMaxAttempts: 10,
+    practicalMaxAttempts: 3,
+    order: 15,
+    isActive: true,
+  );
+
+  static const geometricalOptics = Practical(
+    id: 'grade11_geometrical_optics',
+    title: 'Geometrical Optics',
+    description:
+        'Find the focal length of a concave mirror using a distant object and a white screen.',
+    grade: 11,
+    lessonId: 'phy-g11-optics-doc',
+    topicId: 'topic-g11-optics',
+    unitySceneId: 'GeometricalOpticsExperiment',
+    unityBuildUrl: '',
+    maxScore: 100,
+    durationSeconds: 600,
+    demoAllowed: true,
+    demoMaxAttempts: 10,
+    practicalMaxAttempts: 3,
+    order: 16,
+    isActive: true,
+  );
+
   static const all = [
     forceBasic,
     pressureSolid,
@@ -543,6 +619,10 @@ class LocalPracticals {
     newtonsLaws,
     friction,
     resultantForce,
+    turningEffect,
+    equilibriumOfForces,
+    wavesApplications,
+    geometricalOptics,
   ];
 
   static List<Practical> forLesson(String? lessonId) {

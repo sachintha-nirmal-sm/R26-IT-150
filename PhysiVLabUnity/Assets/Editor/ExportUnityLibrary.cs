@@ -60,6 +60,10 @@ public static class PhysiVLabExport
         "Assets/Scenes/NewtonsLawsExperiment.unity",
         "Assets/Scenes/FrictionExperiment.unity",
         "Assets/Scenes/ResultantForceExperiment.unity",
+        "Assets/Scenes/TurningEffectExperiment.unity",
+        "Assets/Scenes/EquilibriumOfForcesExperiment.unity",
+        "Assets/Scenes/WavesApplicationsExperiment.unity",
+        "Assets/Scenes/GeometricalOpticsExperiment.unity",
     };
 
     private static string ExportFolder =>

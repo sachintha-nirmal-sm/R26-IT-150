@@ -114,6 +114,18 @@ public static class ResultantForceSceneSetup
 
         var friction = Object.FindAnyObjectByType<FrictionSceneRuntimeBuilder>();
         if (friction != null) Object.DestroyImmediate(friction.gameObject);
+
+        var turning = Object.FindAnyObjectByType<TurningSceneRuntimeBuilder>();
+        if (turning != null) Object.DestroyImmediate(turning.gameObject);
+
+        var equilibrium = Object.FindAnyObjectByType<EquilibriumSceneRuntimeBuilder>();
+        if (equilibrium != null) Object.DestroyImmediate(equilibrium.gameObject);
+
+        var waves = Object.FindAnyObjectByType<WavesSceneRuntimeBuilder>();
+        if (waves != null) Object.DestroyImmediate(waves.gameObject);
+
+        var optics = Object.FindAnyObjectByType<OpticsSceneRuntimeBuilder>();
+        if (optics != null) Object.DestroyImmediate(optics.gameObject);
     }
 
     private static void EnsureBuildSettings(bool log)

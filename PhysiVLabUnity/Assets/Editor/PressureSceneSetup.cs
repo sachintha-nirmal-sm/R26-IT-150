@@ -118,6 +118,30 @@ public static class PressureSceneSetup
                 Object.DestroyImmediate(resultant.gameObject);
             }
 
+            var turning = Object.FindAnyObjectByType<TurningSceneRuntimeBuilder>();
+            if (turning != null)
+            {
+                Object.DestroyImmediate(turning.gameObject);
+            }
+
+            var equilibrium = Object.FindAnyObjectByType<EquilibriumSceneRuntimeBuilder>();
+            if (equilibrium != null)
+            {
+                Object.DestroyImmediate(equilibrium.gameObject);
+            }
+
+            var waves = Object.FindAnyObjectByType<WavesSceneRuntimeBuilder>();
+            if (waves != null)
+            {
+                Object.DestroyImmediate(waves.gameObject);
+            }
+
+            var optics = Object.FindAnyObjectByType<OpticsSceneRuntimeBuilder>();
+            if (optics != null)
+            {
+                Object.DestroyImmediate(optics.gameObject);
+            }
+
             if (Object.FindAnyObjectByType<PressureSolidPracticalController>() == null)
             {
                 var lab = new GameObject("PressureLab");

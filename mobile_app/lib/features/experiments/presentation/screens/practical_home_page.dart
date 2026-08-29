@@ -53,6 +53,18 @@ class _PracticalHomePageState extends State<PracticalHomePage> {
     if (title.contains('resultant')) {
       return const [LocalPracticals.resultantForce];
     }
+    if (title.contains('turning')) {
+      return const [LocalPracticals.turningEffect];
+    }
+    if (title.contains('equilibrium')) {
+      return const [LocalPracticals.equilibriumOfForces];
+    }
+    if (title.contains('wave') && title.contains('application')) {
+      return const [LocalPracticals.wavesApplications];
+    }
+    if (title.contains('geometrical') || title.contains('optic')) {
+      return const [LocalPracticals.geometricalOptics];
+    }
     if (title.contains('straight') && title.contains('line')) {
       return const [LocalPracticals.motionStraightLine];
     }

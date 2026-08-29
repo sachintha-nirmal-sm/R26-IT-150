@@ -111,12 +111,16 @@ const Map<String, List<LessonItem>> gradeLessons = {
       grade: 'Grade 10',
       duration: '20 mins',
       subtitle: 'Start Lesson',
+      lessonId: 'phy-g10-turning-effect-doc',
+      practicalId: 'grade10_turning_effect',
     ),
     LessonItem(
       title: 'Equilibrium of Forces',
       grade: 'Grade 10',
       duration: '18 mins',
       subtitle: 'Start Lesson',
+      lessonId: 'phy-g10-equilibrium-doc',
+      practicalId: 'grade10_equilibrium',
     ),
     LessonItem(
       title: 'Hydrostatic pressure and its applications',
@@ -149,12 +153,16 @@ const Map<String, List<LessonItem>> gradeLessons = {
       grade: 'Grade 11',
       duration: '22 mins',
       subtitle: 'Start Lesson',
+      lessonId: 'phy-g11-waves-doc',
+      practicalId: 'grade11_waves',
     ),
     LessonItem(
       title: 'Geometrical Optics',
       grade: 'Grade 11',
       duration: '20 mins',
       subtitle: 'Start Lesson',
+      lessonId: 'phy-g11-optics-doc',
+      practicalId: 'grade11_geometrical_optics',
     ),
     LessonItem(
       title: 'Heat',

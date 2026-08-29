@@ -56,6 +56,16 @@ public class PracticalManager : MonoBehaviour
             return "ResultantForceExperiment";
         }
 
+        if (id.Contains("turning") || id.Contains("moment"))
+        {
+            return "TurningEffectExperiment";
+        }
+
+        if (id.Contains("equilibrium"))
+        {
+            return "EquilibriumOfForcesExperiment";
+        }
+
         if (id.Contains("straight_line") || id.Contains("straightline") || id.Contains("motion_straight")
             || (id.Contains("motion") && id.Contains("line")))
         {
@@ -85,6 +95,16 @@ public class PracticalManager : MonoBehaviour
         if (id.Contains("reflection") || id.Contains("prism") || id.Contains("dispersion"))
         {
             return "ReflectionPrismExperiment";
+        }
+
+        if (id.Contains("optics") || id.Contains("geometrical"))
+        {
+            return "GeometricalOpticsExperiment";
+        }
+
+        if (id.Contains("waves"))
+        {
+            return "WavesApplicationsExperiment";
         }
 
         if (id.Contains("density"))
