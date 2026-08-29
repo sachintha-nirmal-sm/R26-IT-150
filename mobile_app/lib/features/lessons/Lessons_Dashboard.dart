@@ -6,6 +6,7 @@ import '../experiments/presentation/screens/experiment_execution_screen.dart';
 import '../games/vector_quest/presentation/pages/vector_quest_game_screen.dart';
 import '../games/lesson_games_screen.dart';
 import 'sub_lessons_screen.dart';
+import 'learning_materials_page.dart';
 
 class LessonsDashboard extends StatefulWidget {
   final String lessonId;
@@ -238,11 +239,25 @@ class _LessonsDashboardState extends State<LessonsDashboard> {
                       bgColor: const Color.fromARGB(255, 210, 235, 255),
                     ),
                   ),
-                  _buildGridCard(
-                    icon: Icons.menu_book_outlined,
-                    label: 'Learning Materials',
-                    iconColor: const Color(0xFF2196F3),
-                    bgColor: const Color.fromARGB(255, 210, 235, 255),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => LearningMaterialsPage(
+                            lessonId: widget.lessonId,
+                            lessonTitle: widget.lessonTitle,
+                            grade: widget.grade,
+                          ),
+                        ),
+                      );
+                    },
+                    child: _buildGridCard(
+                      icon: Icons.menu_book_outlined,
+                      label: 'Learning Materials',
+                      iconColor: const Color(0xFF2196F3),
+                      bgColor: const Color.fromARGB(255, 210, 235, 255),
+                    ),
                   ),
                 ],
               ),

@@ -108,6 +108,7 @@ class MyApp extends StatelessWidget {
 
         "/deep-learn": (context) => const DeepLearningScreen(),
         "/profile": (context) => const ProfileScreen(),
+        "/practical-home": (context) => const ExperimentExecutionScreen(),
         "/experiment-results": (context) => const ExperimentResultsScreen(),
         "/experiment-execution": (context) => const ExperimentExecutionScreen(),
         "/experiment-in-progress": (context) => const ExperimentInProgressScreen(),

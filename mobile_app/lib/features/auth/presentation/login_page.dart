@@ -39,13 +39,16 @@ class _LoginPageState extends State<LoginPage> {
       );
       final uid = credential.user!.uid;
       final userDoc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
-      final role = userDoc.data()?['role'] ?? 'student';
+      final data = userDoc.data() ?? {};
+      final role = data['role'] ?? 'student';
+      final gradeRaw = data['grade'];
+      final gradeInt = (gradeRaw is int) ? gradeRaw : int.tryParse(gradeRaw?.toString() ?? '');
+      final gradeLabel = gradeInt != null ? 'Grade $gradeInt' : 'Grade 10';
       if (mounted) {
         if (role == 'admin') {
           Navigator.of(context).pushReplacementNamed('/admin-dashboard');
         } else {
-          Navigator.of(context).pushReplacementNamed('/home');
-        }
+          Navigator.of(context).pushReplacementNamed('/home', arguments: {'grade': gradeLabel});        }
       }
     } on FirebaseAuthException catch (e) {
       _showError(_friendlyError(e.code));

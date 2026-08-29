@@ -4,28 +4,38 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'admin_lessons_screen.dart';
 import 'admin_students_screen.dart';
 import 'admin_analytics_screen.dart';
+import 'screens/admin_materials_screen.dart';
 
 class AdminDashboard extends StatefulWidget {
-  const AdminDashboard({super.key});
+  final int initialIndex;
+  const AdminDashboard({super.key, this.initialIndex = 0});
 
   @override
   State<AdminDashboard> createState() => _AdminDashboardState();
 }
 
 class _AdminDashboardState extends State<AdminDashboard> {
-  int _selectedIndex = 0;
+  late int _selectedIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedIndex = widget.initialIndex;
+  }
 
   final List<Widget> _screens = [
     const _AdminHomeOverview(),
     const AdminLessonsScreen(),
     const AdminStudentsScreen(),
-    const AdminAnalyticsScreen(),
+    const AdminMaterialsScreen(),  // index 3 — Materials
+    const AdminAnalyticsScreen(),  // index 4 — Analytics
   ];
 
   final List<NavigationDestination> _destinations = const [
     NavigationDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard), label: 'Dashboard'),
     NavigationDestination(icon: Icon(Icons.menu_book_outlined), selectedIcon: Icon(Icons.menu_book), label: 'Lessons'),
     NavigationDestination(icon: Icon(Icons.people_outline), selectedIcon: Icon(Icons.people), label: 'Students'),
+    NavigationDestination(icon: Icon(Icons.folder_outlined), selectedIcon: Icon(Icons.folder), label: 'Materials'),
     NavigationDestination(icon: Icon(Icons.bar_chart_outlined), selectedIcon: Icon(Icons.bar_chart), label: 'Analytics'),
   ];
 

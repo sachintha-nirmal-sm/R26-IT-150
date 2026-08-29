@@ -164,6 +164,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
               _loadData();
             },
           ),
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.red),
+            onPressed: () async {
+              await FirebaseAuth.instance.signOut();
+              if (mounted) {
+                Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+              }
+            },
+          ),
         ],
       ),
       body: _loading

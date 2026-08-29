@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
@@ -330,6 +330,7 @@ class _GradeLessonsViewState extends State<_GradeLessonsView> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: null,
         onPressed: _showCreateDialog,
         backgroundColor: const Color(0xFF1A3CBA),
         icon: const Icon(Icons.add, color: Colors.white),

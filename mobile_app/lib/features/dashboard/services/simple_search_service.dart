@@ -200,6 +200,42 @@ class SimpleSearchService {
   ) async {
     try {
       List<Map<String, dynamic>> materials = [];
+      final String gradeStr = 'Grade $gradeNum';
+
+      // Search lesson_materials
+      try {
+        final materialsSnap = await _firestore
+            .collection('lesson_materials')
+            .where('grade', isEqualTo: gradeStr)
+            .get();
+
+        final lessonMaterials = materialsSnap.docs.where((doc) {
+          final data = doc.data();
+          final title = (data['materialName'] as String? ?? '').toLowerCase();
+          final description = (data['description'] as String? ?? '').toLowerCase();
+          final lessonTitle = (data['lessonTitle'] as String? ?? '').toLowerCase();
+          return title.contains(lowerQuery) || 
+                 description.contains(lowerQuery) ||
+                 lessonTitle.contains(lowerQuery);
+        }).map((doc) {
+          final data = doc.data();
+          return {
+            'id': doc.id,
+            'title': data['materialName'] ?? 'Untitled Material',
+            'description': data['description'] ?? 'Learning material',
+            'type': 'Learning Materials',
+            'subtype': data['materialType'] ?? 'Document',
+            'fileUrl': data['fileUrl'],
+            'lessonId': data['lessonId'] ?? '',
+            'lessonTitle': data['lessonTitle'] ?? '',
+            'grade': gradeStr,
+          };
+        }).toList();
+
+        materials.addAll(lessonMaterials);
+      } catch (e) {
+        print('⚠️ Error searching lesson_materials: $e');
+      }
 
       // Search experiments
       try {

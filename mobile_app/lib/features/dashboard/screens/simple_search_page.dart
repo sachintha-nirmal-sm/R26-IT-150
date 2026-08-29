@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/simple_search_service.dart';
 import '../../lessons/Lessons_Dashboard.dart';
+import '../../lessons/learning_materials_page.dart';
 
 class SimpleSearchPage extends StatefulWidget {
   final String grade;
@@ -210,10 +211,21 @@ class _SimpleSearchPageState extends State<SimpleSearchPage> {
     if (type == 'Learning Materials') {
       final subtype = result['subtype'] as String?;
       print('📚 Navigating to learning material: ${result['title']} ($subtype)');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Opening ${result['title']}...')),
+      
+      final String lessonId = result['lessonId'] ?? '';
+      final String lessonTitle = result['lessonTitle'] ?? 'Materials';
+      final String grade = result['grade'] ?? widget.grade;
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => LearningMaterialsPage(
+            lessonId: lessonId,
+            lessonTitle: lessonTitle,
+            grade: grade,
+          ),
+        ),
       );
-      // TODO: Implement navigation to learning materials
       return;
     }
 
