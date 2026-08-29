@@ -101,6 +101,12 @@ public static class ForceSceneSetup
         {
             Object.DestroyImmediate(hydrostatic.gameObject);
         }
+
+        var wep = Object.FindAnyObjectByType<WorkEnergyPowerSceneRuntimeBuilder>();
+        if (wep != null)
+        {
+            Object.DestroyImmediate(wep.gameObject);
+        }
     }
 
     private static void EnsureBuildSettings(bool log)

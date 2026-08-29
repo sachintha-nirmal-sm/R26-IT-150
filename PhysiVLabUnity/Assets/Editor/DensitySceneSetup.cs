@@ -82,6 +82,12 @@ public static class DensitySceneSetup
                 Object.DestroyImmediate(hydrostatic.gameObject);
             }
 
+            var wep = Object.FindAnyObjectByType<WorkEnergyPowerSceneRuntimeBuilder>();
+            if (wep != null)
+            {
+                Object.DestroyImmediate(wep.gameObject);
+            }
+
             if (Object.FindAnyObjectByType<DensityWaterPracticalController>() == null)
             {
                 var lab = new GameObject("DensityLab");

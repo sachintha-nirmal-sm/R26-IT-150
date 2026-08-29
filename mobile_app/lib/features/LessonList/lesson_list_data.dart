@@ -123,6 +123,8 @@ const Map<String, List<LessonItem>> gradeLessons = {
       grade: 'Grade 10',
       duration: '20 mins',
       subtitle: 'Start Lesson',
+      lessonId: 'phy-g10-work-energy-doc',
+      practicalId: 'grade10_work_energy_power',
     ),
     LessonItem(
       title: 'Current electricity',

@@ -46,6 +46,9 @@ class _PracticalHomePageState extends State<PracticalHomePage> {
     final title = (_lessonTitle ?? '').toLowerCase();
     if (title.contains('density')) return const [LocalPracticals.densityWater];
     if (title.contains('force')) return const [LocalPracticals.forceBasic];
+    if (title.contains('work') && title.contains('energy')) {
+      return const [LocalPracticals.workEnergyPower];
+    }
     if (title.contains('hydrostatic') ||
         title.contains('upthrust') ||
         title.contains('archimedes')) {

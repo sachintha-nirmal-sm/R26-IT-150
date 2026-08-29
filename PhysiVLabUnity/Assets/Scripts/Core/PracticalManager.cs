@@ -41,6 +41,11 @@ public class PracticalManager : MonoBehaviour
         }
 
         string id = (practicalId ?? "").ToLowerInvariant();
+        if (id.Contains("work") || id.Contains("energy_power") || id.Contains("work_energy"))
+        {
+            return "WorkEnergyPowerExperiment";
+        }
+
         if (id.Contains("hydrostatic") || id.Contains("upthrust") || id.Contains("archimedes"))
         {
             return "HydrostaticPressureExperiment";

@@ -96,6 +96,9 @@ public static class LeverSceneSetup
 
         var hydrostatic = Object.FindAnyObjectByType<UpthrustSceneRuntimeBuilder>();
         if (hydrostatic != null) Object.DestroyImmediate(hydrostatic.gameObject);
+
+        var wep = Object.FindAnyObjectByType<WorkEnergyPowerSceneRuntimeBuilder>();
+        if (wep != null) Object.DestroyImmediate(wep.gameObject);
     }
 
     private static void EnsureBuildSettings(bool log)

@@ -416,6 +416,25 @@ class LocalPracticals {
     isActive: true,
   );
 
+  static const workEnergyPower = Practical(
+    id: 'grade10_work_energy_power',
+    title: 'Work, energy and power',
+    description:
+        'Drop a weight onto clay from different heights and relate potential energy, work and power.',
+    grade: 10,
+    lessonId: 'phy-g10-work-energy-doc',
+    topicId: 'topic-g10-work-energy',
+    unitySceneId: 'WorkEnergyPowerExperiment',
+    unityBuildUrl: '',
+    maxScore: 100,
+    durationSeconds: 600,
+    demoAllowed: true,
+    demoMaxAttempts: 10,
+    practicalMaxAttempts: 3,
+    order: 7,
+    isActive: true,
+  );
+
   static const all = [
     forceBasic,
     pressureSolid,
@@ -423,6 +442,7 @@ class LocalPracticals {
     reflectionPrism,
     leverActivity,
     hydrostaticPressure,
+    workEnergyPower,
   ];
 
   static List<Practical> forLesson(String? lessonId) {

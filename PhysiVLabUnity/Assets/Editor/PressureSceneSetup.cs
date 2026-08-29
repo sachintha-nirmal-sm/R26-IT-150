@@ -82,6 +82,12 @@ public static class PressureSceneSetup
                 Object.DestroyImmediate(hydrostatic.gameObject);
             }
 
+            var wep = Object.FindAnyObjectByType<WorkEnergyPowerSceneRuntimeBuilder>();
+            if (wep != null)
+            {
+                Object.DestroyImmediate(wep.gameObject);
+            }
+
             if (Object.FindAnyObjectByType<PressureSolidPracticalController>() == null)
             {
                 var lab = new GameObject("PressureLab");

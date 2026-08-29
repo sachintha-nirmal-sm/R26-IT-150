@@ -103,6 +103,12 @@ public static class ReflectionSceneSetup
         {
             Object.DestroyImmediate(hydrostatic.gameObject);
         }
+
+        var wep = Object.FindAnyObjectByType<WorkEnergyPowerSceneRuntimeBuilder>();
+        if (wep != null)
+        {
+            Object.DestroyImmediate(wep.gameObject);
+        }
     }
 
     private static void EnsureBuildSettings(bool log)
