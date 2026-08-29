@@ -51,6 +51,11 @@ public class PracticalManager : MonoBehaviour
             return "FrictionExperiment";
         }
 
+        if (id.Contains("resultant"))
+        {
+            return "ResultantForceExperiment";
+        }
+
         if (id.Contains("straight_line") || id.Contains("straightline") || id.Contains("motion_straight")
             || (id.Contains("motion") && id.Contains("line")))
         {

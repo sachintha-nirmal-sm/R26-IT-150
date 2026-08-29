@@ -112,6 +112,12 @@ public static class DensitySceneSetup
                 Object.DestroyImmediate(friction.gameObject);
             }
 
+            var resultant = Object.FindAnyObjectByType<ResultantSceneRuntimeBuilder>();
+            if (resultant != null)
+            {
+                Object.DestroyImmediate(resultant.gameObject);
+            }
+
             if (Object.FindAnyObjectByType<DensityWaterPracticalController>() == null)
             {
                 var lab = new GameObject("DensityLab");

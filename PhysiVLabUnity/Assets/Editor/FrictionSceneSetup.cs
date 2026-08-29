@@ -111,6 +111,9 @@ public static class FrictionSceneSetup
 
         var newton = Object.FindAnyObjectByType<NewtonsLawsSceneRuntimeBuilder>();
         if (newton != null) Object.DestroyImmediate(newton.gameObject);
+
+        var resultant = Object.FindAnyObjectByType<ResultantSceneRuntimeBuilder>();
+        if (resultant != null) Object.DestroyImmediate(resultant.gameObject);
     }
 
     private static void EnsureBuildSettings(bool log)

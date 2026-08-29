@@ -511,6 +511,25 @@ class LocalPracticals {
     isActive: true,
   );
 
+  static const resultantForce = Practical(
+    id: 'grade10_resultant_force',
+    title: 'Resultant force',
+    description:
+        'Find the resultant of two forces with spring balances, a trolley and pulleys.',
+    grade: 10,
+    lessonId: 'phy-g10-resultant-force-doc',
+    topicId: 'topic-g10-resultant-force',
+    unitySceneId: 'ResultantForceExperiment',
+    unityBuildUrl: '',
+    maxScore: 100,
+    durationSeconds: 600,
+    demoAllowed: true,
+    demoMaxAttempts: 10,
+    practicalMaxAttempts: 3,
+    order: 12,
+    isActive: true,
+  );
+
   static const all = [
     forceBasic,
     pressureSolid,
@@ -523,6 +542,7 @@ class LocalPracticals {
     motionStraightLine,
     newtonsLaws,
     friction,
+    resultantForce,
   ];
 
   static List<Practical> forLesson(String? lessonId) {

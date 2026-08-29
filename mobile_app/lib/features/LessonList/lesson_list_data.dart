@@ -103,6 +103,8 @@ const Map<String, List<LessonItem>> gradeLessons = {
       grade: 'Grade 10',
       duration: '18 mins',
       subtitle: 'Start Lesson',
+      lessonId: 'phy-g10-resultant-force-doc',
+      practicalId: 'grade10_resultant_force',
     ),
     LessonItem(
       title: 'Turning effect of a force',

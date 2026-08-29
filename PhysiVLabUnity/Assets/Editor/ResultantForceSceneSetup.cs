@@ -7,23 +7,23 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 
 /// <summary>
-/// Creates Assets/Scenes/HydrostaticPressureExperiment.unity.
-/// Menu: Tools → PhysiVLab → Create Hydrostatic Scene
+/// Creates Assets/Scenes/ResultantForceExperiment.unity.
+/// Menu: Tools → PhysiVLab → Create Resultant Force Scene
 /// </summary>
 [InitializeOnLoad]
-public static class HydrostaticSceneSetup
+public static class ResultantForceSceneSetup
 {
-    private const string ScenePath = "Assets/Scenes/HydrostaticPressureExperiment.unity";
+    private const string ScenePath = "Assets/Scenes/ResultantForceExperiment.unity";
     private const string SamplePath = "Assets/Scenes/SampleScene.unity";
     private const string ForcePath = "Assets/Scenes/ForceBasicConcepts.unity";
 
-    static HydrostaticSceneSetup()
+    static ResultantForceSceneSetup()
     {
         EditorApplication.delayCall += () => EnsureBuildSettings(false);
     }
 
-    [MenuItem("Tools/PhysiVLab/Create Hydrostatic Scene")]
-    public static void CreateHydrostaticSceneMenu()
+    [MenuItem("Tools/PhysiVLab/Create Resultant Force Scene")]
+    public static void CreateResultantForceSceneMenu()
     {
         CreateOrRepair(true);
     }
@@ -53,18 +53,18 @@ public static class HydrostaticSceneSetup
         {
             var opened = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
             StripOtherLabs();
-            var root = Object.FindAnyObjectByType<UpthrustSceneRuntimeBuilder>();
+            var root = Object.FindAnyObjectByType<ResultantSceneRuntimeBuilder>();
             if (root == null)
             {
-                var lab = new GameObject("HydrostaticLab");
-                lab.AddComponent<UpthrustSceneRuntimeBuilder>();
-                lab.AddComponent<UpthrustRuntimeBootstrap>();
+                var lab = new GameObject("ResultantForceLab");
+                lab.AddComponent<ResultantSceneRuntimeBuilder>();
+                lab.AddComponent<ResultantRuntimeBootstrap>();
                 EditorSceneManager.MarkSceneDirty(opened);
                 EditorSceneManager.SaveScene(opened);
             }
-            else if (root.GetComponent<UpthrustRuntimeBootstrap>() == null)
+            else if (root.GetComponent<ResultantRuntimeBootstrap>() == null)
             {
-                root.gameObject.AddComponent<UpthrustRuntimeBootstrap>();
+                root.gameObject.AddComponent<ResultantRuntimeBootstrap>();
                 EditorSceneManager.MarkSceneDirty(opened);
                 EditorSceneManager.SaveScene(opened);
             }
@@ -75,7 +75,7 @@ public static class HydrostaticSceneSetup
         {
             EditorUtility.DisplayDialog(
                 "PhysiVLab",
-                "Hydrostatic scene is ready:\n" + ScenePath + "\n\nPress Play in Unity to try the lab.",
+                "Resultant force scene is ready:\n" + ScenePath + "\n\nPress Play in Unity to try the lab.",
                 "OK");
         }
     }
@@ -97,6 +97,9 @@ public static class HydrostaticSceneSetup
         var lever = Object.FindAnyObjectByType<LeverSceneRuntimeBuilder>();
         if (lever != null) Object.DestroyImmediate(lever.gameObject);
 
+        var hydrostatic = Object.FindAnyObjectByType<UpthrustSceneRuntimeBuilder>();
+        if (hydrostatic != null) Object.DestroyImmediate(hydrostatic.gameObject);
+
         var wep = Object.FindAnyObjectByType<WorkEnergyPowerSceneRuntimeBuilder>();
         if (wep != null) Object.DestroyImmediate(wep.gameObject);
 
@@ -111,9 +114,6 @@ public static class HydrostaticSceneSetup
 
         var friction = Object.FindAnyObjectByType<FrictionSceneRuntimeBuilder>();
         if (friction != null) Object.DestroyImmediate(friction.gameObject);
-
-        var resultant = Object.FindAnyObjectByType<ResultantSceneRuntimeBuilder>();
-        if (resultant != null) Object.DestroyImmediate(resultant.gameObject);
     }
 
     private static void EnsureBuildSettings(bool log)

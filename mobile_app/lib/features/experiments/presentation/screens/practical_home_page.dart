@@ -50,6 +50,9 @@ class _PracticalHomePageState extends State<PracticalHomePage> {
     if (title.contains('friction')) {
       return const [LocalPracticals.friction];
     }
+    if (title.contains('resultant')) {
+      return const [LocalPracticals.resultantForce];
+    }
     if (title.contains('straight') && title.contains('line')) {
       return const [LocalPracticals.motionStraightLine];
     }
