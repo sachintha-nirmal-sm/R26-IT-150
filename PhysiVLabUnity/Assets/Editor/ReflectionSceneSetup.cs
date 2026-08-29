@@ -7,23 +7,23 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 
 /// <summary>
-/// Creates Assets/Scenes/PressureExertedBySolid.unity.
-/// Menu: Tools → PhysiVLab → Create Pressure Scene
+/// Creates Assets/Scenes/ReflectionPrismExperiment.unity.
+/// Menu: Tools → PhysiVLab → Create Reflection Scene
 /// </summary>
 [InitializeOnLoad]
-public static class PressureSceneSetup
+public static class ReflectionSceneSetup
 {
-    private const string ScenePath = "Assets/Scenes/PressureExertedBySolid.unity";
+    private const string ScenePath = "Assets/Scenes/ReflectionPrismExperiment.unity";
     private const string SamplePath = "Assets/Scenes/SampleScene.unity";
     private const string ForcePath = "Assets/Scenes/ForceBasicConcepts.unity";
 
-    static PressureSceneSetup()
+    static ReflectionSceneSetup()
     {
         EditorApplication.delayCall += () => EnsureBuildSettings(false);
     }
 
-    [MenuItem("Tools/PhysiVLab/Create Pressure Scene")]
-    public static void CreatePressureSceneMenu()
+    [MenuItem("Tools/PhysiVLab/Create Reflection Scene")]
+    public static void CreateReflectionSceneMenu()
     {
         CreateOrRepair(true);
     }
@@ -52,40 +52,11 @@ public static class PressureSceneSetup
         if (interactive)
         {
             var opened = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
-            var force = Object.FindAnyObjectByType<ForcePracticalController>();
-            if (force != null)
+            StripOtherLabs();
+            if (Object.FindAnyObjectByType<PrismSceneRuntimeBuilder>() == null)
             {
-                Object.DestroyImmediate(force.gameObject);
-            }
-
-            var density = Object.FindAnyObjectByType<DensityWaterPracticalController>();
-            if (density != null)
-            {
-                Object.DestroyImmediate(density.gameObject);
-            }
-
-            var reflection = Object.FindAnyObjectByType<PrismSceneRuntimeBuilder>();
-            if (reflection != null)
-            {
-                Object.DestroyImmediate(reflection.gameObject);
-            }
-
-            var lever = Object.FindAnyObjectByType<LeverSceneRuntimeBuilder>();
-            if (lever != null)
-            {
-                Object.DestroyImmediate(lever.gameObject);
-            }
-
-            var hydrostatic = Object.FindAnyObjectByType<UpthrustSceneRuntimeBuilder>();
-            if (hydrostatic != null)
-            {
-                Object.DestroyImmediate(hydrostatic.gameObject);
-            }
-
-            if (Object.FindAnyObjectByType<PressureSolidPracticalController>() == null)
-            {
-                var lab = new GameObject("PressureLab");
-                lab.AddComponent<PressureSolidPracticalController>();
+                var lab = new GameObject("ReflectionLab");
+                lab.AddComponent<PrismSceneRuntimeBuilder>();
                 EditorSceneManager.MarkSceneDirty(opened);
                 EditorSceneManager.SaveScene(opened);
             }
@@ -96,8 +67,41 @@ public static class PressureSceneSetup
         {
             EditorUtility.DisplayDialog(
                 "PhysiVLab",
-                "Pressure scene is ready:\n" + ScenePath + "\n\nPress Play in Unity to try the lab.",
+                "Reflection scene is ready:\n" + ScenePath + "\n\nPress Play in Unity to try the lab.",
                 "OK");
+        }
+    }
+
+    private static void StripOtherLabs()
+    {
+        var force = Object.FindAnyObjectByType<ForcePracticalController>();
+        if (force != null)
+        {
+            Object.DestroyImmediate(force.gameObject);
+        }
+
+        var pressure = Object.FindAnyObjectByType<PressureSolidPracticalController>();
+        if (pressure != null)
+        {
+            Object.DestroyImmediate(pressure.gameObject);
+        }
+
+        var density = Object.FindAnyObjectByType<DensityWaterPracticalController>();
+        if (density != null)
+        {
+            Object.DestroyImmediate(density.gameObject);
+        }
+
+        var lever = Object.FindAnyObjectByType<LeverSceneRuntimeBuilder>();
+        if (lever != null)
+        {
+            Object.DestroyImmediate(lever.gameObject);
+        }
+
+        var hydrostatic = Object.FindAnyObjectByType<UpthrustSceneRuntimeBuilder>();
+        if (hydrostatic != null)
+        {
+            Object.DestroyImmediate(hydrostatic.gameObject);
         }
     }
 
