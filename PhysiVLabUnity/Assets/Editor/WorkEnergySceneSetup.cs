@@ -99,6 +99,15 @@ public static class WorkEnergySceneSetup
 
         var hydrostatic = Object.FindAnyObjectByType<UpthrustSceneRuntimeBuilder>();
         if (hydrostatic != null) Object.DestroyImmediate(hydrostatic.gameObject);
+
+        var elec = Object.FindAnyObjectByType<CurrentElectricitySceneRuntimeBuilder>();
+        if (elec != null) Object.DestroyImmediate(elec.gameObject);
+
+        var motion = Object.FindAnyObjectByType<MotionSceneRuntimeBuilder>();
+        if (motion != null) Object.DestroyImmediate(motion.gameObject);
+
+        var newton = Object.FindAnyObjectByType<NewtonsLawsSceneRuntimeBuilder>();
+        if (newton != null) Object.DestroyImmediate(newton.gameObject);
     }
 
     private static void EnsureBuildSettings(bool log)

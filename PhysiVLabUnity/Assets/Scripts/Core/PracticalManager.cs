@@ -41,6 +41,22 @@ public class PracticalManager : MonoBehaviour
         }
 
         string id = (practicalId ?? "").ToLowerInvariant();
+        if (id.Contains("newton"))
+        {
+            return "NewtonsLawsExperiment";
+        }
+
+        if (id.Contains("straight_line") || id.Contains("straightline") || id.Contains("motion_straight")
+            || (id.Contains("motion") && id.Contains("line")))
+        {
+            return "MotionStraightLineExperiment";
+        }
+
+        if (id.Contains("current_electric") || id.Contains("currentelectricity") || id.Contains("circuit"))
+        {
+            return "CurrentElectricityExperiment";
+        }
+
         if (id.Contains("work") || id.Contains("energy_power") || id.Contains("work_energy"))
         {
             return "WorkEnergyPowerExperiment";

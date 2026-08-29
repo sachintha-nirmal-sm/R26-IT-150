@@ -79,12 +79,16 @@ const Map<String, List<LessonItem>> gradeLessons = {
       grade: 'Grade 10',
       duration: '25 mins',
       subtitle: 'Start Lesson',
+      lessonId: 'phy-g10-motion-straight-doc',
+      practicalId: 'grade10_motion_straight_line',
     ),
     LessonItem(
       title: "Newton's laws of motion",
       grade: 'Grade 10',
       duration: '22 mins',
       subtitle: 'Start Lesson',
+      lessonId: 'phy-g10-newtons-laws-doc',
+      practicalId: 'grade10_newtons_laws',
     ),
     LessonItem(
       title: 'Friction',
@@ -131,6 +135,8 @@ const Map<String, List<LessonItem>> gradeLessons = {
       grade: 'Grade 10',
       duration: '25 mins',
       subtitle: 'Start Lesson',
+      lessonId: 'phy-g10-current-electricity-doc',
+      practicalId: 'grade10_current_electricity',
     ),
   ],
   'Grade 11': [

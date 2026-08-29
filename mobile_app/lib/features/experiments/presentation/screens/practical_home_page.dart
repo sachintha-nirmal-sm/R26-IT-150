@@ -44,6 +44,15 @@ class _PracticalHomePageState extends State<PracticalHomePage> {
     final items = await _repo.fetchActiveForCurrentStudent(lessonId: _lessonId);
     if (items.isNotEmpty) return items;
     final title = (_lessonTitle ?? '').toLowerCase();
+    if (title.contains('newton')) {
+      return const [LocalPracticals.newtonsLaws];
+    }
+    if (title.contains('straight') && title.contains('line')) {
+      return const [LocalPracticals.motionStraightLine];
+    }
+    if (title.contains('current') && title.contains('electricity')) {
+      return const [LocalPracticals.currentElectricity];
+    }
     if (title.contains('density')) return const [LocalPracticals.densityWater];
     if (title.contains('force')) return const [LocalPracticals.forceBasic];
     if (title.contains('work') && title.contains('energy')) {

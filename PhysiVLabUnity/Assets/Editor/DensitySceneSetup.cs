@@ -88,6 +88,24 @@ public static class DensitySceneSetup
                 Object.DestroyImmediate(wep.gameObject);
             }
 
+            var elec = Object.FindAnyObjectByType<CurrentElectricitySceneRuntimeBuilder>();
+            if (elec != null)
+            {
+                Object.DestroyImmediate(elec.gameObject);
+            }
+
+            var motion = Object.FindAnyObjectByType<MotionSceneRuntimeBuilder>();
+            if (motion != null)
+            {
+                Object.DestroyImmediate(motion.gameObject);
+            }
+
+            var newton = Object.FindAnyObjectByType<NewtonsLawsSceneRuntimeBuilder>();
+            if (newton != null)
+            {
+                Object.DestroyImmediate(newton.gameObject);
+            }
+
             if (Object.FindAnyObjectByType<DensityWaterPracticalController>() == null)
             {
                 var lab = new GameObject("DensityLab");

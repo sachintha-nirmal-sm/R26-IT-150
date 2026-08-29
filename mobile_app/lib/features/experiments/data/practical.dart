@@ -435,6 +435,63 @@ class LocalPracticals {
     isActive: true,
   );
 
+  static const currentElectricity = Practical(
+    id: 'grade10_current_electricity',
+    title: 'Current electricity',
+    description:
+        'Build circuits with two dry cells and compare series, parallel and opposing connections.',
+    grade: 10,
+    lessonId: 'phy-g10-current-electricity-doc',
+    topicId: 'topic-g10-current-electricity',
+    unitySceneId: 'CurrentElectricityExperiment',
+    unityBuildUrl: '',
+    maxScore: 100,
+    durationSeconds: 600,
+    demoAllowed: true,
+    demoMaxAttempts: 10,
+    practicalMaxAttempts: 3,
+    order: 8,
+    isActive: true,
+  );
+
+  static const motionStraightLine = Practical(
+    id: 'grade10_motion_straight_line',
+    title: 'Motion in a straight line',
+    description:
+        'Time a toy car on a track and compare distance, displacement, speed, velocity and acceleration.',
+    grade: 10,
+    lessonId: 'phy-g10-motion-straight-doc',
+    topicId: 'topic-g10-motion-straight',
+    unitySceneId: 'MotionStraightLineExperiment',
+    unityBuildUrl: '',
+    maxScore: 100,
+    durationSeconds: 600,
+    demoAllowed: true,
+    demoMaxAttempts: 10,
+    practicalMaxAttempts: 3,
+    order: 9,
+    isActive: true,
+  );
+
+  static const newtonsLaws = Practical(
+    id: 'grade10_newtons_laws',
+    title: "Newton's laws of motion",
+    description:
+        "Investigate Newton's first, second and third laws with a trolley, pulley and spring balance.",
+    grade: 10,
+    lessonId: 'phy-g10-newtons-laws-doc',
+    topicId: 'topic-g10-newtons-laws',
+    unitySceneId: 'NewtonsLawsExperiment',
+    unityBuildUrl: '',
+    maxScore: 100,
+    durationSeconds: 600,
+    demoAllowed: true,
+    demoMaxAttempts: 10,
+    practicalMaxAttempts: 3,
+    order: 10,
+    isActive: true,
+  );
+
   static const all = [
     forceBasic,
     pressureSolid,
@@ -443,6 +500,9 @@ class LocalPracticals {
     leverActivity,
     hydrostaticPressure,
     workEnergyPower,
+    currentElectricity,
+    motionStraightLine,
+    newtonsLaws,
   ];
 
   static List<Practical> forLesson(String? lessonId) {

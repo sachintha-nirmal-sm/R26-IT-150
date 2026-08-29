@@ -55,6 +55,9 @@ public static class PhysiVLabExport
         "Assets/Scenes/LeverActivity15_1.unity",
         "Assets/Scenes/HydrostaticPressureExperiment.unity",
         "Assets/Scenes/WorkEnergyPowerExperiment.unity",
+        "Assets/Scenes/CurrentElectricityExperiment.unity",
+        "Assets/Scenes/MotionStraightLineExperiment.unity",
+        "Assets/Scenes/NewtonsLawsExperiment.unity",
     };
 
     private static string ExportFolder =>
