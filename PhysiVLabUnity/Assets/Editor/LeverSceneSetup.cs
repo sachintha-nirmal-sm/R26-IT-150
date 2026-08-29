@@ -7,22 +7,23 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 
 /// <summary>
-/// Creates Assets/Scenes/ForceBasicConcepts.unity and adds it to Build Settings.
-/// Menu: Tools → PhysiVLab → Create Force Scene
+/// Creates Assets/Scenes/LeverActivity15_1.unity.
+/// Menu: Tools → PhysiVLab → Create Lever Scene
 /// </summary>
 [InitializeOnLoad]
-public static class ForceSceneSetup
+public static class LeverSceneSetup
 {
-    private const string ScenePath = "Assets/Scenes/ForceBasicConcepts.unity";
+    private const string ScenePath = "Assets/Scenes/LeverActivity15_1.unity";
     private const string SamplePath = "Assets/Scenes/SampleScene.unity";
+    private const string ForcePath = "Assets/Scenes/ForceBasicConcepts.unity";
 
-    static ForceSceneSetup()
+    static LeverSceneSetup()
     {
         EditorApplication.delayCall += () => EnsureBuildSettings(false);
     }
 
-    [MenuItem("Tools/PhysiVLab/Create Force Scene")]
-    public static void CreateForceSceneMenu()
+    [MenuItem("Tools/PhysiVLab/Create Lever Scene")]
+    public static void CreateLeverSceneMenu()
     {
         CreateOrRepair(true);
     }
@@ -33,9 +34,10 @@ public static class ForceSceneSetup
 
         if (!File.Exists(ScenePath))
         {
-            if (File.Exists(SamplePath))
+            string source = File.Exists(ForcePath) ? ForcePath : SamplePath;
+            if (File.Exists(source))
             {
-                AssetDatabase.CopyAsset(SamplePath, ScenePath);
+                AssetDatabase.CopyAsset(source, ScenePath);
             }
             else
             {
@@ -51,10 +53,18 @@ public static class ForceSceneSetup
         {
             var opened = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
             StripOtherLabs();
-            if (Object.FindAnyObjectByType<ForcePracticalController>() == null)
+            var root = Object.FindAnyObjectByType<LeverSceneRuntimeBuilder>();
+            if (root == null)
             {
-                var lab = new GameObject("ForceLab");
-                lab.AddComponent<ForcePracticalController>();
+                var lab = new GameObject("LeverLab");
+                lab.AddComponent<LeverSceneRuntimeBuilder>();
+                lab.AddComponent<LeverRuntimeBootstrap>();
+                EditorSceneManager.MarkSceneDirty(opened);
+                EditorSceneManager.SaveScene(opened);
+            }
+            else if (root.GetComponent<LeverRuntimeBootstrap>() == null)
+            {
+                root.gameObject.AddComponent<LeverRuntimeBootstrap>();
                 EditorSceneManager.MarkSceneDirty(opened);
                 EditorSceneManager.SaveScene(opened);
             }
@@ -65,42 +75,27 @@ public static class ForceSceneSetup
         {
             EditorUtility.DisplayDialog(
                 "PhysiVLab",
-                "Force scene is ready:\n" + ScenePath + "\n\nPress Play in Unity to try the lab.",
+                "Lever scene is ready:\n" + ScenePath + "\n\nPress Play in Unity to try the lab.",
                 "OK");
         }
     }
 
     private static void StripOtherLabs()
     {
+        var force = Object.FindAnyObjectByType<ForcePracticalController>();
+        if (force != null) Object.DestroyImmediate(force.gameObject);
+
         var pressure = Object.FindAnyObjectByType<PressureSolidPracticalController>();
-        if (pressure != null)
-        {
-            Object.DestroyImmediate(pressure.gameObject);
-        }
+        if (pressure != null) Object.DestroyImmediate(pressure.gameObject);
 
         var density = Object.FindAnyObjectByType<DensityWaterPracticalController>();
-        if (density != null)
-        {
-            Object.DestroyImmediate(density.gameObject);
-        }
+        if (density != null) Object.DestroyImmediate(density.gameObject);
 
         var reflection = Object.FindAnyObjectByType<PrismSceneRuntimeBuilder>();
-        if (reflection != null)
-        {
-            Object.DestroyImmediate(reflection.gameObject);
-        }
-
-        var lever = Object.FindAnyObjectByType<LeverSceneRuntimeBuilder>();
-        if (lever != null)
-        {
-            Object.DestroyImmediate(lever.gameObject);
-        }
+        if (reflection != null) Object.DestroyImmediate(reflection.gameObject);
 
         var hydrostatic = Object.FindAnyObjectByType<UpthrustSceneRuntimeBuilder>();
-        if (hydrostatic != null)
-        {
-            Object.DestroyImmediate(hydrostatic.gameObject);
-        }
+        if (hydrostatic != null) Object.DestroyImmediate(hydrostatic.gameObject);
     }
 
     private static void EnsureBuildSettings(bool log)
@@ -116,7 +111,7 @@ public static class ForceSceneSetup
             return;
         }
 
-        scenes.Insert(0, new EditorBuildSettingsScene(ScenePath, true));
+        scenes.Add(new EditorBuildSettingsScene(ScenePath, true));
         EditorBuildSettings.scenes = scenes.ToArray();
         if (log)
         {

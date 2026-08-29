@@ -49,12 +49,16 @@ const Map<String, List<LessonItem>> gradeLessons = {
       grade: 'Grade 9',
       duration: '22 mins',
       subtitle: 'Start Lesson',
+      lessonId: 'phy-g9-reflection-doc',
+      practicalId: 'grade9_reflection_prism',
     ),
     LessonItem(
       title: 'Simple Machines',
       grade: 'Grade 9',
       duration: '20 mins',
       subtitle: 'Start Lesson',
+      lessonId: 'phy-g9-lever-doc',
+      practicalId: 'grade9_lever_15_1',
     ),
     LessonItem(
       title: 'Nanotechnology and its Applications',
@@ -111,6 +115,8 @@ const Map<String, List<LessonItem>> gradeLessons = {
       grade: 'Grade 10',
       duration: '22 mins',
       subtitle: 'Start Lesson',
+      lessonId: 'phy-g10-hydrostatic-doc',
+      practicalId: 'grade10_hydrostatic_pressure',
     ),
     LessonItem(
       title: 'Work, energy and power',

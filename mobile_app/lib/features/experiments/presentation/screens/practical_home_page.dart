@@ -46,7 +46,20 @@ class _PracticalHomePageState extends State<PracticalHomePage> {
     final title = (_lessonTitle ?? '').toLowerCase();
     if (title.contains('density')) return const [LocalPracticals.densityWater];
     if (title.contains('force')) return const [LocalPracticals.forceBasic];
+    if (title.contains('hydrostatic') ||
+        title.contains('upthrust') ||
+        title.contains('archimedes')) {
+      return const [LocalPracticals.hydrostaticPressure];
+    }
     if (title.contains('pressure')) return const [LocalPracticals.pressureSolid];
+    if (title.contains('reflection') ||
+        title.contains('refract') ||
+        title.contains('prism')) {
+      return const [LocalPracticals.reflectionPrism];
+    }
+    if (title.contains('lever') || title.contains('simple machine')) {
+      return const [LocalPracticals.leverActivity];
+    }
     return LocalPracticals.forLesson(_lessonId);
   }
 

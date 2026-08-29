@@ -50,6 +50,10 @@ public static class PhysiVLabExport
     {
         "Assets/Scenes/ForceBasicConcepts.unity",
         "Assets/Scenes/PressureExertedBySolid.unity",
+        "Assets/Scenes/DensityWaterExperiment.unity",
+        "Assets/Scenes/ReflectionPrismExperiment.unity",
+        "Assets/Scenes/LeverActivity15_1.unity",
+        "Assets/Scenes/HydrostaticPressureExperiment.unity",
     };
 
     private static string ExportFolder =>

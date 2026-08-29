@@ -359,11 +359,75 @@ class LocalPracticals {
     isActive: true,
   );
 
-  static const all = [forceBasic, pressureSolid, densityWater];
+  static const reflectionPrism = Practical(
+    id: 'grade9_reflection_prism',
+    title: 'Dispersion of White Light through a Glass Prism',
+    description:
+        'Select the apparatus, send a thin white beam through a glass prism, and record the ROYGBIV spectrum.',
+    grade: 9,
+    lessonId: 'phy-g9-reflection-doc',
+    topicId: 'topic-g9-reflection',
+    unitySceneId: 'ReflectionPrismExperiment',
+    unityBuildUrl: '',
+    maxScore: 100,
+    durationSeconds: 600,
+    demoAllowed: true,
+    demoMaxAttempts: 10,
+    practicalMaxAttempts: 3,
+    order: 4,
+    isActive: true,
+  );
+
+  static const leverActivity = Practical(
+    id: 'grade9_lever_15_1',
+    title: 'Lever — Activity 15.1',
+    description:
+        'Set up a first-class lever, measure effort for different load distances, and record the relationship.',
+    grade: 9,
+    lessonId: 'phy-g9-lever-doc',
+    topicId: 'topic-g9-lever',
+    unitySceneId: 'LeverActivity15_1',
+    unityBuildUrl: '',
+    maxScore: 100,
+    durationSeconds: 600,
+    demoAllowed: true,
+    demoMaxAttempts: 10,
+    practicalMaxAttempts: 3,
+    order: 5,
+    isActive: true,
+  );
+
+  static const hydrostaticPressure = Practical(
+    id: 'grade10_hydrostatic_pressure',
+    title: 'Hydrostatic pressure and its applications',
+    description:
+        'Measure upthrust with a Eureka can and spring balance, then complete the observation table.',
+    grade: 10,
+    lessonId: 'phy-g10-hydrostatic-doc',
+    topicId: 'topic-g10-hydrostatic',
+    unitySceneId: 'HydrostaticPressureExperiment',
+    unityBuildUrl: '',
+    maxScore: 100,
+    durationSeconds: 600,
+    demoAllowed: true,
+    demoMaxAttempts: 10,
+    practicalMaxAttempts: 3,
+    order: 6,
+    isActive: true,
+  );
+
+  static const all = [
+    forceBasic,
+    pressureSolid,
+    densityWater,
+    reflectionPrism,
+    leverActivity,
+    hydrostaticPressure,
+  ];
 
   static List<Practical> forLesson(String? lessonId) {
     if (lessonId == null || lessonId.isEmpty) {
-      return const [forceBasic, pressureSolid];
+      return all;
     }
     return all.where((item) => item.lessonId == lessonId).toList();
   }
