@@ -108,6 +108,9 @@ public static class WorkEnergySceneSetup
 
         var newton = Object.FindAnyObjectByType<NewtonsLawsSceneRuntimeBuilder>();
         if (newton != null) Object.DestroyImmediate(newton.gameObject);
+
+        var friction = Object.FindAnyObjectByType<FrictionSceneRuntimeBuilder>();
+        if (friction != null) Object.DestroyImmediate(friction.gameObject);
     }
 
     private static void EnsureBuildSettings(bool log)

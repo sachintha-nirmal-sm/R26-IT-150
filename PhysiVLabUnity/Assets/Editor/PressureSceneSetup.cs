@@ -106,6 +106,12 @@ public static class PressureSceneSetup
                 Object.DestroyImmediate(newton.gameObject);
             }
 
+            var friction = Object.FindAnyObjectByType<FrictionSceneRuntimeBuilder>();
+            if (friction != null)
+            {
+                Object.DestroyImmediate(friction.gameObject);
+            }
+
             if (Object.FindAnyObjectByType<PressureSolidPracticalController>() == null)
             {
                 var lab = new GameObject("PressureLab");

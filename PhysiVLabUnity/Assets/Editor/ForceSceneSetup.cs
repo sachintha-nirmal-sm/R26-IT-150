@@ -125,6 +125,12 @@ public static class ForceSceneSetup
         {
             Object.DestroyImmediate(newton.gameObject);
         }
+
+        var friction = Object.FindAnyObjectByType<FrictionSceneRuntimeBuilder>();
+        if (friction != null)
+        {
+            Object.DestroyImmediate(friction.gameObject);
+        }
     }
 
     private static void EnsureBuildSettings(bool log)

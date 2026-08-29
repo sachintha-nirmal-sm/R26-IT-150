@@ -46,6 +46,11 @@ public class PracticalManager : MonoBehaviour
             return "NewtonsLawsExperiment";
         }
 
+        if (id.Contains("friction"))
+        {
+            return "FrictionExperiment";
+        }
+
         if (id.Contains("straight_line") || id.Contains("straightline") || id.Contains("motion_straight")
             || (id.Contains("motion") && id.Contains("line")))
         {

@@ -492,6 +492,25 @@ class LocalPracticals {
     isActive: true,
   );
 
+  static const friction = Practical(
+    id: 'grade10_friction',
+    title: 'Friction',
+    description:
+        'Pull a wooden block on sandpaper and compare limiting friction for three contact areas.',
+    grade: 10,
+    lessonId: 'phy-g10-friction-doc',
+    topicId: 'topic-g10-friction',
+    unitySceneId: 'FrictionExperiment',
+    unityBuildUrl: '',
+    maxScore: 100,
+    durationSeconds: 600,
+    demoAllowed: true,
+    demoMaxAttempts: 10,
+    practicalMaxAttempts: 3,
+    order: 11,
+    isActive: true,
+  );
+
   static const all = [
     forceBasic,
     pressureSolid,
@@ -503,6 +522,7 @@ class LocalPracticals {
     currentElectricity,
     motionStraightLine,
     newtonsLaws,
+    friction,
   ];
 
   static List<Practical> forLesson(String? lessonId) {

@@ -108,6 +108,9 @@ public static class NewtonsLawsSceneSetup
 
         var motion = Object.FindAnyObjectByType<MotionSceneRuntimeBuilder>();
         if (motion != null) Object.DestroyImmediate(motion.gameObject);
+
+        var friction = Object.FindAnyObjectByType<FrictionSceneRuntimeBuilder>();
+        if (friction != null) Object.DestroyImmediate(friction.gameObject);
     }
 
     private static void EnsureBuildSettings(bool log)

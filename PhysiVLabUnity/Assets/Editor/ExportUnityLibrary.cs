@@ -58,6 +58,7 @@ public static class PhysiVLabExport
         "Assets/Scenes/CurrentElectricityExperiment.unity",
         "Assets/Scenes/MotionStraightLineExperiment.unity",
         "Assets/Scenes/NewtonsLawsExperiment.unity",
+        "Assets/Scenes/FrictionExperiment.unity",
     };
 
     private static string ExportFolder =>

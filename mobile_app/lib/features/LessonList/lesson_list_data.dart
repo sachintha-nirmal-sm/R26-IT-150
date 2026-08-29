@@ -95,6 +95,8 @@ const Map<String, List<LessonItem>> gradeLessons = {
       grade: 'Grade 10',
       duration: '20 mins',
       subtitle: 'Start Lesson',
+      lessonId: 'phy-g10-friction-doc',
+      practicalId: 'grade10_friction',
     ),
     LessonItem(
       title: 'Resultant force',
