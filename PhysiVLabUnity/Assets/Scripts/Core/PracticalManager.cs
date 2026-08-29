@@ -41,14 +41,34 @@ public class PracticalManager : MonoBehaviour
         }
 
         string id = (practicalId ?? "").ToLowerInvariant();
-        if (id.Contains("force"))
+        if (id.Contains("hydrostatic") || id.Contains("upthrust") || id.Contains("archimedes"))
         {
-            return "ForceBasicConcepts";
+            return "HydrostaticPressureExperiment";
+        }
+
+        if (id.Contains("lever"))
+        {
+            return "LeverActivity15_1";
+        }
+
+        if (id.Contains("reflection") || id.Contains("prism") || id.Contains("dispersion"))
+        {
+            return "ReflectionPrismExperiment";
+        }
+
+        if (id.Contains("density"))
+        {
+            return "DensityWaterExperiment";
         }
 
         if (id.Contains("pressure"))
         {
             return "PressureExertedBySolid";
+        }
+
+        if (id.Contains("force"))
+        {
+            return "ForceBasicConcepts";
         }
 
         return SceneManager.GetActiveScene().name;
