@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../data/practical.dart';
+import '../../data/practical_guide.dart';
 import '../../data/practicals_repository.dart';
+import '../widgets/practical_hero.dart';
 
 class PracticalHomePage extends StatefulWidget {
   const PracticalHomePage({super.key, this.lessonId, this.lessonTitle});
@@ -205,104 +207,112 @@ class _PracticalCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final guide = PracticalGuide.forPractical(
+      practical.id,
+      title: practical.title,
+    );
+
     return Container(
       margin: const EdgeInsets.only(bottom: 24),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
+            color: guide.color.withValues(alpha: 0.12),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
-      child: InkWell(
-        onTap: onStart,
-        borderRadius: BorderRadius.circular(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                  child: Container(
-                    height: 180,
-                    width: double.infinity,
-                    color: const Color(0xFF2C3E50),
-                    child: const Center(
-                      child: Icon(Icons.science, color: Colors.white30, size: 60),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  bottom: 12,
-                  right: 12,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.7),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      practical.durationLabel,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onStart,
+          borderRadius: BorderRadius.circular(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              PracticalHeroCard(practical: practical, compact: true),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      practical.title,
                       style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
+                        fontSize: 17,
                         fontWeight: FontWeight.bold,
+                        color: Color(0xFF1A1C1E),
                       ),
                     ),
-                  ),
-                ),
-              ],
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    const SizedBox(height: 6),
+                    Text(
+                      practical.description,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        height: 1.35,
+                        color: Colors.grey,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
                       children: [
-                        Text(
-                          practical.title,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF1A1C1E),
+                        for (final item in guide.kit.take(3))
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: guide.accent.withValues(alpha: 0.35),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              item,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: guide.color,
+                              ),
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          practical.description,
-                          style: const TextStyle(fontSize: 13, color: Colors.grey),
-                        ),
                       ],
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF2196F3),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Text(
-                      'Start',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
+                    const SizedBox(height: 14),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 18,
+                          vertical: 9,
+                        ),
+                        decoration: BoxDecoration(
+                          color: guide.color,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Text(
+                          'Open lab',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
+      ),
       ),
     );
   }

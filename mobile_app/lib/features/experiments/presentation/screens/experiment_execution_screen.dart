@@ -3,6 +3,7 @@ import '../../../../core/api/api_client.dart';
 import '../../data/practical.dart';
 import '../../data/practicals_repository.dart';
 import '../../data/unity_lab_service.dart';
+import '../widgets/practical_hero.dart';
 import 'experiment_results_screen.dart';
 import 'unity_player_screen.dart';
 
@@ -200,9 +201,13 @@ class _ExperimentExecutionScreenState extends State<ExperimentExecutionScreen> {
                     OutlinedButton(onPressed: _refresh, child: const Text('Retry')),
                     const SizedBox(height: 16),
                   ],
-                  _buildVideoSection(),
+                  _buildTopicPreview(),
                   const SizedBox(height: 24),
                   _buildActionButtons(),
+                  if (_practical != null) ...[
+                    const SizedBox(height: 20),
+                    PracticalInstructionsCard(practical: _practical!),
+                  ],
                   const SizedBox(height: 32),
                 ],
               ),
@@ -279,48 +284,24 @@ class _ExperimentExecutionScreenState extends State<ExperimentExecutionScreen> {
     );
   }
 
-  Widget _buildVideoSection() {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF0F2F5),
-        borderRadius: BorderRadius.circular(25),
-      ),
-      child: Column(
-        children: [
-          Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF2F80ED).withValues(alpha: 0.2),
-                  blurRadius: 16,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: const Icon(
-              Icons.play_arrow,
-              color: Color(0xFF2F80ED),
-              size: 32,
-            ),
+  Widget _buildTopicPreview() {
+    final practical = _practical;
+    if (practical == null) {
+      return Container(
+        padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF0F2F5),
+          borderRadius: BorderRadius.circular(25),
+        ),
+        child: const Center(
+          child: Text(
+            'Open a practical from Interactive Experiments.',
+            style: TextStyle(color: Color(0xFF999999)),
           ),
-          const SizedBox(height: 16),
-          const Text(
-            'Experiment video will appear here',
-            style: TextStyle(
-              fontSize: 14,
-              color: Color(0xFF999999),
-              fontFamily: 'Poppins',
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
+        ),
+      );
+    }
+    return PracticalHeroCard(practical: practical);
   }
 
   Widget _buildActionButtons() {
@@ -352,69 +333,15 @@ class _ExperimentExecutionScreenState extends State<ExperimentExecutionScreen> {
           ),
           const SizedBox(height: 12),
         ],
-        Row(
-          children: [
-            Expanded(
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: canOfficial
-                      ? [
-                          BoxShadow(
-                            color: const Color(0xFF2F80ED).withValues(alpha: 0.3),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: ElevatedButton.icon(
-                  onPressed: canOfficial && !_busy ? _startOfficial : null,
-                  icon: Icon(
-                    (practical?.canRetryOfficial ?? false)
-                        ? Icons.refresh
-                        : Icons.play_arrow,
-                    size: 20,
-                  ),
-                  label: Text(
-                    (practical?.canRetryOfficial ?? false)
-                        ? 'Retry Start'
-                        : 'Start',
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    backgroundColor: const Color(0xFF2F80ED),
-                    foregroundColor: Colors.white,
-                    disabledBackgroundColor: const Color(0xFFD0D5DD),
-                    disabledForegroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: canDemo && !_busy ? _startDemo : null,
-                icon: const Icon(Icons.science, size: 20),
-                label: const Text('Trial'),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  side: BorderSide(
-                    color: canDemo ? const Color(0xFF2F80ED) : const Color(0xFFD0D5DD),
-                    width: 1.5,
-                  ),
-                  foregroundColor: const Color(0xFF2F80ED),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
+        if (practical != null)
+          PracticalStartTrialBar(
+            practical: practical,
+            busy: _busy,
+            onStart: canOfficial ? _startOfficial : null,
+            onTrial: canDemo ? _startDemo : null,
+          )
+        else
+          const SizedBox.shrink(),
         if (canResult) ...[
           const SizedBox(height: 12),
           SizedBox(
