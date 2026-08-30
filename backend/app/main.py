@@ -57,6 +57,16 @@ app.include_router(admin_rag.router)
 app.include_router(chatbot.router)
 
 
+@app.get("/", tags=["Health"])
+def root():
+    return {
+        "status": "online",
+        "docs": "/docs",
+        "health": "/health",
+        "chat": "POST /chat/rag",
+    }
+
+
 @app.get("/health", tags=["Health"])
 def health_check():
     return {

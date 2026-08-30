@@ -16,7 +16,7 @@ PROJECT_ID: str = os.getenv("FIREBASE_PROJECT_ID", "physics-learning-platform")
 # Old projects used appspot.com. Override via STORAGE_BUCKET env var if needed.
 STORAGE_BUCKET: str = os.getenv(
     "STORAGE_BUCKET",
-    f"{PROJECT_ID}.firebasestorage.app"
+    f"{PROJECT_ID}.appspot.com",
 )
 
 # Candidate paths for serviceAccountKey.json
@@ -44,6 +44,10 @@ VECTOR_STORE_DIR: Path = Path(
     os.getenv("VECTOR_STORE_DIR", str(BACKEND_DIR / "data" / "vector_store"))
 )
 VECTOR_STORE_DIR.mkdir(parents=True, exist_ok=True)
+LOCAL_UPLOAD_DIR: Path = Path(
+    os.getenv("LOCAL_UPLOAD_DIR", str(BACKEND_DIR / "data" / "uploads"))
+)
+LOCAL_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "all-MiniLM-L6-v2")
 RAG_CHUNK_SIZE: int = int(os.getenv("RAG_CHUNK_SIZE", "800"))
 RAG_CHUNK_OVERLAP: int = int(os.getenv("RAG_CHUNK_OVERLAP", "120"))

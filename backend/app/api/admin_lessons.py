@@ -17,7 +17,8 @@ from google.cloud import firestore
 from pydantic import BaseModel, Field
 
 from app.core.dependencies import VerifiedUser, require_admin
-from app.core.firebase import db, bucket
+from app.core.firebase import db
+from app.core.config import LOCAL_UPLOAD_DIR
 from app.rag.ingest import ingest_material
 
 router = APIRouter(prefix="/admin/lessons", tags=["Admin - Lessons"])
@@ -324,19 +325,13 @@ async def upload_material(
         )
 
     material_id = str(uuid.uuid4())
-    storage_path = f"materials/{lesson_id}/{material_id}_{file.filename}"
-    
-    try:
-        blob = bucket.blob(storage_path)
-        blob.upload_from_string(
-            file_bytes,
-            content_type=file.content_type
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to upload file to Cloud Storage: {str(e)}"
-        )
+    safe_name = file.filename or "upload.pdf"
+    local_file = LOCAL_UPLOAD_DIR / lesson_id / f"{material_id}_{safe_name}"
+    local_file.parent.mkdir(parents=True, exist_ok=True)
+    local_file.write_bytes(file_bytes)
+    # Local disk is the source for RAG. Cloud Storage is optional and often
+    # missing until Firebase Storage is enabled on the project.
+    storage_path = f"local:{local_file.as_posix()}"
 
     # 2. Write metadata document to Firestore
     now = firestore.SERVER_TIMESTAMP

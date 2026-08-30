@@ -1,12 +1,29 @@
 """Material ingestion: Storage → text → chunks → embeddings → local vector store."""
 
+from pathlib import Path
+
 from google.cloud import firestore
 
+from app.core.config import LOCAL_UPLOAD_DIR
 from app.core.firebase import bucket, db
 from app.rag.chunking import chunk_text
 from app.rag.embeddings import embed_texts
 from app.rag.text_extract import extract_text
 from app.rag.vector_store import replace_material
+
+
+def _read_file_bytes(storage_path: str) -> bytes:
+    if storage_path.startswith("local:"):
+        path = Path(storage_path.removeprefix("local:"))
+        return path.read_bytes()
+    try:
+        return bucket.blob(storage_path).download_as_bytes()
+    except Exception:
+        # Fallback: same relative path under local uploads
+        local = LOCAL_UPLOAD_DIR / storage_path
+        if local.exists():
+            return local.read_bytes()
+        raise
 
 
 def ingest_material(lesson_id: str, material_id: str) -> int:
@@ -27,8 +44,7 @@ def ingest_material(lesson_id: str, material_id: str) -> int:
             "ingestionError": None,
         })
 
-        blob = bucket.blob(storage_path)
-        file_bytes = blob.download_as_bytes()
+        file_bytes = _read_file_bytes(storage_path)
         text = extract_text(file_bytes, file_name)
         pieces = chunk_text(text)
         if not pieces:
