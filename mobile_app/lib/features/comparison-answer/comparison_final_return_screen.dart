@@ -14,6 +14,8 @@ class ComparisonFinalReturnScreen extends StatelessWidget {
         onTap: (index) {
           if (index == 0) {
             Navigator.pushNamed(context, "/home");
+          } else if (index == 3) {
+            Navigator.pushNamed(context, "/profile");
           }
         },
         items: const [
@@ -49,7 +51,7 @@ class ComparisonFinalReturnScreen extends StatelessWidget {
               Row(
                 children: [
                   IconButton(
-                    onPressed: () {},
+                    onPressed: () => Navigator.pop(context),
                     icon: const Icon(
                       Icons.arrow_back_ios_new,
                       color: Color(0xFF0057B8),
@@ -67,7 +69,17 @@ class ComparisonFinalReturnScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 48),
+                  Padding(
+                    padding: const EdgeInsets.only(right: 16),
+                    child: GestureDetector(
+                      onTap: () => Navigator.pushNamed(context, "/profile"),
+                      child: const CircleAvatar(
+                        radius: 18,
+                        backgroundColor: Color(0xFFCCCCCC),
+                        child: Icon(Icons.person, color: Colors.white, size: 22),
+                      ),
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 24),

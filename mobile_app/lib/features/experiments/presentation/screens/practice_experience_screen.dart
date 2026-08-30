@@ -228,7 +228,7 @@ class _PracticeExperienceScreenState extends State<PracticeExperienceScreen> {
       centerTitle: true,
       actions: [
         Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.only(right: 16),
           child: Center(
             child: Text(
               _getSessionTime(),
@@ -238,6 +238,17 @@ class _PracticeExperienceScreenState extends State<PracticeExperienceScreen> {
                 fontWeight: FontWeight.w600,
                 fontFamily: 'Courier New',
               ),
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(right: 16),
+          child: GestureDetector(
+            onTap: () => Navigator.pushNamed(context, "/profile"),
+            child: const CircleAvatar(
+              radius: 18,
+              backgroundColor: Color(0xFFCCCCCC),
+              child: Icon(Icons.person, color: Colors.white, size: 22),
             ),
           ),
         ),
