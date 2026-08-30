@@ -81,6 +81,94 @@
         { "fieldPath": "lessonTag",     "order": "ASCENDING"  },
         { "fieldPath": "weaknessScore", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "practicals",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "grade",    "order": "ASCENDING" },
+        { "fieldPath": "isActive", "order": "ASCENDING" },
+        { "fieldPath": "order",    "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "practicals",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "topicId",  "order": "ASCENDING" },
+        { "fieldPath": "isActive", "order": "ASCENDING" },
+        { "fieldPath": "order",    "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "practicals",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "lessonId", "order": "ASCENDING" },
+        { "fieldPath": "isActive", "order": "ASCENDING" },
+        { "fieldPath": "order",    "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "topics",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "grade",    "order": "ASCENDING" },
+        { "fieldPath": "isActive", "order": "ASCENDING" },
+        { "fieldPath": "order",    "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "topics",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "lessonId", "order": "ASCENDING" },
+        { "fieldPath": "isActive", "order": "ASCENDING" },
+        { "fieldPath": "order",    "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "practicalResults",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "studentId",   "order": "ASCENDING"  },
+        { "fieldPath": "completedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "practicalResults",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "studentId",    "order": "ASCENDING"  },
+        { "fieldPath": "practicalId",  "order": "ASCENDING"  },
+        { "fieldPath": "completedAt",  "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "practicalResults",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "practicalId",  "order": "ASCENDING"  },
+        { "fieldPath": "attemptType",  "order": "ASCENDING"  },
+        { "fieldPath": "completedAt",  "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "studentPracticals",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "studentId",    "order": "ASCENDING"  },
+        { "fieldPath": "lastAttemptAt","order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "studentPracticals",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "studentId",    "order": "ASCENDING"  },
+        { "fieldPath": "completed",    "order": "ASCENDING"  },
+        { "fieldPath": "lastAttemptAt","order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

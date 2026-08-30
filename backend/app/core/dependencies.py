@@ -30,6 +30,7 @@ from firebase_admin.auth import (
 )
 
 from app.core.firebase import auth
+from app.core.firebase import db as firestore_db
 
 # Enable OpenAPI HTTPBearer security scheme (renders "Authorize" button in Swagger UI)
 security_scheme = HTTPBearer(auto_error=False)
@@ -138,17 +139,26 @@ async def require_auth(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # 4. Validate role claim
-    # Per architecture Section 1: role is the SOLE authoritative value.
     if role not in ("admin", "student"):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=(
-                f"Missing or invalid 'role' custom claim: '{role}'. "
-                "Ensure the account has been provisioned with a valid role claim."
-            ),
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        snap = firestore_db.collection("users").document(uid).get()
+        profile = snap.to_dict() if snap.exists else {}
+        role = profile.get("role")
+        if role not in ("admin", "student"):
+            role = "student"
+            try:
+                auth.set_custom_user_claims(uid, {"role": "student"})
+            except Exception:
+                pass
+            firestore_db.collection("users").document(uid).set(
+                {
+                    "role": "student",
+                    "status": profile.get("status") or "active",
+                    "currentGrade": profile.get("currentGrade") or 10,
+                    "email": profile.get("email") or email or "",
+                    "fullName": profile.get("fullName") or "",
+                },
+                merge=True,
+            )
 
     return VerifiedUser(uid=uid, role=role, email=email)
 

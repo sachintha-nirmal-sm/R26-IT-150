@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../../core/api/api_client.dart';
+import '../data/auth_repository.dart';
+
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
 
@@ -13,6 +16,7 @@ class _SignupScreenState extends State<SignupScreen> {
   static const Color _primaryBlue = Color(0xFF2196F3);
   static const Color _fieldBorder = Color(0xFFE0E0E0);
 
+  final _repo = AuthRepository();
   final _nameController     = TextEditingController();
   final _emailController    = TextEditingController();
   final _passwordController = TextEditingController();
@@ -34,12 +38,12 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   Future<void> _signUp() async {
-    final name     = _nameController.text.trim();
+    final fullName = _nameController.text.trim();
     final email    = _emailController.text.trim();
     final password = _passwordController.text;
     final confirm  = _confirmController.text;
 
-    if (name.isEmpty || email.isEmpty || password.isEmpty || confirm.isEmpty) {
+    if (fullName.isEmpty || email.isEmpty || password.isEmpty || confirm.isEmpty) {
       _showError('Please fill in all fields.');
       return;
     }
@@ -62,42 +66,28 @@ class _SignupScreenState extends State<SignupScreen> {
 
     setState(() => _isLoading = true);
     try {
-      final credential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+      await _repo.signUp(
+        fullName: fullName,
         email: email,
         password: password,
+        currentGrade: _selectedGrade,
       );
-      final uid = credential.user!.uid;
-
-      await FirebaseFirestore.instance.collection('users').doc(uid).set({
-        'name': name,
-        'email': email,
-        'grade': _selectedGrade,
-        'role': 'student',
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-
-      if (mounted) Navigator.of(context).pushReplacementNamed('/home');
-    } on FirebaseAuthException catch (e) {
-      _showError(_friendlyError(e.code));
-    } catch (e) {
-      _showError('Error: $e');
+      if (!mounted) return;
+      Navigator.of(context).pushReplacementNamed('/home');
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      _showError(error.message);
+    } catch (error) {
+      if (!mounted) return;
+      _showError(error.toString());
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  String _friendlyError(String code) {
-    switch (code) {
-      case 'email-already-in-use': return 'An account with this email already exists.';
-      case 'invalid-email':        return 'Please enter a valid email address.';
-      case 'weak-password':        return 'Password is too weak.';
-      default:                     return 'Sign up failed. Please try again.';
-    }
-  }
-
-  void _showError(String msg) {
+  void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg), backgroundColor: Colors.red),
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
     );
   }
 

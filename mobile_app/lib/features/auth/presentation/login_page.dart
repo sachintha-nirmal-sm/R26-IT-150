@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class LoginPage extends StatefulWidget {
@@ -24,7 +24,7 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> _login() async {
     final email    = _emailController.text.trim();
-    final password = _passwordController.text.trim();
+    final password = _passwordController.text;
 
     if (email.isEmpty || password.isEmpty) {
       _showError('Please enter your email and password.');
@@ -37,6 +37,13 @@ class _LoginPageState extends State<LoginPage> {
         email: email,
         password: password,
       );
+      
+      try {
+        await credential.user?.getIdToken(true);
+      } catch (_) {
+        // Sign-in already succeeded; continue even if token refresh fails.
+      }
+
       final uid = credential.user!.uid;
       final userDoc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
       final data = userDoc.data() ?? {};
@@ -44,27 +51,43 @@ class _LoginPageState extends State<LoginPage> {
       final gradeRaw = data['grade'];
       final gradeInt = (gradeRaw is int) ? gradeRaw : int.tryParse(gradeRaw?.toString() ?? '');
       final gradeLabel = gradeInt != null ? 'Grade $gradeInt' : 'Grade 10';
+
       if (mounted) {
         if (role == 'admin') {
           Navigator.of(context).pushReplacementNamed('/admin-dashboard');
         } else {
-          Navigator.of(context).pushReplacementNamed('/home', arguments: {'grade': gradeLabel});        }
+          Navigator.of(context).pushReplacementNamed('/home', arguments: {'grade': gradeLabel});
+        }
       }
     } on FirebaseAuthException catch (e) {
-      _showError(_friendlyError(e.code));
+      _showError(_friendlyError(e));
+    } catch (error) {
+      _showError(error.toString());
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  String _friendlyError(String code) {
-    switch (code) {
-      case 'user-not-found':    return 'No account found with this email.';
-      case 'wrong-password':    return 'Incorrect password. Please try again.';
-      case 'invalid-email':     return 'Please enter a valid email address.';
-      case 'user-disabled':     return 'This account has been disabled.';
-      case 'too-many-requests': return 'Too many attempts. Please try again later.';
-      default:                  return 'Login failed. Please try again.';
+  String _friendlyError(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'user-not-found':
+        return 'No account found with this email.';
+      case 'wrong-password':
+      case 'invalid-credential':
+      case 'INVALID_LOGIN_CREDENTIALS':
+        return 'Incorrect email or password.';
+      case 'invalid-email':
+        return 'Please enter a valid email address.';
+      case 'user-disabled':
+        return 'This account has been disabled.';
+      case 'too-many-requests':
+        return 'Too many attempts. Please try again later.';
+      case 'network-request-failed':
+        return 'No internet connection. Check Wi-Fi or mobile data.';
+      default:
+        final detail = e.message?.trim();
+        if (detail != null && detail.isNotEmpty) return detail;
+        return 'Login failed (${e.code}).';
     }
   }
 
@@ -128,13 +151,29 @@ class _LoginPageState extends State<LoginPage> {
                       keyboardType: TextInputType.emailAddress,
                       decoration: InputDecoration(
                         hintText: 'Email',
-                        prefixIcon: Icon(Icons.email_outlined, color: Colors.grey.shade400),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(25),
-                            borderSide: BorderSide(color: Colors.grey.shade300)),
-                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(25),
-                            borderSide: BorderSide(color: Colors.grey.shade300)),
-                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(25),
-                            borderSide: BorderSide(color: Colors.blue.shade500, width: 2)),
+                        prefixIcon: Icon(
+                          Icons.email_outlined,
+                          color: Colors.grey.shade400,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(25),
+                          borderSide: BorderSide(
+                            color: Colors.grey.shade300,
+                          ),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(25),
+                          borderSide: BorderSide(
+                            color: Colors.grey.shade300,
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(25),
+                          borderSide: BorderSide(
+                            color: Colors.blue.shade500,
+                            width: 2,
+                          ),
+                        ),
                         filled: true,
                         fillColor: Colors.grey.shade50,
                         contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -194,13 +233,85 @@ class _LoginPageState extends State<LoginPage> {
                         child: _isLoading
                             ? const SizedBox(height: 20, width: 20,
                                 child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                            : Text('Sign in',
+                            : Text(
+                                'Sign in',
                                 style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                                    color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                              ),
                       ),
                     ),
                     const SizedBox(height: 24),
 
+                    // Divider with text
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Divider(
+                            color: Colors.grey.shade300,
+                            thickness: 1,
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: Text(
+                            'OR',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Colors.grey.shade500,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                          ),
+                        ),
+                        Expanded(
+                          child: Divider(
+                            color: Colors.grey.shade300,
+                            thickness: 1,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Google Sign In Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Google Sign-In is not available. Use email and password.',
+                              ),
+                            ),
+                          );
+                        },
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          side: BorderSide(color: Colors.grey.shade300, width: 1),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(25),
+                          ),
+                        ),
+                        icon: Icon(
+                          Icons.g_mobiledata,
+                          size: 24,
+                          color: Colors.grey.shade700,
+                        ),
+                        label: Text(
+                          'Sign in with Google',
+                          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                                color: Colors.grey.shade700,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Sign Up Link
                     Center(
                       child: Row(
                         mainAxisSize: MainAxisSize.min,

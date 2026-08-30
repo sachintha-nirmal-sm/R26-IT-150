@@ -1,6 +1,10 @@
-import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+
+import '../experiments/data/practical.dart';
+import '../experiments/data/practicals_repository.dart';
+import 'lesson_progress.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -9,15 +13,18 @@ class ProfileScreen extends StatefulWidget {
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
+class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserver {
   int _selectedIndex = 3;
+  
+  // Lab / Practical Stats
+  StudentPracticalProgress? _progress;
 
   // User profile
   String _name  = '';
   String _email = '';
   String _grade = '';
 
-  // Stats
+  // Quiz Stats
   int _completedCount  = 0;
   int _inProgressCount = 0;
   int _totalAttempts   = 0;
@@ -30,29 +37,51 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   final ScrollController _recentScrollCtrl = ScrollController();
   final ScrollController _weakScrollCtrl   = ScrollController();
+  final ScrollController _labScrollCtrl    = ScrollController();
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadData();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _recentScrollCtrl.dispose();
     _weakScrollCtrl.dispose();
+    _labScrollCtrl.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      if (!_loading) {
+        setState(() => _loading = true);
+        _loadData();
+      }
+    }
   }
 
   Future<void> _loadData() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) {
-      setState(() => _loading = false);
+      if (mounted) setState(() => _loading = false);
       return;
     }
 
+    // 1. Fetch Practical / Lab Progress
     try {
-      // 1. User profile doc
+      final progress = await PracticalsRepository().fetchMyProgress();
+      if (mounted) _progress = progress;
+    } catch (_) {
+      // Gracefully handle if practical API fails
+    }
+
+    // 2. Fetch Quiz and User Data
+    try {
       final userDoc = await FirebaseFirestore.instance
           .collection('users')
           .doc(uid)
@@ -64,7 +93,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ? 'Grade $gradeRaw'
           : (gradeRaw?.toString() ?? '');
 
-      // 2. All quiz attempts (latest 50 for analysis)
       final snap = await FirebaseFirestore.instance
           .collection('users')
           .doc(uid)
@@ -76,13 +104,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final attempts =
           snap.docs.map((d) => Map<String, dynamic>.from(d.data())).toList();
 
-      // 3. Best score per quizId (lesson or sub-lesson level)
       final Map<String, int>    bestScores = {};
       final Map<String, String> quizTitles = {};
 
       for (final a in attempts) {
-        final qid   = a['quizId']     as String? ?? '';
-        final score = a['score']      as int?    ?? 0;
+        final qid   = a['quizId']      as String? ?? '';
+        final score = a['score']       as int?    ?? 0;
         final title = (a['subLessonTitle'] as String?)?.isNotEmpty == true
             ? a['subLessonTitle'] as String
             : (a['lessonTitle'] as String? ?? qid);
@@ -96,7 +123,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final completed  = bestScores.values.where((s) => s >= 70).length;
       final inProgress = bestScores.values.where((s) => s < 70).length;
 
-      // 4. Recent Progress — last 5 distinct quiz attempts
       final seen  = <String>{};
       final recent = <Map<String, dynamic>>[];
       for (final a in attempts) {
@@ -115,27 +141,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
         if (recent.length >= 5) break;
       }
 
-      // 5. Areas for Improvement — quizzes with best score < 70%, worst first
       final weak = bestScores.entries
           .where((e) => e.value < 70)
           .map((e) => {'title': quizTitles[e.key] ?? e.key, 'bestScore': e.value})
           .toList()
         ..sort((a, b) => (a['bestScore'] as int).compareTo(b['bestScore'] as int));
 
-      setState(() {
-        _name            = u['fullName'] as String? ??
-                           u['displayName'] as String? ?? 'Student';
-        _email           = u['email'] as String? ?? '';
-        _grade           = gradeStr;
-        _completedCount  = completed;
-        _inProgressCount = inProgress;
-        _totalAttempts   = attempts.length;
-        _recentAttempts  = recent;
-        _weakAreas       = weak.take(5).toList();
-        _loading         = false;
-      });
+      if (mounted) {
+        setState(() {
+          _name            = u['fullName'] as String? ??
+                             u['displayName'] as String? ?? 'Student';
+          _email           = u['email'] as String? ?? '';
+          _grade           = gradeStr;
+          _completedCount  = completed;
+          _inProgressCount = inProgress;
+          _totalAttempts   = attempts.length;
+          _recentAttempts  = recent;
+          _weakAreas       = weak.take(5).toList();
+          _loading         = false;
+        });
+      }
     } catch (_) {
-      setState(() => _loading = false);
+      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -190,12 +217,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   children: [
                     _buildUserCard(),
                     const SizedBox(height: 20),
-                    _buildStatsRow(),
+                    
+                    // Quiz Progress
+                    _buildSectionTitle('Quiz Performance', icon: Icons.quiz_outlined, iconColor: const Color(0xFF2196F3)),
+                    const SizedBox(height: 12),
+                    _buildStatsRow(
+                      label1: 'Completed', val1: '$_completedCount', icon1: Icons.check_circle, color1: Colors.green,
+                      label2: 'Needs Retry', val2: '$_inProgressCount', icon2: Icons.refresh_rounded, color2: Colors.orange,
+                      label3: 'Total Quizzes', val3: '$_totalAttempts', icon3: Icons.quiz_outlined, color3: Colors.blue,
+                    ),
                     const SizedBox(height: 30),
-                    _buildSectionTitle('Recent Progress'),
+
+                    // Practical / Lab Progress
+                    _buildSectionTitle('Lab Performance', icon: Icons.science_outlined, iconColor: const Color(0xFF2196F3)),
+                    const SizedBox(height: 12),
+                    _buildStatsRow(
+                      label1: 'Completed', val1: '${_progress?.completedPracticals ?? 0}', icon1: Icons.check_circle, color1: Colors.blue,
+                      label2: 'Total Labs', val2: '${_progress?.totalPracticals ?? 0}', icon2: Icons.science, color2: Colors.blue,
+                      label3: 'Average', val3: _progress == null ? '-' : '${_progress!.averagePercentage.round()}%', icon3: Icons.insights, color3: Colors.blue,
+                    ),
+                    const SizedBox(height: 30),
+                    
+                    // Recent Quiz Progress
+                    _buildSectionTitle('Recent Quizzes'),
                     const SizedBox(height: 12),
                     _buildRecentProgress(),
                     const SizedBox(height: 30),
+
+                    // Recent Lab Progress
+                    _buildSectionTitle('Recent Labs'),
+                    const SizedBox(height: 12),
+                    _buildRecentLabs(),
+                    const SizedBox(height: 30),
+
+                    // Weak Areas
                     _buildSectionTitle('Areas for Improvement',
                         icon: Icons.warning_amber_rounded,
                         iconColor: Colors.red.shade700),
@@ -254,7 +309,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     style:
                         const TextStyle(color: Colors.grey, fontSize: 13)),
               const SizedBox(height: 8),
-              if (_grade.isNotEmpty)
+              if (_grade.isNotEmpty || _progress != null)
                 Container(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 10, vertical: 4),
@@ -262,7 +317,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     color: const Color(0xFFE8F1FF),
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: Text(_grade,
+                  child: Text(
+                      _grade.isNotEmpty 
+                        ? _grade 
+                        : 'Grade ${_progress?.grade ?? ""}',
                       style: const TextStyle(
                           color: Color(0xFF2196F3),
                           fontSize: 12,
@@ -277,19 +335,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   // ── Stats row ───────────────────────────────────────────────────────────────
 
-  Widget _buildStatsRow() {
+  Widget _buildStatsRow({
+    required String label1, required String val1, required IconData icon1, required Color color1,
+    required String label2, required String val2, required IconData icon2, required Color color2,
+    required String label3, required String val3, required IconData icon3, required Color color3,
+  }) {
     return Row(children: [
       Expanded(
-          child: _statCard('Completed', '$_completedCount',
-              Icons.check_circle, Colors.green)),
+          child: _statCard(label1, val1, icon1, color1)),
       const SizedBox(width: 12),
       Expanded(
-          child: _statCard('Needs Retry', '$_inProgressCount',
-              Icons.refresh_rounded, Colors.orange)),
+          child: _statCard(label2, val2, icon2, color2)),
       const SizedBox(width: 12),
       Expanded(
-          child: _statCard('Total Quizzes', '$_totalAttempts',
-              Icons.quiz_outlined, Colors.blue)),
+          child: _statCard(label3, val3, icon3, color3)),
     ]);
   }
 
@@ -340,7 +399,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     ]);
   }
 
-  // ── Recent Progress ─────────────────────────────────────────────────────────
+  // ── Recent Progress (Quizzes) ───────────────────────────────────────────────
 
   Widget _buildRecentProgress() {
     if (_recentAttempts.isEmpty) {
@@ -361,6 +420,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }).toList();
 
     return _scrollSection(items, _recentScrollCtrl);
+  }
+
+  // ── Recent Progress (Labs) ──────────────────────────────────────────────────
+
+  Widget _buildRecentLabs() {
+    if (_progress == null) {
+      return _emptyCard("Connect to the backend to load saved practical scores.");
+    }
+    if (_progress!.recentResults.isEmpty) {
+      return _emptyCard("Complete a practical with Start to see it here.");
+    }
+
+    final items = _progress!.recentResults.map((item) {
+      return _listItem(
+        icon: Icons.check_circle,
+        title: item.title,
+        subtitle: 'Completed · ${item.percentage.round()}%',
+        color: const Color(0xFF27AE60),
+      );
+    }).toList();
+
+    return _scrollSection(items, _labScrollCtrl);
   }
 
   // ── Areas for Improvement ───────────────────────────────────────────────────

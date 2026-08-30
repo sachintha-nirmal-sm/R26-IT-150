@@ -57,7 +57,10 @@ venv/
 **/windows/flutter/generated_plugins.cmake
 **/windows/flutter/ephemeral/
 
-# Android/Gradle outputs
+# Unity as a Library export (generated, do not commit)
+mobile_app/android/unityLibrary/
+mobile_app/android/unityExport/
+**/unityLibrary/build/
 **/.gradle/
 local.properties
 *.apk

@@ -1,7 +1,14 @@
-import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/material.dart';
+
+import 'core/app_navigator.dart';
 import 'firebase_options.dart';
 import 'features/experiments/experiments.dart';
+import 'features/experiments/data/lab_result_sync.dart';
+import 'features/experiments/data/practical.dart';
+import 'features/experiments/presentation/screens/practical_home_page.dart';
+
 import 'features/LessonList/lesson_list_page.dart';
 import 'features/auth/presentation/get_started_page.dart';
 import 'features/auth/presentation/login_page.dart';
@@ -53,13 +60,25 @@ void main() async {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  @override
+  void initState() {
+    super.initState();
+    LabResultSync.start();
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Physics Lab',
+      navigatorKey: appNavigatorKey,
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
@@ -90,8 +109,9 @@ class MyApp extends StatelessWidget {
           mainAxisMargin: 4,
         ),
       ),
-      home: const GetStartedPage(),
-      initialRoute: "/get-started",
+      initialRoute: FirebaseAuth.instance.currentUser == null
+          ? '/get-started'
+          : '/home',
       routes: {
         "/get-started": (context) => const GetStartedPage(),
         "/login": (context) => const LoginPage(),
@@ -100,19 +120,35 @@ class MyApp extends StatelessWidget {
         "/lesson-list": (context) => const PhysicsLessonsScreen(),
         "/force-motion": (context) => const ForceLinearMotionPage(),
         "/lesson-quizzes": (context) => const LessonQuizzesPage(),
+        "/lessonDBoard": (context) => const LessonsDashboard(),
         "/search": (context) {
           final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
           final grade = args?['grade'] as String? ?? 'Grade 10';
           return SimpleSearchPage(grade: grade);
         },
-
         "/deep-learn": (context) => const DeepLearningScreen(),
         "/profile": (context) => const ProfileScreen(),
-        "/practical-home": (context) => const ExperimentExecutionScreen(),
+        "/practical-home": (context) => const PracticalHomePage(),
         "/experiment-results": (context) => const ExperimentResultsScreen(),
         "/experiment-execution": (context) => const ExperimentExecutionScreen(),
-        "/experiment-in-progress": (context) => const ExperimentInProgressScreen(),
-        "/practice-experience": (context) => const PracticeExperienceScreen(),
+        "/experiment-in-progress": (context) {
+          final args = ModalRoute.of(context)?.settings.arguments;
+          if (args is PracticalRunArgs) {
+            return ExperimentInProgressScreen(args: args);
+          }
+          return const Scaffold(
+            body: Center(child: Text('Start this practical from Practical Hub.')),
+          );
+        },
+        "/practice-experience": (context) {
+          final args = ModalRoute.of(context)?.settings.arguments;
+          if (args is PracticalRunArgs) {
+            return PracticeExperienceScreen(args: args);
+          }
+          return const Scaffold(
+            body: Center(child: Text('Start the trial from Practical Hub.')),
+          );
+        },
         "/scenario-question": (context) => const ScenarioQuestionScreen(),
         "/quiz-complete": (context) => const QuizCompleteScreen(
               completionSeconds: 0,
