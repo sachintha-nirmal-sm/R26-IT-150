@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "336276756841",
+    "project_id": "physicslab-eaa8a",
+    "storage_bucket": "physicslab-eaa8a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:336276756841:android:30080c842776806c2d85f8",
+        "android_client_info": {
+          "package_name": "com.example.mobile_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBXGMZOCCdAL3WVEnBg_mCS-dbo0kfd1sY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
