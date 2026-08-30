@@ -70,7 +70,7 @@ class _SignupScreenState extends State<SignupScreen> {
         fullName: fullName,
         email: email,
         password: password,
-        currentGrade: _selectedGrade,
+        currentGrade: _selectedGrade!,
       );
       if (!mounted) return;
       Navigator.of(context).pushReplacementNamed('/home');

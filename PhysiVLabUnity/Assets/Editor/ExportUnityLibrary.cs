@@ -45,7 +45,8 @@ public class PhysiVLabDisableBurstOnBuild : IPreprocessBuildWithReport
 /// </summary>
 public static class PhysiVLabExport
 {
-    private const string FlutterAndroid = @"E:\R26-IT-150\mobile_app\android";
+    private static string FlutterAndroid =>
+        Path.GetFullPath(Path.Combine(Directory.GetParent(Application.dataPath).FullName, "..", "mobile_app", "android"));
     private static readonly string[] KnownScenes =
     {
         "Assets/Scenes/ForceBasicConcepts.unity",
