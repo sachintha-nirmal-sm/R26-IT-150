@@ -65,6 +65,18 @@ class _PracticalHomePageState extends State<PracticalHomePage> {
     if (title.contains('geometrical') || title.contains('optic')) {
       return const [LocalPracticals.geometricalOptics];
     }
+    if (title.contains('heat')) {
+      return const [LocalPracticals.heatExpansion];
+    }
+    if (title.contains('appliance') ||
+        (title.contains('power') &&
+            title.contains('energy') &&
+            title.contains('electric'))) {
+      return const [LocalPracticals.powerEnergyAppliances];
+    }
+    if (title.contains('electronics') || title.contains('diode')) {
+      return const [LocalPracticals.electronicsDiode];
+    }
     if (title.contains('straight') && title.contains('line')) {
       return const [LocalPracticals.motionStraightLine];
     }

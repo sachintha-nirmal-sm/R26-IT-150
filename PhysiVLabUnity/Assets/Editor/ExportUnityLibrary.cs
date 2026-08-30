@@ -64,6 +64,9 @@ public static class PhysiVLabExport
         "Assets/Scenes/EquilibriumOfForcesExperiment.unity",
         "Assets/Scenes/WavesApplicationsExperiment.unity",
         "Assets/Scenes/GeometricalOpticsExperiment.unity",
+        "Assets/Scenes/HeatExpansionExperiment.unity",
+        "Assets/Scenes/PowerEnergyAppliancesExperiment.unity",
+        "Assets/Scenes/ElectronicsDiodeExperiment.unity",
     };
 
     private static string ExportFolder =>

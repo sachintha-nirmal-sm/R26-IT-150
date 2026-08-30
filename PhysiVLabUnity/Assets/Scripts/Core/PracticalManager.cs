@@ -77,6 +77,11 @@ public class PracticalManager : MonoBehaviour
             return "CurrentElectricityExperiment";
         }
 
+        if (id.Contains("appliance") || id.Contains("power_appliances"))
+        {
+            return "PowerEnergyAppliancesExperiment";
+        }
+
         if (id.Contains("work") || id.Contains("energy_power") || id.Contains("work_energy"))
         {
             return "WorkEnergyPowerExperiment";
@@ -100,6 +105,16 @@ public class PracticalManager : MonoBehaviour
         if (id.Contains("optics") || id.Contains("geometrical"))
         {
             return "GeometricalOpticsExperiment";
+        }
+
+        if (id.Contains("heat"))
+        {
+            return "HeatExpansionExperiment";
+        }
+
+        if (id.Contains("electronics") || id.Contains("diode"))
+        {
+            return "ElectronicsDiodeExperiment";
         }
 
         if (id.Contains("waves"))

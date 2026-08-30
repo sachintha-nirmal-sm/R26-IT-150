@@ -606,6 +606,63 @@ class LocalPracticals {
     isActive: true,
   );
 
+  static const heatExpansion = Practical(
+    id: 'grade11_heat',
+    title: 'Heat',
+    description:
+        'Illustrate expansion of liquids with a test tube, thin glass tube and a water bath.',
+    grade: 11,
+    lessonId: 'phy-g11-heat-doc',
+    topicId: 'topic-g11-heat',
+    unitySceneId: 'HeatExpansionExperiment',
+    unityBuildUrl: '',
+    maxScore: 100,
+    durationSeconds: 600,
+    demoAllowed: true,
+    demoMaxAttempts: 10,
+    practicalMaxAttempts: 3,
+    order: 17,
+    isActive: true,
+  );
+
+  static const powerEnergyAppliances = Practical(
+    id: 'grade11_power_appliances',
+    title: 'Power and Energy of Electric Appliances',
+    description:
+        'Measure voltage and current of electric appliances, then calculate power, energy and kilowatt-hours.',
+    grade: 11,
+    lessonId: 'phy-g11-power-appliances-doc',
+    topicId: 'topic-g11-power-appliances',
+    unitySceneId: 'PowerEnergyAppliancesExperiment',
+    unityBuildUrl: '',
+    maxScore: 100,
+    durationSeconds: 600,
+    demoAllowed: true,
+    demoMaxAttempts: 10,
+    practicalMaxAttempts: 3,
+    order: 18,
+    isActive: true,
+  );
+
+  static const electronicsDiode = Practical(
+    id: 'grade11_electronics',
+    title: 'Electronics',
+    description:
+        'Investigate forward bias and reverse bias of a diode using a battery, switch and bulb.',
+    grade: 11,
+    lessonId: 'phy-g11-electronics-doc',
+    topicId: 'topic-g11-electronics',
+    unitySceneId: 'ElectronicsDiodeExperiment',
+    unityBuildUrl: '',
+    maxScore: 100,
+    durationSeconds: 600,
+    demoAllowed: true,
+    demoMaxAttempts: 10,
+    practicalMaxAttempts: 3,
+    order: 19,
+    isActive: true,
+  );
+
   static const all = [
     forceBasic,
     pressureSolid,
@@ -623,6 +680,9 @@ class LocalPracticals {
     equilibriumOfForces,
     wavesApplications,
     geometricalOptics,
+    heatExpansion,
+    powerEnergyAppliances,
+    electronicsDiode,
   ];
 
   static List<Practical> forLesson(String? lessonId) {

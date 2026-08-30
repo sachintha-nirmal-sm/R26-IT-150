@@ -163,6 +163,24 @@ public static class ReflectionSceneSetup
         {
             Object.DestroyImmediate(optics.gameObject);
         }
+
+        var heat = Object.FindAnyObjectByType<HeatSceneRuntimeBuilder>();
+        if (heat != null)
+        {
+            Object.DestroyImmediate(heat.gameObject);
+        }
+
+        var powerEnergy = Object.FindAnyObjectByType<PowerEnergySceneRuntimeBuilder>();
+        if (powerEnergy != null)
+        {
+            Object.DestroyImmediate(powerEnergy.gameObject);
+        }
+
+        var electronics = Object.FindAnyObjectByType<ElectronicsSceneRuntimeBuilder>();
+        if (electronics != null)
+        {
+            Object.DestroyImmediate(electronics.gameObject);
+        }
     }
 
     private static void EnsureBuildSettings(bool log)
