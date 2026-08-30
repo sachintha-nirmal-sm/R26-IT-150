@@ -71,16 +71,17 @@ service cloud.firestore {
     match /users/{uid} {
       allow read: if isOwner(uid) || isAdmin();
 
-      // Signup: owner creates their own doc, must set role = 'student'.
-      allow create: if isOwner(uid) && request.resource.data.role == 'student';
+      allow create: if (isOwner(uid) && request.resource.data.role == 'student')
+        || isAdmin();
 
       // Profile update: owner may change any field EXCEPT currentGrade or role.
       // The affectedKeys() check ensures neither field appears in the diff,
       // i.e. the client cannot add, change, or remove them.
-      allow update: if isOwner(uid)
-        && !(["currentGrade", "role"].hasAny(
-               request.resource.data.diff(resource.data).affectedKeys()
-             ));
+      allow update: if isAdmin()
+        || (isOwner(uid)
+            && !(["currentGrade", "role"].hasAny(
+                   request.resource.data.diff(resource.data).affectedKeys()
+                 )));
 
       allow delete: if false;
 
@@ -95,50 +96,48 @@ service cloud.firestore {
       // --------------------------------------------------------
 
       match /gradeHistory/{id} {
-        allow read: if isOwner(uid);
-        allow write: if false;
+        allow read: if isOwner(uid) || isAdmin();
+        allow write: if isAdmin();
       }
 
       match /quizProgress/{id} {
-        allow read: if isOwner(uid);
-        allow write: if false;
+        allow read: if isOwner(uid) || isAdmin();
+        allow write: if isAdmin();
       }
 
       match /quizAttempts/{id} {
-        allow read: if isOwner(uid);
-        allow write: if false;
+        allow read: if isOwner(uid) || isAdmin();
+        allow write: if isAdmin();
       }
 
       match /wrongQuestions/{id} {
-        allow read: if isOwner(uid);
-        allow write: if false;
+        allow read: if isOwner(uid) || isAdmin();
+        allow write: if isAdmin();
       }
 
       match /feedback/{id} {
-        allow read: if isOwner(uid);
-        allow write: if false;
+        allow read: if isOwner(uid) || isAdmin();
+        allow write: if isAdmin();
       }
 
       match /weakTopics/{id} {
-        allow read: if isOwner(uid);
-        allow write: if false;
+        allow read: if isOwner(uid) || isAdmin();
+        allow write: if isAdmin();
       }
 
       match /youtubeRecommendations/{id} {
-        allow read: if isOwner(uid);
-        allow write: if false;
+        allow read: if isOwner(uid) || isAdmin();
+        allow write: if isAdmin();
       }
 
       match /finalQuizAttempts/{id} {
-        allow read: if isOwner(uid);
-        allow write: if false;
+        allow read: if isOwner(uid) || isAdmin();
+        allow write: if isAdmin();
       }
 
-      // performanceSummary: documented as a "single doc" in the schema
-      // (section 3.17), stored as one document inside this subcollection.
       match /performanceSummary/{id} {
-        allow read: if isOwner(uid);
-        allow write: if false;
+        allow read: if isOwner(uid) || isAdmin();
+        allow write: if isAdmin();
       }
     }
 
@@ -156,13 +155,13 @@ service cloud.firestore {
         || (isAuthenticated()
             && resource.data.status == 'published'
             && resource.data.grade == getUserGrade(request.auth.uid));
-      allow write: if false;
+      allow write: if isAdmin();
 
       // materials — raw PDFs/notes for RAG ingestion; client never reads these.
       // Uploads go through a FastAPI endpoint that writes to Cloud Storage and
       // updates this subcollection via Admin SDK.
       match /materials/{materialId} {
-        allow read, write: if false;
+        allow read, write: if isAdmin();
       }
 
       // quizzes — same grade-check as the parent lesson.
@@ -173,7 +172,7 @@ service cloud.firestore {
           || (isAuthenticated()
               && getLessonData(lessonId).status == 'published'
               && getLessonData(lessonId).grade == getUserGrade(request.auth.uid));
-        allow write: if false;
+        allow write: if isAdmin();
 
         // questionBankVersions + their questions — client NEVER reads these.
         // The Flutter app calls GET /quizzes/{id}/start; FastAPI reads the
@@ -181,10 +180,12 @@ service cloud.firestore {
         // correctAnswer and explanation stripped out. This is the only reliable
         // way to prevent a student from reading the answer key directly.
         match /questionBankVersions/{versionId} {
-          allow read, write: if false;
+          allow read: if isAdmin();
+          allow write: if isAdmin();
 
           match /questions/{questionId} {
-            allow read, write: if false;
+            allow read: if isAdmin();
+            allow write: if isAdmin();
           }
         }
       }
@@ -200,10 +201,12 @@ service cloud.firestore {
     // readable by the client SDK.
     // --------------------------------------------------------
     match /finalQuizzes/{finalQuizId} {
-      allow read, write: if false;
+      allow read: if isAdmin();
+      allow write: if isAdmin();
 
       match /questions/{questionId} {
-        allow read, write: if false;
+        allow read: if isAdmin();
+        allow write: if isAdmin();
       }
     }
 
@@ -216,7 +219,7 @@ service cloud.firestore {
     // --------------------------------------------------------
     match /generationJobs/{jobId} {
       allow read: if isAdmin();
-      allow write: if false;
+      allow write: if isAdmin();
     }
 
     // --------------------------------------------------------
@@ -232,7 +235,81 @@ service cloud.firestore {
     // --------------------------------------------------------
     match /analytics/{document=**} {
       allow read: if isAdmin();
-      allow write: if false;
+      allow write: if isAdmin();
+    }
+
+    // --------------------------------------------------------
+    // Game-Based Measurement & Calculation — Practicals
+    // --------------------------------------------------------
+    // Separate from the quiz/RAG collections above. Configuration
+    // (topics, practicals) is shared; student results/progress are
+    // private. All writes go through FastAPI + Admin SDK so the
+    // client cannot inflate scores, skip the demo gate, or bypass
+    // attempt limits / server-side timers.
+    //
+    // Collection names follow project camelCase convention:
+    //   topics, practicals, practicalResults,
+    //   studentPracticals, studentProgress
+    // (Word-doc aliases: practical_results, student_practicals,
+    //  student_progress).
+    // --------------------------------------------------------
+
+    // topics/{topicId}
+    // Grade-scoped grouping of practicals under a lesson.
+    // Students may read active topics for their currentGrade only.
+    match /topics/{topicId} {
+      allow read: if isAdmin()
+        || (isAuthenticated()
+            && resource.data.isActive == true
+            && resource.data.grade == getUserGrade(request.auth.uid));
+      allow write: if isAdmin();
+    }
+
+    // practicals/{practicalId}
+    // Master config for each Unity practical (timer, attempt limits,
+    // scene, maxScore). Attempt limits MUST come from this document,
+    // never from the client. Students may read active practicals for
+    // their currentGrade only so they can render the hub / launch Unity.
+    match /practicals/{practicalId} {
+      allow read: if isAdmin()
+        || (isAuthenticated()
+            && resource.data.isActive == true
+            && (resource.data.grade == getUserGrade(request.auth.uid)
+                || practicalId == "grade9_density_water"
+                || practicalId == "grade9_force_basic"
+                || practicalId == "grade9_pressure_solid"));
+      allow write: if isAdmin();
+    }
+
+    // practicalResults/{resultId}
+    // Immutable record of each demo/practical completion.
+    // Demo results do not count as official score; the backend still
+    // writes them so attempt history is complete. Owner or admin may
+    // read; nobody writes from the client SDK.
+    match /practicalResults/{resultId} {
+      allow read: if isAdmin()
+        || (isAuthenticated() && resource.data.studentId == request.auth.uid);
+      allow write: if isAdmin();
+    }
+
+    // studentPracticals/{studentId}_{practicalId}
+    // Fast O(1) lookup of one student's progress on one practical
+    // (demoAttemptsUsed, practicalAttemptsUsed, bestScore, currentState).
+    // Owner or admin may read; writes are backend-only so a client
+    // cannot reset attempts or mark a practical complete.
+    match /studentPracticals/{id} {
+      allow read: if isAdmin()
+        || (isAuthenticated() && resource.data.studentId == request.auth.uid);
+      allow write: if isAdmin();
+    }
+
+    // studentProgress/{studentId}
+    // Aggregated profile/dashboard progress (gradeProgress, averages).
+    // Doc ID = Firebase Auth UID. Profile screens read this instead of
+    // scanning every practicalResults document.
+    match /studentProgress/{studentId} {
+      allow read: if isAdmin() || isOwner(studentId);
+      allow write: if isAdmin();
     }
 
     // chat_sessions — written only by FastAPI (Admin SDK).

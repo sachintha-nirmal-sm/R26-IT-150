@@ -1,22 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../LessonList/lesson_list_page.dart';
-import '../quizzes/lesson_quizzes_page.dart';
-
+import '../quizzes/student_quiz_screen.dart';
 import '../experiments/presentation/screens/experiment_execution_screen.dart';
 import '../games/vector_quest/presentation/pages/vector_quest_game_screen.dart';
+import '../games/lesson_games_screen.dart';
+import 'sub_lessons_screen.dart';
 import 'learning_materials_page.dart';
 
-
 class LessonsDashboard extends StatefulWidget {
+  final String lessonId;
   final String lessonTitle;
   final String grade;
   final String? lessonDescription;
+  final String? practicalId;
 
   const LessonsDashboard({
     super.key,
+    required this.lessonId,
     this.lessonTitle = 'Linear Motion',
     this.grade = 'Grade 9 Physics',
     this.lessonDescription,
+    this.practicalId,
   });
 
   @override
@@ -30,12 +35,53 @@ class _LessonsDashboardState extends State<LessonsDashboard> {
   int _selectedIndex = 1; // Lessons tab selected by default
 
   late String _currentLessonDescription;
+  bool? _hasSubLessons; // null = still checking
 
   @override
   void initState() {
     super.initState();
     _currentLessonDescription = widget.lessonDescription ??
         _getDescriptionForLesson(widget.lessonTitle);
+    _checkSubLessons();
+  }
+
+  Future<void> _checkSubLessons() async {
+    try {
+      final snap = await FirebaseFirestore.instance
+          .collection('lessons')
+          .doc(widget.lessonId)
+          .collection('subLessons')
+          .limit(1)
+          .get();
+      if (mounted) setState(() => _hasSubLessons = snap.docs.isNotEmpty);
+    } catch (_) {
+      if (mounted) setState(() => _hasSubLessons = false);
+    }
+  }
+
+  void _navigateToQuiz() {
+    if (_hasSubLessons == true) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => SubLessonsScreen(
+            lessonId: widget.lessonId,
+            lessonTitle: widget.lessonTitle,
+            grade: widget.grade,
+          ),
+        ),
+      );
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => StudentQuizScreen(
+            lessonId: widget.lessonId,
+            lessonTitle: widget.lessonTitle,
+          ),
+        ),
+      );
+    }
   }
 
   String _getDescriptionForLesson(String title) {
@@ -44,9 +90,22 @@ class _LessonsDashboardState extends State<LessonsDashboard> {
       'Linear Motion': 'Master the fundamental concepts of push, pull, and the laws governing motion.',
       "Forces and Newton's Laws": 'Understand the three laws of motion and how forces affect objects.',
       'Work, Energy, and Power': 'Discover the concepts of work, energy transformation, and power in physical systems.',
-      'Waves and Sound': 'Explore the properties of waves and how sound travels through different media.',
+      'Density': 'Measure mass and volume to calculate the density of water.',
+      'Basic Concepts Associated with Force': 'See how a push changes the motion of an object and check a = F / m.',
+      'Pressure Exerted by Solid': 'Hang sandbags on a thin wire and time how fast it cuts through soap.',
     };
     return descriptions[title] ?? 'Master the fundamental concepts of this lesson.';
+  }
+
+  void _openLinkedPractical() {
+    Navigator.pushNamed(
+      context,
+      '/practical-home',
+      arguments: {
+        if (widget.lessonId.isNotEmpty) 'lessonId': widget.lessonId,
+        'lessonTitle': widget.lessonTitle,
+      },
+    );
   }
 
   void _onItemTapped(int index) {
@@ -54,7 +113,7 @@ class _LessonsDashboardState extends State<LessonsDashboard> {
       _selectedIndex = index;
     });
     if (index == 0) Navigator.pushNamed(context, '/home');
-    if (index == 2) Navigator.pushNamed(context, '/practical-home');
+    if (index == 2) _openLinkedPractical();
     if (index == 3) {
       Navigator.pushNamed(context, '/profile');
     }
@@ -150,24 +209,29 @@ class _LessonsDashboardState extends State<LessonsDashboard> {
                 physics: const NeverScrollableScrollPhysics(),
                 children: [
                   GestureDetector(
-  onTap: () {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const LessonQuizzesPage(),
-      ),
-    );
-  },
-
-  child: _buildGridCard(
-    icon: Icons.quiz_outlined,
-    label: 'Quizzes',
-    iconColor: const Color(0xFF2196F3),
-    bgColor: const Color.fromARGB(255, 210, 235, 255),
-  ),
-),
+                    onTap: _hasSubLessons == null ? null : _navigateToQuiz,
+                    child: _buildGridCard(
+                      icon: Icons.quiz_outlined,
+                      label: 'Quizzes',
+                      iconColor: _hasSubLessons == null
+                          ? Colors.grey
+                          : const Color(0xFF2196F3),
+                      bgColor: const Color.fromARGB(255, 210, 235, 255),
+                    ),
+                  ),
                   GestureDetector(
-                    onTap: () => Navigator.pushNamed(context, '/game-intro'),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => LessonGamesScreen(
+                            lessonTitle: widget.lessonTitle,
+                            lessonTopic: widget.lessonTitle,
+                            grade: widget.grade,
+                          ),
+                        ),
+                      );
+                    },
                     child: _buildGridCard(
                       icon: Icons.sports_esports_outlined,
                       label: 'Games',
@@ -176,9 +240,7 @@ class _LessonsDashboardState extends State<LessonsDashboard> {
                     ),
                   ),
                   GestureDetector(
-                    onTap: () {
-                      Navigator.pushNamed(context, '/practical-home');
-                    },
+                    onTap: _openLinkedPractical,
                     child: _buildGridCard(
                       icon: Icons.science_outlined,
                       label: 'Practicals',
@@ -191,7 +253,8 @@ class _LessonsDashboardState extends State<LessonsDashboard> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => LearningMaterialsPage(
+                          builder: (_) => LearningMaterialsPage(
+                            lessonId: widget.lessonId,
                             lessonTitle: widget.lessonTitle,
                             grade: widget.grade,
                           ),

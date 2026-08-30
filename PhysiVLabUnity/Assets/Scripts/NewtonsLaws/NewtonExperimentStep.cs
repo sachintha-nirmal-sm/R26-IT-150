@@ -1,0 +1,24 @@
+public enum NewtonExperimentStep
+{
+    Introduction,
+    Objective,
+    SelectEquipment,
+    FirstLawSetup,
+    FirstLawStationary,
+    FirstLawMoving,
+    FirstLawFriction,
+    FirstLawObservation,
+    SecondLawSetup,
+    SecondLawConstantMass,
+    SecondLawConstantForce,
+    SecondLawGraphs,
+    ThirdLawSetup,
+    ThirdLawExperiment,
+    ThirdLawObservation,
+    WeightExperiment,
+    ObservationTables,
+    Questions,
+    ConceptMatching,
+    Conclusion,
+    Complete
+}

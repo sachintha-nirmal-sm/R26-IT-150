@@ -9,7 +9,7 @@ class VectorQuestGameScreen extends StatefulWidget {
 
 class _VectorQuestGameScreenState extends State<VectorQuestGameScreen>
     with TickerProviderStateMixin {
-  int _selectedBottomNavIndex = 1;
+  int _selectedBottomNavIndex = 2;
   bool _howToPlayExpanded = true;
   bool _controlsExpanded = false;
   bool _rulesExpanded = false;
@@ -167,14 +167,33 @@ class _VectorQuestGameScreenState extends State<VectorQuestGameScreen>
       ),
       centerTitle: false,
       actions: [
-        Padding(
-          padding: const EdgeInsets.only(right: 16),
-          child: GestureDetector(
-            onTap: () => Navigator.pushNamed(context, '/profile'),
-            child: const CircleAvatar(
-              radius: 18,
-              backgroundColor: Color(0xFFCCCCCC),
-              child: Icon(Icons.person, color: Colors.white, size: 22),
+        Container(
+          margin: const EdgeInsets.all(12),
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: const LinearGradient(
+              colors: [_blue, Color(0xFF1C5ED6)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: _blue.withValues(alpha: 0.3),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: const Center(
+            child: Text(
+              'A',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ),
@@ -329,10 +348,7 @@ class _VectorQuestGameScreenState extends State<VectorQuestGameScreen>
             ),
             child: ElevatedButton.icon(
               onPressed: () {
-                // TODO: Navigate to actual game play screen
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Starting Vector Quest…')),
-                );
+                Navigator.of(context).pushNamed('/force-game');
               },
               icon: const Icon(Icons.play_arrow, size: 22),
               label: const Text(
@@ -630,7 +646,7 @@ class _VectorQuestGameScreenState extends State<VectorQuestGameScreen>
             Navigator.of(context).pushNamed('/lesson-list');
             break;
           case 2:
-            Navigator.of(context).pushNamed('/practical-home');
+            // Already on Games — do nothing
             break;
           case 3:
             Navigator.of(context).pushNamed('/profile');
@@ -643,11 +659,11 @@ class _VectorQuestGameScreenState extends State<VectorQuestGameScreen>
       unselectedItemColor: Colors.grey,
       elevation: 8,
       items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home), label: 'Home'),
+        BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
         BottomNavigationBarItem(
-            icon: Icon(Icons.menu_book_outlined), activeIcon: Icon(Icons.menu_book), label: 'Lessons'),
+            icon: Icon(Icons.menu_book), label: 'Lessons'),
         BottomNavigationBarItem(
-            icon: Icon(Icons.science_outlined), activeIcon: Icon(Icons.science), label: 'Labs'),
+            icon: Icon(Icons.sports_esports), label: 'Games'),
         BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
       ],
     );

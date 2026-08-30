@@ -1,13 +1,20 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:html' as html;
+import '../admin/models/lesson_material.dart';
+import '../admin/services/materials_service.dart';
 
 class LearningMaterialsPage extends StatefulWidget {
+  final String lessonId;
   final String lessonTitle;
   final String grade;
 
   const LearningMaterialsPage({
     super.key,
-    this.lessonTitle = 'Linear Motion',
-    this.grade = 'Grade 9 Physics',
+    required this.lessonId,
+    this.lessonTitle = 'Lesson',
+    this.grade = 'Grade 9',
   });
 
   @override
@@ -16,58 +23,69 @@ class LearningMaterialsPage extends StatefulWidget {
 
 class _LearningMaterialsPageState extends State<LearningMaterialsPage> {
   static const Color _primaryBlue = Color(0xFF2196F3);
-  static const Color _navInactive = Color(0xFFB0BEC5);
-  int _selectedIndex = 1; // Lessons tab selected by default
+  final MaterialsService _service = MaterialsService();
+  late Future<List<LessonMaterial>> _future;
 
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-    if (index == 0) Navigator.pushNamed(context, '/home');
-    if (index == 2) Navigator.pushNamed(context, '/practical-home');
-    if (index == 3) Navigator.pushNamed(context, '/profile');
+  @override
+  void initState() {
+    super.initState();
+    _future = _service.getMaterialsForLesson(
+      widget.lessonId,
+      grade: widget.grade,
+      lessonTitle: widget.lessonTitle,
+    );
   }
 
-  // Sample documents data
-  final List<Map<String, dynamic>> documents = [
-    {
-      'title': 'Introduction to Linear Motion',
-      'subtitle': 'PDF Document • 2.5 MB',
-      'icon': Icons.description_outlined,
-      'color': const Color(0xFF2196F3),
-    },
-    {
-      'title': 'Equations of Motion',
-      'subtitle': 'PDF Document • 1.8 MB',
-      'icon': Icons.description_outlined,
-      'color': const Color(0xFF7C3AED),
-    },
-    {
-      'title': 'Graphical Representation',
-      'subtitle': 'PDF Document • 3.2 MB',
-      'icon': Icons.description_outlined,
-      'color': const Color(0xFF16A34A),
-    },
-    {
-      'title': 'Numerical Examples & Problems',
-      'subtitle': 'PDF Document • 2.1 MB',
-      'icon': Icons.description_outlined,
-      'color': const Color(0xFFEA580C),
-    },
-    {
-      'title': 'Summary Notes',
-      'subtitle': 'PDF Document • 1.5 MB',
-      'icon': Icons.description_outlined,
-      'color': const Color(0xFF06B6D4),
-    },
-    {
-      'title': 'Practice Questions',
-      'subtitle': 'PDF Document • 2.8 MB',
-      'icon': Icons.description_outlined,
-      'color': const Color(0xFFEC4899),
-    },
-  ];
+  // ─── Download PDF File ────────────────────────────────────────────────────────
+  void _downloadMaterial(LessonMaterial m) {
+    _service.incrementDownloadCount(m.id);
 
+    // Format file name to ensure it has .pdf extension
+    String fileName = m.materialName.trim();
+    if (!fileName.toLowerCase().endsWith('.pdf')) {
+      fileName = '$fileName.pdf';
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.download_done_rounded, color: Colors.white, size: 18),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Downloading $fileName...',
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          duration: const Duration(seconds: 3),
+          backgroundColor: _primaryBlue,
+        ),
+      );
+    }
+
+    // Transform Cloudinary URL to include fl_attachment to force direct browser attachment download
+    // This avoids XHR CORS 401 Unauthorized errors when fetching raw files via JS http.get
+    String downloadUrl = m.cloudinaryUrl;
+    if (downloadUrl.contains('/upload/') && !downloadUrl.contains('fl_attachment')) {
+      downloadUrl = downloadUrl.replaceAll('/upload/', '/upload/fl_attachment/');
+    }
+
+    // Trigger direct native browser download via HTML anchor element
+    final anchor = html.AnchorElement(href: downloadUrl)
+      ..setAttribute('download', fileName)
+      ..target = '_blank'
+      ..style.display = 'none';
+    html.document.body?.children.add(anchor);
+    anchor.click();
+    anchor.remove();
+  }
+
+  // ─── Build ───────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -77,12 +95,10 @@ class _LearningMaterialsPageState extends State<LearningMaterialsPage> {
           icon: const Icon(Icons.arrow_back, color: _primaryBlue),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(
+        title: const Text(
           'Learning Materials',
-          style: const TextStyle(
-            color: Colors.black87,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(
+              color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 17),
         ),
         centerTitle: true,
         backgroundColor: Colors.white,
@@ -101,104 +117,140 @@ class _LearningMaterialsPageState extends State<LearningMaterialsPage> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Lesson Header
-            Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFFE8F1FB),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Chapter: ${widget.lessonTitle}',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF2196F3),
-                      fontWeight: FontWeight.w600,
-                    ),
+      body: FutureBuilder<List<LessonMaterial>>(
+        future: _future,
+        builder: (context, snap) {
+          // Loading
+          if (snap.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: CircularProgressIndicator(color: _primaryBlue),
+            );
+          }
+
+          // Error
+          if (snap.hasError) {
+            return _buildEmpty(
+              icon: Icons.error_outline,
+              color: Colors.red.shade300,
+              title: 'Could not load materials',
+              subtitle: snap.error.toString(),
+            );
+          }
+
+          final materials = snap.data ?? [];
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ── Lesson header card ──────────────────────────────────
+                Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE8F1FB),
+                    borderRadius: BorderRadius.circular(16),
                   ),
-                  const SizedBox(height: 8),
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.grade,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: _primaryBlue,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        widget.lessonTitle,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          const Icon(Icons.folder_open,
+                              size: 14, color: Colors.grey),
+                          const SizedBox(width: 4),
+                          Text(
+                            materials.isEmpty
+                                ? 'No materials uploaded yet'
+                                : '${materials.length} PDF material${materials.length != 1 ? 's' : ''} available',
+                            style: const TextStyle(
+                                fontSize: 12, color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // ── Empty state ─────────────────────────────────────────
+                if (materials.isEmpty)
+                  _buildEmpty(
+                    icon: Icons.folder_open_outlined,
+                    color: Colors.grey.shade300,
+                    title: 'No materials yet',
+                    subtitle:
+                        'Your teacher hasn\'t uploaded any PDF materials for this lesson yet. Check back later.',
+                  )
+                else ...[
                   Text(
-                    'Complete Study Material',
+                    'Available PDFs (${materials.length})',
                     style: const TextStyle(
-                      fontSize: 20,
+                      fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: Colors.black87,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Grade: ${widget.grade}',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey,
+                  const SizedBox(height: 12),
+
+                  // ── Material grid ─────────────────────────────────────
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                      childAspectRatio: 0.80,
                     ),
+                    itemCount: materials.length,
+                    itemBuilder: (_, i) => _buildMaterialCard(materials[i]),
                   ),
                 ],
-              ),
-            ),
-            const SizedBox(height: 24),
 
-            // Learning Materials List
-            Text(
-              'Available Documents',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
+                const SizedBox(height: 32),
+              ],
             ),
-            const SizedBox(height: 12),
-
-            // Document Cards Grid
-            GridView.builder(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 0.85,
-              ),
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: documents.length,
-              itemBuilder: (context, index) {
-                return _buildDocumentCard(documents[index]);
-              },
-            ),
-
-            const SizedBox(height: 32),
-          ],
-        ),
+          );
+        },
       ),
-      bottomNavigationBar: _buildBottomNav(),
     );
   }
 
-  Widget _buildDocumentCard(Map<String, dynamic> document) {
+  // ─── Material card ────────────────────────────────────────────────────────────
+  Widget _buildMaterialCard(LessonMaterial m) {
+    const color = Color(0xFFE53E3E); // Red for PDF
+    const icon = Icons.picture_as_pdf;
+
     return GestureDetector(
-      onTap: () {
-        // TODO: Open PDF when backend is ready
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Opening ${document['title']}...'),
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      },
+      onTap: () => _downloadMaterial(m),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withOpacity(0.06),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -207,28 +259,27 @@ class _LearningMaterialsPageState extends State<LearningMaterialsPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            // Icon circle
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: (document['color'] as Color).withOpacity(0.1),
+                color: color.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(
-                document['icon'] as IconData,
-                color: document['color'] as Color,
-                size: 36,
-              ),
+              child: const Icon(icon, color: color, size: 34),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
+
+            // File name
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 10),
               child: Text(
-                document['title'] as String,
+                m.materialName,
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
-                  fontSize: 13,
+                  fontSize: 12,
                   fontWeight: FontWeight.w600,
                   color: Colors.black87,
                   height: 1.3,
@@ -236,18 +287,58 @@ class _LearningMaterialsPageState extends State<LearningMaterialsPage> {
               ),
             ),
             const SizedBox(height: 6),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Text(
-                document['subtitle'] as String,
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 11,
-                  color: Colors.grey,
-                  height: 1.2,
+
+            // File size + type chip
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Text(
+                    'PDF',
+                    style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w700,
+                        color: color),
+                  ),
                 ),
+                const SizedBox(width: 4),
+                Text(
+                  m.getFileSizeString(),
+                  style:
+                      TextStyle(fontSize: 10, color: Colors.grey.shade500),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+
+            // Single Download PDF Button
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              decoration: BoxDecoration(
+                color: _primaryBlue.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  Icon(Icons.download_rounded, size: 14, color: _primaryBlue),
+                  SizedBox(width: 4),
+                  Text(
+                    'Download PDF',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: _primaryBlue,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -256,56 +347,35 @@ class _LearningMaterialsPageState extends State<LearningMaterialsPage> {
     );
   }
 
-  Widget _buildBottomNav() {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 8,
-            offset: Offset(0, -2),
-          ),
-        ],
-      ),
-      child: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        selectedItemColor: _primaryBlue,
-        unselectedItemColor: _navInactive,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        selectedLabelStyle: const TextStyle(
-          fontWeight: FontWeight.w700,
-          fontSize: 12,
+  // ─── Empty / error widget ─────────────────────────────────────────────────────
+  Widget _buildEmpty({
+    required IconData icon,
+    required Color color,
+    required String title,
+    required String subtitle,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 48),
+      child: Center(
+        child: Column(
+          children: [
+            Icon(icon, size: 72, color: color),
+            const SizedBox(height: 16),
+            Text(title,
+                style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black54)),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: Text(subtitle,
+                  textAlign: TextAlign.center,
+                  style:
+                      TextStyle(fontSize: 13, color: Colors.grey.shade500)),
+            ),
+          ],
         ),
-        unselectedLabelStyle: const TextStyle(
-          fontWeight: FontWeight.w500,
-          fontSize: 12,
-        ),
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.menu_book_outlined),
-            activeIcon: Icon(Icons.menu_book),
-            label: 'Lessons',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.science_outlined),
-            activeIcon: Icon(Icons.science),
-            label: 'Labs',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ],
       ),
     );
   }
