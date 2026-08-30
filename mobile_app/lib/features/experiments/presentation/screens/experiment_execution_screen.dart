@@ -250,33 +250,14 @@ class _ExperimentExecutionScreenState extends State<ExperimentExecutionScreen> {
       ),
       centerTitle: false,
       actions: [
-        Container(
-          margin: const EdgeInsets.all(12),
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: const LinearGradient(
-              colors: [Color(0xFF2F80ED), Color(0xFF1C5ED6)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF2F80ED).withValues(alpha: 0.3),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: const Center(
-            child: Text(
-              'A',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
+        Padding(
+          padding: const EdgeInsets.only(right: 16),
+          child: GestureDetector(
+            onTap: () => Navigator.pushNamed(context, "/profile"),
+            child: const CircleAvatar(
+              radius: 18,
+              backgroundColor: Color(0xFFCCCCCC),
+              child: Icon(Icons.person, color: Colors.white, size: 22),
             ),
           ),
         ),
@@ -363,6 +344,9 @@ class _ExperimentExecutionScreenState extends State<ExperimentExecutionScreen> {
         setState(() {
           _selectedBottomNavIndex = index;
         });
+        if (index == 3) {
+          Navigator.pushNamed(context, '/profile');
+        }
       },
       type: BottomNavigationBarType.fixed,
       backgroundColor: Colors.white,

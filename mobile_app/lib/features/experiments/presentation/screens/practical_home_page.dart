@@ -22,6 +22,10 @@ class _PracticalHomePageState extends State<PracticalHomePage> {
   String? _lessonTitle;
   bool _readRouteArgs = false;
 
+  static const Color _primaryBlue = Color(0xFF2196F3);
+  static const Color _navInactive = Color(0xFFB0BEC5);
+  int _selectedIndex = 2; // Labs tab selected by default
+
   @override
   void initState() {
     super.initState();
@@ -113,6 +117,15 @@ class _PracticalHomePageState extends State<PracticalHomePage> {
     });
   }
 
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+    if (index == 0) Navigator.pushNamed(context, '/home');
+    if (index == 1) Navigator.pushNamed(context, '/lesson-list');
+    if (index == 3) Navigator.pushNamed(context, '/profile');
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -128,7 +141,7 @@ class _PracticalHomePageState extends State<PracticalHomePage> {
           _lessonTitle == null || _lessonTitle!.isEmpty
               ? 'Practical Hub'
               : '$_lessonTitle practicals',
-          style: TextStyle(color: Color(0xFF1A1C1E), fontWeight: FontWeight.bold),
+          style: const TextStyle(color: Color(0xFF1A1C1E), fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
       ),
@@ -195,6 +208,61 @@ class _PracticalHomePageState extends State<PracticalHomePage> {
           );
         },
       ),
+      bottomNavigationBar: _buildBottomNav(),
+    );
+  }
+
+  Widget _buildBottomNav() {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 8,
+            offset: Offset(0, -2),
+          ),
+        ],
+      ),
+      child: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+        selectedItemColor: _primaryBlue,
+        unselectedItemColor: _navInactive,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        selectedLabelStyle: const TextStyle(
+          fontWeight: FontWeight.w700,
+          fontSize: 12,
+        ),
+        unselectedLabelStyle: const TextStyle(
+          fontWeight: FontWeight.w500,
+          fontSize: 12,
+        ),
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_outlined),
+            activeIcon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.menu_book_outlined),
+            activeIcon: Icon(Icons.menu_book),
+            label: 'Lessons',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.science_outlined),
+            activeIcon: Icon(Icons.science),
+            label: 'Labs',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline),
+            activeIcon: Icon(Icons.person),
+            label: 'Profile',
+          ),
+        ],
+      ),
     );
   }
 }
@@ -219,7 +287,7 @@ class _PracticalCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: guide.color.withValues(alpha: 0.12),
+            color: guide.color.withOpacity(0.12),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
@@ -228,91 +296,91 @@ class _PracticalCard extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(24),
         child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onStart,
-          borderRadius: BorderRadius.circular(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              PracticalHeroCard(practical: practical, compact: true),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      practical.title,
-                      style: const TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1A1C1E),
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onStart,
+            borderRadius: BorderRadius.circular(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                PracticalHeroCard(practical: practical, compact: true),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        practical.title,
+                        style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1A1C1E),
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      practical.description,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        height: 1.35,
-                        color: Colors.grey,
+                      const SizedBox(height: 6),
+                      Text(
+                        practical.description,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          height: 1.35,
+                          color: Colors.grey,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: [
-                        for (final item in guide.kit.take(3))
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 5,
-                            ),
-                            decoration: BoxDecoration(
-                              color: guide.accent.withValues(alpha: 0.35),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              item,
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: guide.color,
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: [
+                          for (final item in guide.kit.take(3))
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 5,
+                              ),
+                              decoration: BoxDecoration(
+                                color: guide.accent.withOpacity(0.35),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                item,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: guide.color,
+                                ),
                               ),
                             ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 18,
+                            vertical: 9,
                           ),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 18,
-                          vertical: 9,
-                        ),
-                        decoration: BoxDecoration(
-                          color: guide.color,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Text(
-                          'Open lab',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
+                          decoration: BoxDecoration(
+                            color: guide.color,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Text(
+                            'Open lab',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
-      ),
       ),
     );
   }

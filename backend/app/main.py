@@ -1,8 +1,17 @@
+import sys
+import io
+import traceback
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import Response, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from app.core import db
-from app.api import auth as auth_router
+
+# Force UTF-8 on Windows so binary data in tracebacks never crashes the process
+if hasattr(sys.stdout, 'buffer'):
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+if hasattr(sys.stderr, 'buffer'):
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -27,6 +36,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Use standard CORSMiddleware for robust preflight and header handling
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -35,13 +45,34 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Custom error handling middleware to safely catch and print tracebacks
+@app.middleware("http")
+async def error_handling_middleware(request: Request, call_next):
+    try:
+        response = await call_next(request)
+        return response
+    except Exception as exc:
+        try:
+            traceback.print_exc()
+        except Exception:
+            print(f"[error] {type(exc).__name__}: {repr(exc)[:200]}", file=sys.__stderr__)
+        return JSONResponse(status_code=500, content={"detail": "Internal server error"})
+
 # --- Routers ---
-from app.api import auth as auth_router
-from app.api import admin_lessons
+from app.api.auth import router as auth_router
+from app.api.admin_lessons import router as admin_lessons_router
+from app.api.admin_sub_lessons import router as sub_lessons_router
+from app.api.generate_questions import router as generate_router
+from app.api.ml_analytics import router as ml_analytics_router
+from app.api.recommendations import router as recommendations_router
 from app.api import practicals
 
-app.include_router(auth_router.router)
-app.include_router(admin_lessons.router)
+app.include_router(auth_router)
+app.include_router(admin_lessons_router)
+app.include_router(sub_lessons_router)
+app.include_router(generate_router)
+app.include_router(ml_analytics_router)
+app.include_router(recommendations_router)
 app.include_router(practicals.router)
 
 @app.get("/health", tags=["Health"])
@@ -52,3 +83,7 @@ def health_check():
         "firebase_connected": db is not None,
         "firebase_project": db.project if db else None,
     }
+
+@app.get("/")
+def health():
+    return {"status": "ok"}
