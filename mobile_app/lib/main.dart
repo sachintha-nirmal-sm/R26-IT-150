@@ -34,7 +34,6 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
-        fontFamily: 'Poppins',
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF1A3CBA),
           brightness: Brightness.light,
@@ -48,9 +47,9 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-    home: const GetStartedPage(),
-    initialRoute: "/get-started",
-    routes: {
+      initialRoute: "/",
+      routes: {
+    "/": (context) => const GetStartedPage(),
     "/get-started": (context) => const GetStartedPage(),
     "/login": (context) => const LoginPage(),
     "/home": (context) => const PhysicsLabHomePage(),
