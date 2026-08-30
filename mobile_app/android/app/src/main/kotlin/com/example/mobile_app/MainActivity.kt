@@ -1,12 +1,30 @@
 package com.example.mobile_app
 
 import android.content.Intent
+import android.os.Bundle
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
     private val channelName = "com.example.mobile_app/unity_lab"
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        UnityBridge.attach(application)
+        UnityBridge.acceptIncoming(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        UnityBridge.acceptIncoming(intent)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        UnityBridge.acceptIncoming(intent)
+    }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -25,8 +43,7 @@ class MainActivity : FlutterActivity() {
                 }
                 "takePendingResult" -> result.success(UnityBridge.takePendingResult())
                 "unloadUnity" -> {
-                    UnityBridge.unityActivity?.finish()
-                    UnityBridge.unityActivity = null
+                    UnityBridge.finishUnityActivity()
                     result.success(true)
                 }
                 else -> result.notImplemented()
@@ -40,14 +57,13 @@ class MainActivity : FlutterActivity() {
 
     private fun startUnity(sessionJson: String): Boolean {
         val activityClass = resolveUnityActivity() ?: return false
-        UnityBridge.pendingSession = sessionJson
+        UnityBridge.stashSession(sessionJson)
         UnityBridge.pendingResult = null
         val intent = Intent(this, activityClass).apply {
-            putExtra("flutter_session", sessionJson)
-            addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
+            putExtra(UnityBridge.EXTRA_SESSION, sessionJson)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         startActivity(intent)
-        UnityBridge.deliverSession(sessionJson)
         return true
     }
 

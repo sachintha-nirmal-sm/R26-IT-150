@@ -11,14 +11,28 @@ class ProfileScreen extends StatefulWidget {
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
+class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserver {
   int _selectedIndex = 3;
   StudentPracticalProgress? _progress;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadProgress();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _loadProgress();
+    }
   }
 
   Future<void> _loadProgress() async {
@@ -32,8 +46,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FE),
       appBar: AppBar(
@@ -132,7 +144,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Expanded(
                   child: _buildStatCard(
                     'Completed',
-                    '${_progress?.completedPracticals ?? 1}',
+                    '${_progress?.completedPracticals ?? 0}',
                     Icons.check_circle,
                     Colors.blue,
                   ),
@@ -141,7 +153,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Expanded(
                   child: _buildStatCard(
                     'Total labs',
-                    '${_progress?.totalPracticals ?? 6}',
+                    '${_progress?.totalPracticals ?? 0}',
                     Icons.science,
                     Colors.blue,
                   ),
@@ -167,38 +179,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             const SizedBox(height: 15),
 
-            // Progress Items
-            if (args != null && args['topic'] != null)
-              _buildListItem(
-                Icons.check_circle, 
-                args['topic'], 
-                "Completed • ${args['score']}%", 
-                const Color(0xFF27AE60), 
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => NewtonModuleScreen(
-                        lessonName: args['topic'],
-                        practicalScore: args['score'],
-                      ),
-                    ),
-                  );
-                },
+            if (_progress == null)
+              const Text(
+                'Connect to the backend to load saved practical scores.',
+                style: TextStyle(color: Colors.grey),
+              )
+            else if (_progress!.recentResults.isEmpty)
+              const Text(
+                'Complete a practical with Start to see it here.',
+                style: TextStyle(color: Colors.grey),
+              )
+            else
+              ..._progress!.recentResults.map(
+                (item) => _buildListItem(
+                  Icons.check_circle,
+                  item.title,
+                  'Completed • ${item.percentage.round()}%',
+                  const Color(0xFF27AE60),
+                ),
               ),
-            
-            _buildListItem(Icons.more_horiz, "Linear motion", "Inprogress .60%", Colors.blue, onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const NewtonModuleScreen(lessonName: "Linear motion")),
-              );
-            }),
-            _buildListItem(Icons.more_horiz, "Vectors & Scalars", "In Progress • 40%", Colors.blue, onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const NewtonModuleScreen(lessonName: "Vectors & Scalars")),
-              );
-            }),
 
             const SizedBox(height: 30),
             Row(

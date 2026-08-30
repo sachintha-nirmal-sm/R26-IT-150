@@ -32,7 +32,6 @@ class ExperimentResultsScreen extends StatelessWidget {
     final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
     final displayScore = score ?? args?['score'] ?? 0;
     final displayDuration = finalDuration ?? args?['finalDuration'] ?? "0 min 0 sec";
-    final displayTopic = topicName ?? args?['topicName'] ?? "Force";
 
     final label = _getPerformanceLabel(displayScore);
     final color = _getPerformanceColor(displayScore);
@@ -114,18 +113,7 @@ class ExperimentResultsScreen extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {
-                  Navigator.pushNamed(
-                    context, 
-                    '/profile', 
-                    arguments: {
-                      'view': 'recent_progress',
-                      'topic': displayTopic,
-                      'status': 'Completed',
-                      'score': displayScore,
-                    },
-                  );
-                },
+                onPressed: () => Navigator.pop(context),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF2F80ED),
                   foregroundColor: Colors.white,
@@ -134,8 +122,8 @@ class ExperimentResultsScreen extends StatelessWidget {
                   elevation: 5,
                 ),
                 child: const Text(
-                  "Save Result", 
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)
+                  "Done",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ),
             ),

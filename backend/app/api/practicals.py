@@ -17,6 +17,7 @@ from fastapi import APIRouter, Depends, Query
 
 from app.core.dependencies import VerifiedUser, require_student
 from app.models.practical import (
+    CompletePracticalRequest,
     DemoFinishRequest,
     OfficialResultBundle,
     PracticalDetail,
@@ -104,6 +105,19 @@ def submit_practical(
     user: VerifiedUser = Depends(require_student),
 ) -> PracticalResultResponse:
     return service.submit_practical(user.uid, practical_id, body)
+
+
+@router.post(
+    "/api/practicals/{practical_id}/complete",
+    response_model=PracticalResultResponse,
+    summary="Save Unity official score and update the student profile",
+)
+def complete_practical(
+    practical_id: str,
+    body: CompletePracticalRequest,
+    user: VerifiedUser = Depends(require_student),
+) -> PracticalResultResponse:
+    return service.complete_official(user.uid, practical_id, body)
 
 
 @router.get(

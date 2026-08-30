@@ -1,7 +1,10 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'core/app_navigator.dart';
 import 'firebase_options.dart';
 import 'features/experiments/experiments.dart';
+import 'features/experiments/data/lab_result_sync.dart';
 import 'features/experiments/data/practical.dart';
 import 'features/experiments/presentation/screens/practical_home_page.dart';
 import 'features/LessonList/lesson_list_page.dart';
@@ -31,13 +34,25 @@ void main() async {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  @override
+  void initState() {
+    super.initState();
+    LabResultSync.start();
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Physics Lab',
+      navigatorKey: appNavigatorKey,
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
@@ -55,7 +70,9 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      initialRoute: '/get-started',
+      initialRoute: FirebaseAuth.instance.currentUser == null
+          ? '/get-started'
+          : '/home',
       routes: {
     "/get-started": (context) => const GetStartedPage(),
     "/login": (context) => const LoginPage(),

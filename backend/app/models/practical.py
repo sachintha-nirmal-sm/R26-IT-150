@@ -67,9 +67,16 @@ class SubmitPracticalRequest(BaseModel):
     resultId: str
     attemptNumber: int = Field(..., ge=1)
     score: int = Field(..., ge=0)
+    durationSeconds: int | None = Field(None, ge=0)
     measurements: dict[str, Any] | None = None
     calculations: dict[str, Any] | None = None
     evaluation: dict[str, Any] | None = None
+
+
+class CompletePracticalRequest(BaseModel):
+    score: int = Field(..., ge=0)
+    durationSeconds: int | None = Field(None, ge=0)
+    measurements: dict[str, Any] | None = None
 
 
 class PracticalResultResponse(BaseModel):
@@ -104,6 +111,15 @@ class GradeProgress(BaseModel):
     averagePercentage: float = 0
 
 
+class RecentPracticalItem(BaseModel):
+    practicalId: str
+    title: str
+    score: int
+    percentage: float
+    completedAt: str | None = None
+    attemptType: str = "practical"
+
+
 class StudentProgressResponse(BaseModel):
     studentId: str
     grade: int
@@ -113,4 +129,5 @@ class StudentProgressResponse(BaseModel):
     averagePercentage: float
     gradeProgress: dict[str, GradeProgress]
     lessonProgress: dict[str, GradeProgress]
+    recentResults: list[RecentPracticalItem] = Field(default_factory=list)
     updatedAt: str | None = None

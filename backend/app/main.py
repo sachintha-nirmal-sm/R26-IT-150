@@ -9,9 +9,12 @@ async def lifespan(app: FastAPI):
     # Startup verification
     print("[FastAPI] App starting up...")
     try:
-        # Verify Firestore connection by listing top-level collections or checking client
         _ = db.project
         print(f"[FastAPI] Firebase Admin SDK initialized successfully (Project: {db.project}).")
+        from app.core.firebase import db as firestore_db
+        from app.services.practical_catalogue import ensure_catalogue
+        ensure_catalogue(firestore_db)
+        print("[FastAPI] Practical catalogue ready in Firestore.")
     except Exception as e:
         print(f"[FastAPI Error] Firebase Admin SDK initialization check failed: {e}")
     yield

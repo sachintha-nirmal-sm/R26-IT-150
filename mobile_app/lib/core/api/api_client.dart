@@ -102,7 +102,7 @@ class ApiClient {
       late http.Response response;
       if (method == 'GET') {
         response = await _http.get(uri, headers: headers).timeout(
-              const Duration(seconds: 6),
+              const Duration(seconds: 12),
             );
       } else {
         response = await _http
@@ -111,7 +111,7 @@ class ApiClient {
               headers: headers,
               body: body == null ? null : jsonEncode(body),
             )
-            .timeout(const Duration(seconds: 6));
+            .timeout(const Duration(seconds: 20));
       }
 
       if (requireAuth && response.statusCode == 401 && !retried) {

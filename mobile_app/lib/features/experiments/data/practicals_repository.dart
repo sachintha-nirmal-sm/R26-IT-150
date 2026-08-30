@@ -82,6 +82,7 @@ class PracticalsRepository {
     required String resultId,
     required int attemptNumber,
     required int score,
+    int? durationSeconds,
     Map<String, dynamic>? measurements,
     Map<String, dynamic>? calculations,
     Map<String, dynamic>? evaluation,
@@ -92,12 +93,59 @@ class PracticalsRepository {
         'resultId': resultId,
         'attemptNumber': attemptNumber,
         'score': score,
+        if (durationSeconds != null) 'durationSeconds': durationSeconds,
         if (measurements != null) 'measurements': measurements,
         if (calculations != null) 'calculations': calculations,
         if (evaluation != null) 'evaluation': evaluation,
       },
     );
     return PracticalResult.fromJson(_asMap(decoded));
+  }
+
+  /// Official Start always writes Firestore via FastAPI, even if Unity ran
+  /// on a local fallback session (`local-…` resultId).
+  Future<PracticalResult> recordOfficialScore({
+    required PracticalSession session,
+    required int score,
+    int? durationSeconds,
+    Map<String, dynamic>? measurements,
+  }) async {
+    final practicalId = session.practicalId;
+    final payload = {
+      'score': score,
+      if (durationSeconds != null) 'durationSeconds': durationSeconds,
+      if (measurements != null) 'measurements': _jsonSafe(measurements),
+    };
+    try {
+      final decoded = await _api.post(
+        '/api/practicals/$practicalId/complete',
+        body: payload,
+      );
+      return PracticalResult.fromJson(_asMap(decoded));
+    } on ApiException catch (error) {
+      if (error.statusCode != 404) rethrow;
+      final started = await startPractical(practicalId);
+      return submitPractical(
+        practicalId: practicalId,
+        resultId: started.resultId,
+        attemptNumber: started.attemptNumber,
+        score: score,
+        durationSeconds: durationSeconds,
+        measurements: measurements,
+      );
+    }
+  }
+
+  Map<String, dynamic> _jsonSafe(Map<String, dynamic> input) {
+    final out = <String, dynamic>{};
+    input.forEach((key, value) {
+      if (value == null || value is num || value is bool || value is String) {
+        out[key] = value;
+      } else {
+        out[key] = value.toString();
+      }
+    });
+    return out;
   }
 
   Future<PracticalResult> fetchOfficialResult(String practicalId) async {

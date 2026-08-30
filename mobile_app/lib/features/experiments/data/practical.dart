@@ -57,13 +57,8 @@ class Practical {
 
   bool get canStartDemo {
     if (!demoAllowed) return false;
-    if (currentState == 'DEMO_IN_PROGRESS') return true;
-    if (demoAttemptsUsed >= demoMaxAttempts) return false;
-    return const {
-      'AVAILABLE',
-      'DEMO_COMPLETED',
-      'PRACTICAL_AVAILABLE',
-    }.contains(currentState);
+    if (currentState == 'PRACTICAL_IN_PROGRESS') return false;
+    return true;
   }
 
   bool get canRetryOfficial =>
@@ -244,6 +239,35 @@ class PracticalResult {
   }
 }
 
+class RecentPracticalItem {
+  const RecentPracticalItem({
+    required this.practicalId,
+    required this.title,
+    required this.score,
+    required this.percentage,
+    this.completedAt,
+    this.attemptType = 'practical',
+  });
+
+  final String practicalId;
+  final String title;
+  final int score;
+  final double percentage;
+  final String? completedAt;
+  final String attemptType;
+
+  factory RecentPracticalItem.fromJson(Map<String, dynamic> json) {
+    return RecentPracticalItem(
+      practicalId: json['practicalId'] as String? ?? '',
+      title: json['title'] as String? ?? 'Practical',
+      score: Practical._asInt(json['score']),
+      percentage: Practical._asDouble(json['percentage']),
+      completedAt: json['completedAt'] as String?,
+      attemptType: json['attemptType'] as String? ?? 'practical',
+    );
+  }
+}
+
 class StudentPracticalProgress {
   const StudentPracticalProgress({
     required this.studentId,
@@ -253,6 +277,7 @@ class StudentPracticalProgress {
     required this.totalScore,
     required this.averagePercentage,
     required this.gradeProgress,
+    this.recentResults = const [],
   });
 
   final String studentId;
@@ -262,6 +287,7 @@ class StudentPracticalProgress {
   final int totalScore;
   final double averagePercentage;
   final Map<String, Map<String, num>> gradeProgress;
+  final List<RecentPracticalItem> recentResults;
 
   factory StudentPracticalProgress.fromJson(Map<String, dynamic> json) {
     final rawGrades = json['gradeProgress'];
@@ -278,6 +304,15 @@ class StudentPracticalProgress {
         }
       });
     }
+    final rawRecent = json['recentResults'];
+    final recent = <RecentPracticalItem>[];
+    if (rawRecent is List) {
+      for (final item in rawRecent) {
+        if (item is Map) {
+          recent.add(RecentPracticalItem.fromJson(Map<String, dynamic>.from(item)));
+        }
+      }
+    }
     return StudentPracticalProgress(
       studentId: json['studentId'] as String? ?? '',
       grade: Practical._asInt(json['grade']),
@@ -286,6 +321,7 @@ class StudentPracticalProgress {
       totalScore: Practical._asInt(json['totalScore']),
       averagePercentage: Practical._asDouble(json['averagePercentage']),
       gradeProgress: grades,
+      recentResults: recent,
     );
   }
 }

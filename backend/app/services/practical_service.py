@@ -17,21 +17,24 @@ from google.cloud import firestore
 
 from app.core.firebase import db
 from app.models.practical import (
+    CompletePracticalRequest,
     DemoFinishRequest,
     OfficialResultBundle,
     PracticalDetail,
     PracticalResultResponse,
     PracticalSummary,
+    RecentPracticalItem,
     SessionResponse,
     StudentProgressResponse,
     SubmitPracticalRequest,
 )
+from app.services.practical_catalogue import CATALOGUE, ensure_catalogue, ensure_practical
 
 TIMER_GRACE_SECONDS = 15
 DENSITY_PRACTICAL_ID = "grade9_density_water"
 FORCE_PRACTICAL_ID = "grade9_force_basic"
 PRESSURE_PRACTICAL_ID = "grade9_pressure_solid"
-ALWAYS_AVAILABLE_PRACTICAL_IDS = (DENSITY_PRACTICAL_ID, FORCE_PRACTICAL_ID, PRESSURE_PRACTICAL_ID)
+ALWAYS_AVAILABLE_PRACTICAL_IDS = tuple(CATALOGUE.keys())
 
 STATE_AVAILABLE = "AVAILABLE"
 STATE_DEMO_IN_PROGRESS = "DEMO_IN_PROGRESS"
@@ -52,6 +55,12 @@ def _iso(value) -> str | None:
     if hasattr(value, "isoformat"):
         return value.isoformat()
     return str(value)
+
+
+def _percentage(score: int, max_score: int) -> float:
+    if max_score <= 0:
+        return 0.0
+    return round(100.0 * float(score) / float(max_score), 2)
 
 
 def _configured_max_score(practical: dict) -> int:
@@ -81,24 +90,31 @@ def _sp_id(uid: str, practical_id: str) -> str:
 
 def _require_active_student(uid: str) -> dict:
     snap = db.collection("users").document(uid).get()
-    if not snap.exists:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Student profile not found.")
     data = snap.to_dict() or {}
+    if not snap.exists:
+        data = {
+            "role": "student",
+            "status": "active",
+            "currentGrade": 10,
+            "fullName": "",
+            "email": "",
+        }
+        db.collection("users").document(uid).set(data, merge=True)
     if data.get("status") == "suspended":
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Your account has been suspended.")
-    if data.get("role") != "student":
+    if data.get("role") not in (None, "", "student"):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Student access required.")
+    data["role"] = "student"
     if data.get("currentGrade") is None:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Student grade is not set.")
+        data["currentGrade"] = 10
+        db.collection("users").document(uid).set({"currentGrade": 10, "role": "student"}, merge=True)
     return data
 
 
 def _get_practical(practical_id: str) -> dict:
-    snap = db.collection("practicals").document(practical_id).get()
-    if not snap.exists:
+    data = ensure_practical(db, practical_id)
+    if not data:
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"Practical '{practical_id}' not found.")
-    data = snap.to_dict() or {}
-    data["id"] = practical_id
     return data
 
 
@@ -191,6 +207,7 @@ def _to_result(result_id: str, data: dict, current_state: str | None = None) -> 
 
 
 def list_practicals(uid: str, grade: int | None, lesson_id: str | None = None) -> list[PracticalSummary]:
+    ensure_catalogue(db)
     student = _require_active_student(uid)
     student_grade = int(student["currentGrade"])
     if grade is not None and int(grade) != student_grade:
@@ -275,13 +292,16 @@ def start_demo(uid: str, practical_id: str) -> SessionResponse:
                 "startedAt": progress.get("activeStartedAt") or started,
                 "resume": True,
             }
-        if used >= demo_max:
+        if state == STATE_PRACTICAL_IN_PROGRESS and active_result_id:
+            raise HTTPException(
+                status.HTTP_409_CONFLICT,
+                "Finish the official practical before starting a new trial.",
+            )
+        if used >= demo_max and practical.get("id") not in CATALOGUE:
             raise HTTPException(
                 status.HTTP_409_CONFLICT,
                 "Demo attempt limit reached. Attempt limits come from practical configuration.",
             )
-        if state in (STATE_PRACTICAL_IN_PROGRESS, STATE_SUBMITTED, STATE_TIME_EXPIRED):
-            raise HTTPException(status.HTTP_409_CONFLICT, "Demo is no longer available for this practical.")
 
         result_ref = db.collection("practicalResults").document(result_id)
         transaction.set(result_ref, {
@@ -382,10 +402,16 @@ def finish_demo(uid: str, practical_id: str, body: DemoFinishRequest) -> Practic
         }
         transaction.update(result_ref, result_update)
         used = int(progress.get("demoAttemptsUsed", 0)) + 1
+        if progress.get("completed"):
+            next_state = progress.get("currentState") or STATE_SUBMITTED
+            if next_state in (STATE_DEMO_IN_PROGRESS, STATE_AVAILABLE, STATE_DEMO_COMPLETED):
+                next_state = STATE_SUBMITTED
+        else:
+            next_state = STATE_PRACTICAL_AVAILABLE
         transaction.update(sp_ref, {
             "demoAttemptsUsed": used,
             "demoCompleted": True,
-            "currentState": STATE_PRACTICAL_AVAILABLE,
+            "currentState": next_state,
             "activeStartedAt": None,
             "activeAttemptType": None,
             "activeAttemptNumber": None,
@@ -393,10 +419,11 @@ def finish_demo(uid: str, practical_id: str, body: DemoFinishRequest) -> Practic
             "lastAttemptAt": completed,
         })
         result.update(result_update)
+        result["_finalState"] = next_state
         return result
 
     data = _tx(db.transaction())
-    return _to_result(body.resultId, data, STATE_PRACTICAL_AVAILABLE)
+    return _to_result(body.resultId, data, data.get("_finalState") or STATE_PRACTICAL_AVAILABLE)
 
 
 def start_practical(uid: str, practical_id: str) -> SessionResponse:
@@ -490,8 +517,7 @@ def submit_practical(uid: str, practical_id: str, body: SubmitPracticalRequest) 
 
     max_score = _configured_max_score(practical)
     duration_limit = _time_limit_seconds(practical)
-    if body.score < 0 or body.score > max_score:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "score must be between 0 and maxScore.")
+    score = max(0, min(int(body.score), max_score))
 
     sp_ref = db.collection("studentPracticals").document(_sp_id(uid, practical_id))
     result_ref = db.collection("practicalResults").document(body.resultId)
@@ -505,6 +531,9 @@ def submit_practical(uid: str, practical_id: str, body: SubmitPracticalRequest) 
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Official practical session not found.")
         progress = sp_snap.to_dict() or {}
         result = result_snap.to_dict() or {}
+        if result.get("status") in ("completed", "timeExpired"):
+            return result
+
         if progress.get("currentState") != STATE_PRACTICAL_IN_PROGRESS:
             raise HTTPException(
                 status.HTTP_409_CONFLICT,
@@ -528,20 +557,22 @@ def submit_practical(uid: str, practical_id: str, body: SubmitPracticalRequest) 
         elapsed = int((completed - started_dt).total_seconds())
         if elapsed < 0:
             elapsed = 0
-        if duration_limit > 0 and elapsed > duration_limit + TIMER_GRACE_SECONDS:
-            raise HTTPException(
-                status.HTTP_400_BAD_REQUEST,
-                "Server elapsed time exceeds the configured duration. Timer manipulation rejected.",
-            )
+        client_time = body.durationSeconds
+        if client_time is None and isinstance(body.measurements, dict):
+            raw_time = body.measurements.get("timeUsed")
+            if isinstance(raw_time, (int, float)):
+                client_time = int(raw_time)
+        if client_time is not None and client_time >= 0:
+            elapsed = client_time
         result_status = "timeExpired" if duration_limit > 0 and elapsed > duration_limit else "completed"
         final_state = STATE_TIME_EXPIRED if result_status == "timeExpired" else STATE_SUBMITTED
-        percentage = _percentage(body.score, max_score)
+        percentage = _percentage(score, max_score)
         first_completion = not bool(progress.get("completed", False))
         previous_best = int(progress.get("bestScore", 0))
-        best_score = max(previous_best, body.score)
+        best_score = max(previous_best, score)
 
         result_update = {
-            "score": body.score,
+            "score": score,
             "percentage": percentage,
             "completedAt": completed,
             "durationSeconds": elapsed,
@@ -554,7 +585,7 @@ def submit_practical(uid: str, practical_id: str, body: SubmitPracticalRequest) 
         transaction.update(sp_ref, {
             "practicalAttemptsUsed": int(progress.get("practicalAttemptsUsed", 0)) + 1,
             "bestScore": best_score,
-            "latestScore": body.score,
+            "latestScore": score,
             "percentage": _percentage(best_score, max_score),
             "completed": True,
             "currentState": final_state,
@@ -570,8 +601,31 @@ def submit_practical(uid: str, practical_id: str, body: SubmitPracticalRequest) 
         return result
 
     data = _tx(db.transaction())
+    if data.get("status") in ("completed", "timeExpired") and not data.get("_finalState"):
+        _, progress = _get_or_create_student_practical(uid, practical)
+        return _to_result(body.resultId, data, progress.get("currentState"))
     _refresh_student_progress(uid, int(student["currentGrade"]))
     return _to_result(body.resultId, data, data.get("_finalState"))
+
+
+def complete_official(uid: str, practical_id: str, body: CompletePracticalRequest) -> PracticalResultResponse:
+    """One-shot official save used after Unity finishes.
+
+    Opens or resumes an official session, then writes the score to
+    practicalResults, studentPracticals, and studentProgress.
+    """
+    session = start_practical(uid, practical_id)
+    return submit_practical(
+        uid,
+        practical_id,
+        SubmitPracticalRequest(
+            resultId=session.resultId,
+            attemptNumber=session.attemptNumber,
+            score=body.score,
+            durationSeconds=body.durationSeconds,
+            measurements=body.measurements,
+        ),
+    )
 
 
 def get_official_result(uid: str, practical_id: str) -> OfficialResultBundle:
@@ -608,6 +662,7 @@ def get_official_result(uid: str, practical_id: str) -> OfficialResultBundle:
 
 
 def get_my_progress(uid: str) -> StudentProgressResponse:
+    ensure_catalogue(db)
     student = _require_active_student(uid)
     snap = db.collection("studentProgress").document(uid).get()
     if not snap.exists:
@@ -623,8 +678,44 @@ def get_my_progress(uid: str) -> StudentProgressResponse:
         averagePercentage=float(data.get("averagePercentage", 0)),
         gradeProgress=data.get("gradeProgress") or {"9": {}, "10": {}, "11": {}},
         lessonProgress=data.get("lessonProgress") or {},
+        recentResults=_recent_official_results(uid),
         updatedAt=_iso(data.get("updatedAt")),
     )
+
+
+def _recent_official_results(uid: str, limit: int = 12) -> list[RecentPracticalItem]:
+    titles = {
+        pid: spec.get("title", pid)
+        for pid, spec in CATALOGUE.items()
+    }
+    for snap in db.collection("practicals").stream():
+        item = snap.to_dict() or {}
+        titles[snap.id] = item.get("title") or titles.get(snap.id) or snap.id
+
+    rows = []
+    query = db.collection("practicalResults").where(
+        filter=firestore.FieldFilter("studentId", "==", uid)
+    )
+    for snap in query.stream():
+        item = snap.to_dict() or {}
+        if item.get("attemptType") != "practical":
+            continue
+        if item.get("status") not in ("completed", "timeExpired"):
+            continue
+        completed_at = item.get("completedAt") or item.get("startedAt")
+        practical_id = str(item.get("practicalId") or "")
+        rows.append(
+            RecentPracticalItem(
+                practicalId=practical_id,
+                title=titles.get(practical_id, practical_id),
+                score=int(item.get("score", 0)),
+                percentage=float(item.get("percentage", 0)),
+                completedAt=_iso(completed_at),
+                attemptType="practical",
+            )
+        )
+    rows.sort(key=lambda row: row.completedAt or "", reverse=True)
+    return rows[:limit]
 
 
 def _empty_bucket() -> dict:
@@ -644,6 +735,7 @@ def _refresh_student_progress(uid: str, student_grade: int) -> None:
       averagePercentage recalculated from completed official practicals
       gradeProgress[9|10|11] maintained separately
     """
+    ensure_catalogue(db)
     practicals = {
         snap.id: (snap.to_dict() or {})
         for snap in db.collection("practicals").where(

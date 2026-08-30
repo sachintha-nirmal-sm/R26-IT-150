@@ -63,6 +63,7 @@ public class FlutterBridge : MonoBehaviour
 
         Instance = this;
         DontDestroyOnLoad(gameObject);
+        Application.wantsToQuit += PreventHostProcessQuit;
         ParseLaunchUrl(Application.absoluteURL);
         TryReadAndroidSession();
         ApplyAttemptLimit();
@@ -288,6 +289,15 @@ public class FlutterBridge : MonoBehaviour
         }
 #else
         Debug.Log("[FlutterBridge] host result (editor): " + json);
+#endif
+    }
+
+    private static bool PreventHostProcessQuit()
+    {
+#if UNITY_ANDROID && !UNITY_EDITOR
+        return false;
+#else
+        return true;
 #endif
     }
 

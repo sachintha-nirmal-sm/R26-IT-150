@@ -14,7 +14,7 @@ class ApiConfig {
   static const _fromDefine = String.fromEnvironment('API_BASE_URL');
   static const _lanHost = String.fromEnvironment(
     'API_HOST',
-    defaultValue: '192.168.128.196',
+    defaultValue: '172.28.10.87',
   );
 
   static String? _resolved;

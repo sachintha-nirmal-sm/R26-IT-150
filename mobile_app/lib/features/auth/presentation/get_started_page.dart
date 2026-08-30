@@ -1,7 +1,24 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-class GetStartedPage extends StatelessWidget {
+class GetStartedPage extends StatefulWidget {
   const GetStartedPage({Key? key}) : super(key: key);
+
+  @override
+  State<GetStartedPage> createState() => _GetStartedPageState();
+}
+
+class _GetStartedPageState extends State<GetStartedPage> {
+  @override
+  void initState() {
+    super.initState();
+    if (FirebaseAuth.instance.currentUser != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        Navigator.of(context).pushReplacementNamed('/home');
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

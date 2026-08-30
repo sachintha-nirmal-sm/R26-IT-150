@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/api/api_client.dart';
 import '../../data/practical.dart';
 import '../../data/practicals_repository.dart';
+import '../../data/unity_lab_service.dart';
 import 'experiment_results_screen.dart';
 import 'unity_player_screen.dart';
 
@@ -82,11 +83,22 @@ class _ExperimentExecutionScreenState extends State<ExperimentExecutionScreen> {
     await _runBusy(() async {
       final session = await _beginSession(practical, demo: true);
       if (!mounted) return;
-      await Navigator.push(
+      final popped = await Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => _playerFor(practical, session)),
       );
+      if (!mounted) return;
       await _refresh();
+      if (!mounted) return;
+      if (popped is UnityPracticalResult) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Trial complete: ${popped.score}%. Use Start to save a score to your profile.',
+            ),
+          ),
+        );
+      }
     });
   }
 
@@ -102,11 +114,18 @@ class _ExperimentExecutionScreenState extends State<ExperimentExecutionScreen> {
     await _runBusy(() async {
       final session = await _beginSession(practical, demo: false);
       if (!mounted) return;
-      await Navigator.push(
+      final popped = await Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => _playerFor(practical, session)),
       );
+      if (!mounted) return;
       await _refresh();
+      if (!mounted) return;
+      if (popped is UnityPracticalResult) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Saved ${popped.score}% to your profile.')),
+        );
+      }
     });
   }
 

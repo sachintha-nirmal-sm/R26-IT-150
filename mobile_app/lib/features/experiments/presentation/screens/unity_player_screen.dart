@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../data/practical.dart';
 import '../../data/practicals_repository.dart';
 import '../../data/unity_lab_service.dart';
-import 'experiment_results_screen.dart';
 
 class UnityPlayerScreen extends StatefulWidget {
   const UnityPlayerScreen({super.key, required this.args});
@@ -93,14 +92,26 @@ class _UnityPlayerScreenState extends State<UnityPlayerScreen>
     if (_handled || !mounted) return;
     _handled = true;
     _pendingResult = result;
+    await UnityLabService.takePendingResult();
     await _submit(result);
   }
 
   void _handleCancelled() {
+    if (_handled || _submitting || !mounted) return;
+    _recoverResultOrLeave();
+  }
+
+  Future<void> _recoverResultOrLeave() async {
+    await Future<void>.delayed(const Duration(milliseconds: 400));
     if (_handled || !mounted) return;
-    setState(() {
-      _error = 'Practical closed without a saved result.';
-    });
+    final result = await UnityLabService.takePendingResult();
+    if (result != null) {
+      await _handleUnityResult(result);
+      return;
+    }
+    if (_handled || !mounted) return;
+    _handled = true;
+    Navigator.pop(context);
   }
 
   Future<void> _submit(UnityPracticalResult result) async {
@@ -110,70 +121,72 @@ class _UnityPlayerScreenState extends State<UnityPlayerScreen>
       _error = null;
     });
     try {
-      if (_session.isLocal) {
-        if (!mounted) return;
-        if (_session.isDemo) {
-          Navigator.pop(context);
-          return;
-        }
-        await _openResults(result.score, result.timeUsed);
-        return;
-      }
-
+      await UnityLabService.unloadUnity();
+      await Future<void>.delayed(const Duration(milliseconds: 600));
       if (_session.isDemo) {
-        await _repo.finishDemo(
-          practicalId: _session.practicalId,
-          resultId: _session.resultId,
+        await _finishTrial(result);
+      } else {
+        await _repo.recordOfficialScore(
+          session: _session,
           score: result.score,
+          durationSeconds: result.timeUsed,
           measurements: {
             ...result.measurements,
-            'mode': 'trial',
+            'mode': 'start',
             'timeUsed': result.timeUsed,
+            'completed': result.completed,
           },
         );
-        if (!mounted) return;
+      }
+      if (!mounted) return;
+      if (_session.isDemo) {
         Navigator.pop(context, result);
         return;
       }
-
-      final saved = await _repo.submitPractical(
-        practicalId: _session.practicalId,
-        resultId: _session.resultId,
-        attemptNumber: _session.attemptNumber,
-        score: result.score,
-        measurements: {
-          ...result.measurements,
-          'mode': 'start',
-          'timeUsed': result.timeUsed,
-          'completed': result.completed,
-        },
+      Navigator.of(context).pushNamedAndRemoveUntil(
+        '/profile',
+        (route) => false,
       );
-      if (!mounted) return;
-      await _openResults(saved.percentage.round(), saved.durationSeconds ?? result.timeUsed);
     } catch (error) {
       if (!mounted) return;
+      _handled = false;
       setState(() {
         _submitting = false;
         _saveFailed = true;
         _pendingResult = result;
-        _error = 'Result could not be saved. Please retry.';
+        _error =
+            'Result could not be saved.\n\n$error\n\n'
+            'Keep the backend running and USB debugging connected, then tap Retry save.';
       });
     }
   }
 
-  Future<void> _openResults(int score, int timeUsedSeconds) async {
-    final minutes = timeUsedSeconds ~/ 60;
-    final seconds = timeUsedSeconds % 60;
-    await Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ExperimentResultsScreen(
-          score: score,
-          finalDuration: '$minutes min $seconds sec',
-          topicName: _practical.title,
-        ),
-      ),
-    );
+  Future<void> _finishTrial(UnityPracticalResult result) async {
+    try {
+      var resultId = _session.resultId;
+      if (_session.isLocal) {
+        final started = await _repo.startDemo(_session.practicalId);
+        resultId = started.resultId;
+      }
+      await _repo.finishDemo(
+        practicalId: _session.practicalId,
+        resultId: resultId,
+        score: result.score,
+        measurements: {
+          ...result.measurements,
+          'mode': 'trial',
+          'timeUsed': result.timeUsed,
+        },
+      );
+    } catch (_) {
+      // Trial is practice. Always return to Start / Trial even if the
+      // backend is briefly unreachable.
+    }
+  }
+
+  Future<void> _returnToStartTrial() async {
+    if (!mounted) return;
+    Navigator.pop(context, _pendingResult);
   }
 
   @override
@@ -199,7 +212,7 @@ class _UnityPlayerScreenState extends State<UnityPlayerScreen>
             const SizedBox(height: 20),
             Text(
               _submitting
-                  ? 'Saving result…'
+                  ? 'Saving result to your profile…'
                   : _starting
                       ? 'Opening ${_practical.title}'
                       : _error ??
@@ -217,15 +230,24 @@ class _UnityPlayerScreenState extends State<UnityPlayerScreen>
             if (_saveFailed && _pendingResult != null) ...[
               const SizedBox(height: 16),
               ElevatedButton(
-                onPressed: _submitting ? null : () => _submit(_pendingResult!),
+                onPressed: _submitting
+                    ? null
+                    : () {
+                        _handled = false;
+                        _submit(_pendingResult!);
+                      },
                 child: const Text('Retry save'),
+              ),
+              TextButton(
+                onPressed: _returnToStartTrial,
+                child: const Text('Back to Start / Trial'),
               ),
             ],
             const Spacer(),
             if (_error != null && !_saveFailed)
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Back'),
+                child: const Text('Back to Start / Trial'),
               ),
           ],
         ),

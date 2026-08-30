@@ -103,6 +103,7 @@ class UnityLabService {
   static bool _listening = false;
   static void Function(UnityPracticalResult result)? _onResult;
   static void Function()? _onCancelled;
+  static void Function(UnityPracticalResult result)? _appOnResult;
 
   static bool get isAndroid =>
       !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
@@ -143,11 +144,23 @@ class UnityLabService {
     return started == true;
   }
 
+  static Future<void> unloadUnity() async {
+    if (!isAndroid) return;
+    try {
+      await _channel.invokeMethod<bool>('unloadUnity');
+    } catch (_) {}
+  }
+
   static Future<UnityPracticalResult?> takePendingResult() async {
     if (!isAndroid) return null;
     final raw = await _channel.invokeMethod<String>('takePendingResult');
     if (raw == null || raw.isEmpty) return null;
     return _parse(raw);
+  }
+
+  static void listenApp(void Function(UnityPracticalResult result) onResult) {
+    _appOnResult = onResult;
+    _ensureListener();
   }
 
   static void listen({
@@ -170,7 +183,12 @@ class UnityLabService {
     _channel.setMethodCallHandler((call) async {
       if (call.method == 'onPracticalCompleted') {
         final result = _parse(call.arguments);
-        if (result != null) _onResult?.call(result);
+        if (result == null) return;
+        if (_onResult != null) {
+          _onResult!(result);
+        } else {
+          _appOnResult?.call(result);
+        }
       } else if (call.method == 'onPracticalCancelled') {
         _onCancelled?.call();
       }
