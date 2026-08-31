@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
@@ -9,17 +10,10 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  late TextEditingController _emailController;
-  late TextEditingController _passwordController;
+  final _emailController    = TextEditingController();
+  final _passwordController = TextEditingController();
   bool _obscurePassword = true;
-  bool _isLoading = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _emailController = TextEditingController();
-    _passwordController = TextEditingController();
-  }
+  bool _isLoading       = false;
 
   @override
   void dispose() {
@@ -29,8 +23,9 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _login() async {
-    final email = _emailController.text.trim();
+    final email    = _emailController.text.trim();
     final password = _passwordController.text;
+
     if (email.isEmpty || password.isEmpty) {
       _showError('Please enter your email and password.');
       return;
@@ -38,17 +33,31 @@ class _LoginPageState extends State<LoginPage> {
 
     setState(() => _isLoading = true);
     try {
-      final cred = await FirebaseAuth.instance.signInWithEmailAndPassword(
+      final credential = await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
+      
       try {
-        await cred.user?.getIdToken(true);
+        await credential.user?.getIdToken(true);
       } catch (_) {
         // Sign-in already succeeded; continue even if token refresh fails.
       }
+
+      final uid = credential.user!.uid;
+      final userDoc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      final data = userDoc.data() ?? {};
+      final role = data['role'] ?? 'student';
+      final gradeRaw = data['grade'];
+      final gradeInt = (gradeRaw is int) ? gradeRaw : int.tryParse(gradeRaw?.toString() ?? '');
+      final gradeLabel = gradeInt != null ? 'Grade $gradeInt' : 'Grade 10';
+
       if (mounted) {
-        Navigator.of(context).pushReplacementNamed('/home');
+        if (role == 'admin') {
+          Navigator.of(context).pushReplacementNamed('/admin-dashboard');
+        } else {
+          Navigator.of(context).pushReplacementNamed('/home', arguments: {'grade': gradeLabel});
+        }
       }
     } on FirebaseAuthException catch (e) {
       _showError(_friendlyError(e));
@@ -96,7 +105,6 @@ class _LoginPageState extends State<LoginPage> {
         child: SingleChildScrollView(
           child: Column(
             children: [
-              // Top illustration - Display login image
               Container(
                 padding: const EdgeInsets.symmetric(vertical: 24),
                 child: ClipRRect(
@@ -106,36 +114,27 @@ class _LoginPageState extends State<LoginPage> {
                     width: 300,
                     height: 220,
                     fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        width: 300,
-                        height: 250,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                          color: Colors.grey.shade200,
-                        ),
-                        child: Center(
-                          child: Icon(
-                            Icons.image_not_supported,
-                            size: 60,
-                            color: Colors.grey.shade400,
-                          ),
-                        ),
-                      );
-                    },
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      width: 300,
+                      height: 250,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        color: Colors.grey.shade200,
+                      ),
+                      child: Center(
+                        child: Icon(Icons.image_not_supported,
+                            size: 60, color: Colors.grey.shade400),
+                      ),
+                    ),
                   ),
                 ),
               ),
-
-              // Main content
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    SizedBox(height: 5),
-
-                    // Heading
+                    const SizedBox(height: 5),
                     Text(
                       "Let's sign you in",
                       style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -144,11 +143,12 @@ class _LoginPageState extends State<LoginPage> {
                             color: Colors.grey.shade800,
                           ),
                     ),
-                    SizedBox(height: 32),
+                    const SizedBox(height: 32),
 
-                    // Email Input
+                    // Email
                     TextField(
                       controller: _emailController,
+                      keyboardType: TextInputType.emailAddress,
                       decoration: InputDecoration(
                         hintText: 'Email',
                         prefixIcon: Icon(
@@ -176,88 +176,48 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                         filled: true,
                         fillColor: Colors.grey.shade50,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 16,
-                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                       ),
-                      keyboardType: TextInputType.emailAddress,
                     ),
-                    SizedBox(height: 16),
+                    const SizedBox(height: 16),
 
-                    // Password Input
+                    // Password
                     TextField(
                       controller: _passwordController,
                       obscureText: _obscurePassword,
                       decoration: InputDecoration(
                         hintText: 'Password',
-                        prefixIcon: Icon(
-                          Icons.lock_outline,
-                          color: Colors.grey.shade400,
-                        ),
+                        prefixIcon: Icon(Icons.lock_outline, color: Colors.grey.shade400),
                         suffixIcon: GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _obscurePassword = !_obscurePassword;
-                            });
-                          },
+                          onTap: () => setState(() => _obscurePassword = !_obscurePassword),
                           child: Icon(
-                            _obscurePassword
-                                ? Icons.visibility_off_outlined
-                                : Icons.visibility_outlined,
+                            _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
                             color: Colors.grey.shade400,
                           ),
                         ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(25),
-                          borderSide: BorderSide(
-                            color: Colors.grey.shade300,
-                          ),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(25),
-                          borderSide: BorderSide(
-                            color: Colors.grey.shade300,
-                          ),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(25),
-                          borderSide: BorderSide(
-                            color: Colors.blue.shade500,
-                            width: 2,
-                          ),
-                        ),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(25),
+                            borderSide: BorderSide(color: Colors.grey.shade300)),
+                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(25),
+                            borderSide: BorderSide(color: Colors.grey.shade300)),
+                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(25),
+                            borderSide: BorderSide(color: Colors.blue.shade500, width: 2)),
                         filled: true,
                         fillColor: Colors.grey.shade50,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 16,
-                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                       ),
                     ),
-                    SizedBox(height: 12),
+                    const SizedBox(height: 12),
 
-                    // Forgotten password link
                     Align(
                       alignment: Alignment.centerRight,
                       child: TextButton(
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Forgotten password flow'),
-                            ),
-                          );
-                        },
-                        child: Text(
-                          'Forgotten password?',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Colors.blue.shade500,
-                                fontWeight: FontWeight.w600,
-                              ),
-                        ),
+                        onPressed: () {},
+                        child: Text('Forgotten password?',
+                            style: TextStyle(color: Colors.blue.shade500,
+                                fontWeight: FontWeight.w600, fontSize: 16)),
                       ),
                     ),
-                    SizedBox(height: 24),
+                    const SizedBox(height: 24),
 
                     // Sign In Button
                     SizedBox(
@@ -267,22 +227,23 @@ class _LoginPageState extends State<LoginPage> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.blue.shade500,
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(25),
-                          ),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
                           elevation: 2,
                         ),
-                        child: Text(
-                          _isLoading ? 'Signing in...' : 'Sign in',
-                          style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
+                        child: _isLoading
+                            ? const SizedBox(height: 20, width: 20,
+                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                            : Text(
+                                'Sign in',
+                                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                               ),
-                        ),
                       ),
                     ),
-                    SizedBox(height: 16),
+                    const SizedBox(height: 24),
 
                     // Divider with text
                     Row(
@@ -311,7 +272,7 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                       ],
                     ),
-                    SizedBox(height: 16),
+                    const SizedBox(height: 16),
 
                     // Google Sign In Button
                     SizedBox(
@@ -348,33 +309,25 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                       ),
                     ),
-                    SizedBox(height: 24),
+                    const SizedBox(height: 24),
 
                     // Sign Up Link
                     Center(
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(
-                            "Don't have an account? ",
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Colors.grey.shade600,
-                              ),
-                          ),
+                          Text("Don't have an account? ",
+                              style: TextStyle(color: Colors.grey.shade600)),
                           GestureDetector(
                             onTap: () => Navigator.of(context).pushNamed('/sign-up'),
-                            child: Text(
-                              'Sign Up',
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: Colors.blue.shade500,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                            ),
+                            child: Text('Sign Up',
+                                style: TextStyle(color: Colors.blue.shade500,
+                                    fontWeight: FontWeight.w700, fontSize: 14)),
                           ),
                         ],
                       ),
                     ),
-                    SizedBox(height: 24),
+                    const SizedBox(height: 24),
                   ],
                 ),
               ),

@@ -115,7 +115,18 @@ def _get_practical(practical_id: str) -> dict:
     data = ensure_practical(db, practical_id)
     if not data:
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"Practical '{practical_id}' not found.")
-    return data
+    return _with_canonical_mapping(data)
+
+
+def _with_canonical_mapping(data: dict) -> dict:
+    spec = CATALOGUE.get(str(data.get("id") or ""))
+    if not spec:
+        return data
+    merged = dict(data)
+    for field in ("unitySceneId", "lessonId", "topicId", "title"):
+        if spec.get(field):
+            merged[field] = spec[field]
+    return merged
 
 
 def _assert_grade_allowed(student: dict, practical: dict) -> None:
@@ -165,6 +176,7 @@ def _get_or_create_student_practical(uid: str, practical: dict) -> tuple[str, di
 
 
 def _to_summary(practical: dict) -> PracticalSummary:
+    practical = _with_canonical_mapping(practical)
     return PracticalSummary(
         id=practical["id"],
         title=practical.get("title", ""),

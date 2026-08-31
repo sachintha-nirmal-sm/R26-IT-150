@@ -89,122 +89,79 @@ const List<SearchItem> allSearchItems = [
 ];
 
 // ── Grade-specific Keywords for SL Syllabus ────────────────────────────
+// Optimized for matching lessons, sub-lessons, games, and materials
 const Map<String, List<String>> gradeKeywords = {
   'Grade 9': [
-    'pressure', 'archimedes', 'work & energy',
-    'static electricity', 'moments', 'friction',
+    'simple machines', 'pressure', 'density', 'archimedes',
+    'work & energy', 'static electricity', 'moments', 'friction',
   ],
   'Grade 10': [
-    'distance',
-    'displacement',
-    'speed',
-    'velocity',
-    'acceleration',
-    'displacement time graph',
-    'velocity time graph',
-    'gravitational acceleration',
+    // Motion - broad keywords with high match count
+    'motion', 'kinematics', 'graphs',
 
-    // Forces
-    'force',
-    'effects of force',
-    'momentum',
-    'mass',
-    'weight',
-    'newton laws',
-    'newtons laws of motion',
+    // Forces - high match content
+    'force', 'newton', 'friction', 'equilibrium',
 
-    // Friction
-    'friction',
-    'static friction',
-    'dynamic friction',
-    'limiting friction',
-    'frictional force',
-
-    // Resultant forces
-    'resultant force',
-    'collinear forces',
-    'parallel forces',
-    'inclined forces',
-    'equilibrium',
-
-    // Light / electricity
-    'reflection',
-    'refraction',
-    'current electricity',
-    'ohm law',
+    // High-match keywords
+    'energy', 'work', 'power', 'electricity',
+    'pressure', 'vectors', 'moments',
   ],
   'Grade 11': [
-    'specific heat', 'logic gates', 'electromagnetic induction',
-    'waves', 'radioactivity', 'electronics',
+    // High-match keywords covering all Grade 11 content
+    'waves', 'heat', 'temperature', 'optics',
+    'light', 'electromagnetism', 'induction',
+    'electronics', 'logic gates', 'radioactivity',
   ],
 };
 
 // ── Keyword → Topic alias map ─────────────────────────────────────────────
 // Maps what users type (chip labels / partial words) → actual topic title
-// fragments stored in allSearchItems.
+// Optimized for high-match keywords
 const Map<String, String> _keywordAliases = {
-  // Grade 9
-  'pressure'          : 'force and pressure',
-  'archimedes'        : "archimedes' principle",
-  'work & energy'     : 'work, energy',
-  'work'              : 'work, energy',
-  'energy'            : 'work, energy',
-  'power'             : 'work, energy',
+  // Grade 9 & General
+  'simple machines'   : 'simple machines',
+  'density'           : 'density',
+  'archimedes'        : 'archimedes',
   'static electricity': 'static electricity',
-  'moments'           : 'turning effect',
+
+  // Motion & Kinematics (Grade 10)
+  'motion'            : 'motion in a straight line',
+  'kinematics'        : 'motion in a straight line',
+  'graphs'            : 'motion in a straight line',
+
+  // Forces & Moments (Grade 10)
+  'force'             : 'resultant force',
+  'newton'            : "newton's laws of motion",
   'friction'          : 'friction',
+  'equilibrium'       : 'equilibrium of forces',
+  'moments'           : 'turning effect of a force',
 
-  // Grade 10 – Motion
-  'distance'                : 'motion in a straight line',
-  'displacement'            : 'motion in a straight line',
-  'speed'                   : 'motion in a straight line',
-  'velocity'                : 'motion in a straight line',
-  'acceleration'            : 'motion in a straight line',
-  'displacement time graph' : 'motion in a straight line',
-  'velocity time graph'     : 'motion in a straight line',
-  'gravitational acceleration': 'motion in a straight line',
+  // Energy, Work & Power (Grade 10)
+  'energy'            : 'work, energy and power',
+  'work'              : 'work, energy and power',
+  'power'             : 'work, energy and power',
+  'work & energy'     : 'work, energy and power',
 
-  // Grade 10 – Forces
-  'force'                 : 'resultant force',
-  'effects of force'      : 'resultant force',
-  'momentum'              : "newton's laws of motion",
-  'mass'                  : "newton's laws of motion",
-  'weight'                : "newton's laws of motion",
-  'newton laws'           : "newton's laws of motion",
-  'newtons laws of motion': "newton's laws of motion",
+  // Pressure & Electricity (Grade 10)
+  'pressure'          : 'hydrostatic pressure and its applications',
+  'electricity'       : 'current electricity',
+  'vectors'           : 'vectors',
 
-  // Grade 10 – Friction
-  'static friction'   : 'friction',
-  'dynamic friction'  : 'friction',
-  'limiting friction' : 'friction',
-  'frictional force'  : 'friction',
+  // Grade 11 – Waves & Heat
+  'waves'             : 'waves and their applications',
+  'heat'              : 'heat & temperature changes',
+  'temperature'       : 'heat & temperature changes',
 
-  // Grade 10 – Resultant
-  'resultant force' : 'resultant force',
-  'collinear forces': 'resultant force',
-  'parallel forces' : 'resultant force',
-  'inclined forces' : 'resultant force',
-  'equilibrium'     : 'equilibrium of forces',
+  // Grade 11 – Optics
+  'optics'            : 'light and optics',
+  'light'             : 'light and optics',
 
-  // Grade 10 – Light / Electricity
-  'reflection'        : 'current electricity',
-  'refraction'        : 'current electricity',
-  'current electricity': 'current electricity',
-  'ohm law'           : 'current electricity',
-
-  // Grade 11
-  'heat'                    : 'heat',
-  'temperature'             : 'heat',
-  'specific heat capacity'  : 'specific heat',
-  'specific heat'           : 'specific heat',
-  'waves'                   : 'waves',
-  'wave applications'       : 'waves',
-  'electronics'             : 'electronics',
-  'logic gates'             : 'electronics',
-  'electromagnetism'        : 'electromagnetism',
-  'electromagnetic induction': 'electromagnetism',
-  'radioactivity'           : 'radioactivity',
-  'nuclear energy'          : 'radioactivity',
+  // Grade 11 – Electromagnetism & Electronics
+  'electromagnetism'  : 'electromagnetism & induction',
+  'induction'         : 'electromagnetism & induction',
+  'electronics'       : 'electronics & logic gates',
+  'logic gates'       : 'electronics & logic gates',
+  'radioactivity'     : 'radioactivity',
 };
 
 List<SearchItem> searchItems(String query, String grade) {

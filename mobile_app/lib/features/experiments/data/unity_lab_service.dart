@@ -129,9 +129,12 @@ class UnityLabService {
       attempt: session.attemptNumber,
       timeLimitSeconds: limit > 0 ? limit : 600,
       resultId: session.resultId,
-      unitySceneId: session.unitySceneId.isNotEmpty
-          ? session.unitySceneId
-          : practical.unitySceneId,
+      unitySceneId: LocalPracticals.sceneFor(
+        practical.id,
+        session.unitySceneId.isNotEmpty
+            ? session.unitySceneId
+            : practical.unitySceneId,
+      ),
     );
   }
 

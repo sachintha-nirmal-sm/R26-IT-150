@@ -348,10 +348,7 @@ class _VectorQuestGameScreenState extends State<VectorQuestGameScreen>
             ),
             child: ElevatedButton.icon(
               onPressed: () {
-                // TODO: Navigate to actual game play screen
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Starting Vector Quest…')),
-                );
+                Navigator.of(context).pushNamed('/force-game');
               },
               icon: const Icon(Icons.play_arrow, size: 22),
               label: const Text(

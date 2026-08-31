@@ -84,7 +84,7 @@ class Practical {
       currentState == 'TIME_EXPIRED';
 
   factory Practical.fromJson(Map<String, dynamic> json) {
-    return Practical(
+    final parsed = Practical(
       id: json['id'] as String? ?? '',
       title: json['title'] as String? ?? 'Untitled practical',
       description: json['description'] as String? ?? '',
@@ -109,6 +109,7 @@ class Practical {
       latestScore: _asInt(json['latestScore']),
       percentage: _asDouble(json['percentage']),
     );
+    return LocalPracticals.align(parsed);
   }
 
   static int _asInt(dynamic value, {int fallback = 0}) {
@@ -162,7 +163,7 @@ class PracticalSession {
       mode: isDemo ? 'demo' : 'practical',
       attemptNumber: 1,
       currentState: isDemo ? 'DEMO_IN_PROGRESS' : 'PRACTICAL_IN_PROGRESS',
-      unitySceneId: practical.unitySceneId,
+      unitySceneId: LocalPracticals.sceneFor(practical.id, practical.unitySceneId),
       unityBuildUrl: practical.unityBuildUrl,
       durationSeconds: practical.durationSeconds,
       startedAt: DateTime.now().toIso8601String(),
@@ -179,7 +180,10 @@ class PracticalSession {
       durationSeconds: json['durationSeconds'] == null
           ? null
           : Practical._asInt(json['durationSeconds']),
-      unitySceneId: json['unitySceneId'] as String? ?? '',
+      unitySceneId: LocalPracticals.sceneFor(
+        json['practicalId'] as String? ?? '',
+        json['unitySceneId'] as String? ?? '',
+      ),
       unityBuildUrl: json['unityBuildUrl'] as String? ?? '',
       startedAt: json['startedAt'] as String?,
     );
@@ -726,5 +730,160 @@ class LocalPracticals {
       return all;
     }
     return all.where((item) => item.lessonId == lessonId).toList();
+  }
+
+  static Practical? byId(String id) {
+    for (final item in all) {
+      if (item.id == id) return item;
+    }
+    return null;
+  }
+
+  static const sceneById = <String, String>{
+    'grade9_force_basic': 'ForceBasicConcepts',
+    'grade9_density_water': 'DensityWaterExperiment',
+    'grade9_pressure_solid': 'PressureExertedBySolid',
+    'grade9_reflection_prism': 'ReflectionPrismExperiment',
+    'grade9_lever_15_1': 'LeverActivity15_1',
+    'grade10_hydrostatic_pressure': 'HydrostaticPressureExperiment',
+    'grade10_work_energy_power': 'WorkEnergyPowerExperiment',
+    'grade10_current_electricity': 'CurrentElectricityExperiment',
+    'grade10_motion_straight_line': 'MotionStraightLineExperiment',
+    'grade10_newtons_laws': 'NewtonsLawsExperiment',
+    'grade10_friction': 'FrictionExperiment',
+    'grade10_resultant_force': 'ResultantForceExperiment',
+    'grade10_turning_effect': 'TurningEffectExperiment',
+    'grade10_equilibrium': 'EquilibriumOfForcesExperiment',
+    'grade11_waves': 'WavesApplicationsExperiment',
+    'grade11_geometrical_optics': 'GeometricalOpticsExperiment',
+    'grade11_heat': 'HeatExpansionExperiment',
+    'grade11_power_appliances': 'PowerEnergyAppliancesExperiment',
+    'grade11_electronics': 'ElectronicsDiodeExperiment',
+  };
+
+  static String sceneFor(String practicalId, [String fallback = '']) {
+    return sceneById[practicalId] ?? fallback;
+  }
+
+  static Practical align(Practical live) {
+    final local = byId(live.id);
+    if (local == null) {
+      final scene = sceneFor(live.id, live.unitySceneId);
+      if (scene == live.unitySceneId) return live;
+      return _copy(live, unitySceneId: scene);
+    }
+    return Practical(
+      id: local.id,
+      title: local.title,
+      description: local.description,
+      grade: local.grade,
+      lessonId: local.lessonId,
+      topicId: local.topicId,
+      unitySceneId: local.unitySceneId,
+      unityBuildUrl: local.unityBuildUrl,
+      maxScore: local.maxScore,
+      durationSeconds: local.durationSeconds,
+      demoAllowed: local.demoAllowed,
+      demoMaxAttempts: local.demoMaxAttempts,
+      practicalMaxAttempts: local.practicalMaxAttempts,
+      order: local.order,
+      isActive: local.isActive,
+      currentState: live.currentState,
+      demoAttemptsUsed: live.demoAttemptsUsed,
+      practicalAttemptsUsed: live.practicalAttemptsUsed,
+      demoCompleted: live.demoCompleted,
+      completed: live.completed,
+      bestScore: live.bestScore,
+      latestScore: live.latestScore,
+      percentage: live.percentage,
+    );
+  }
+
+  static Practical _copy(Practical live, {required String unitySceneId}) {
+    return Practical(
+      id: live.id,
+      title: live.title,
+      description: live.description,
+      grade: live.grade,
+      lessonId: live.lessonId,
+      topicId: live.topicId,
+      unitySceneId: unitySceneId,
+      unityBuildUrl: live.unityBuildUrl,
+      maxScore: live.maxScore,
+      durationSeconds: live.durationSeconds,
+      demoAllowed: live.demoAllowed,
+      demoMaxAttempts: live.demoMaxAttempts,
+      practicalMaxAttempts: live.practicalMaxAttempts,
+      order: live.order,
+      isActive: live.isActive,
+      currentState: live.currentState,
+      demoAttemptsUsed: live.demoAttemptsUsed,
+      practicalAttemptsUsed: live.practicalAttemptsUsed,
+      demoCompleted: live.demoCompleted,
+      completed: live.completed,
+      bestScore: live.bestScore,
+      latestScore: live.latestScore,
+      percentage: live.percentage,
+    );
+  }
+
+  static Practical? forTopic({
+    String? practicalId,
+    String? lessonId,
+    String? title,
+  }) {
+    final byPractical = byId(practicalId ?? '');
+    if (byPractical != null) return byPractical;
+
+    final byLesson = forLesson(lessonId);
+    if (lessonId != null && lessonId.isNotEmpty && byLesson.length == 1) {
+      return byLesson.first;
+    }
+    if (byLesson.length == 1) return byLesson.first;
+
+    final matchedId = matchTopicId(title ?? '', lessonId ?? '');
+    return matchedId == null ? null : byId(matchedId);
+  }
+
+  static String? matchTopicId(String title, [String extra = '']) {
+    final t = '$title $extra'.toLowerCase();
+    if (t.contains('newton')) return 'grade10_newtons_laws';
+    if (t.contains('friction')) return 'grade10_friction';
+    if (t.contains('resultant')) return 'grade10_resultant_force';
+    if (t.contains('turning') || t.contains('moment')) {
+      return 'grade10_turning_effect';
+    }
+    if (t.contains('equilibrium')) return 'grade10_equilibrium';
+    if (t.contains('wave') && t.contains('application')) return 'grade11_waves';
+    if (t.contains('geometrical') || t.contains('optic')) {
+      return 'grade11_geometrical_optics';
+    }
+    if (t.contains('heat') || t.contains('expansion')) return 'grade11_heat';
+    if (t.contains('appliance')) return 'grade11_power_appliances';
+    if (t.contains('electronics') || t.contains('diode')) {
+      return 'grade11_electronics';
+    }
+    if (t.contains('straight') && t.contains('line')) {
+      return 'grade10_motion_straight_line';
+    }
+    if (t.contains('current') && t.contains('electric')) {
+      return 'grade10_current_electricity';
+    }
+    if (t.contains('density')) return 'grade9_density_water';
+    if (t.contains('work') && t.contains('energy')) {
+      return 'grade10_work_energy_power';
+    }
+    if (t.contains('hydrostatic') || t.contains('upthrust') || t.contains('archimedes')) {
+      return 'grade10_hydrostatic_pressure';
+    }
+    if (t.contains('lever') || t.contains('simple machine')) {
+      return 'grade9_lever_15_1';
+    }
+    if (t.contains('prism') || t.contains('reflect') || t.contains('refract')) {
+      return 'grade9_reflection_prism';
+    }
+    if (t.contains('pressure')) return 'grade9_pressure_solid';
+    if (t.contains('force')) return 'grade9_force_basic';
+    return null;
   }
 }

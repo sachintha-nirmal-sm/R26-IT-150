@@ -203,7 +203,7 @@ class _GetStartedPageState extends State<GetStartedPage> {
                       size: 20,
                     ),
                     label: Text(
-                      'Swip to get started',
+                      'Click to get started',
                       style: Theme.of(context).textTheme.labelLarge?.copyWith(
                             color: Colors.white,
                             fontSize: 16,

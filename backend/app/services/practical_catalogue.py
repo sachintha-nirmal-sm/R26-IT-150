@@ -328,8 +328,9 @@ def ensure_catalogue(db) -> None:
             patch["demoMaxAttempts"] = 99
         if int(data.get("practicalMaxAttempts", 1) or 1) < 3:
             patch["practicalMaxAttempts"] = 10
-        if not data.get("unitySceneId") and spec.get("unitySceneId"):
-            patch["unitySceneId"] = spec["unitySceneId"]
+        for field in ("unitySceneId", "lessonId", "topicId", "title"):
+            if spec.get(field) and data.get(field) != spec.get(field):
+                patch[field] = spec[field]
         if patch:
             ref.update(patch)
     _ready = True

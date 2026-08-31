@@ -70,6 +70,17 @@ public class FlutterBridge : MonoBehaviour
         PracticalManager.EnsureLoaded();
     }
 
+    private void OnApplicationFocus(bool hasFocus)
+    {
+        if (!hasFocus)
+        {
+            return;
+        }
+
+        TryReadAndroidSession();
+        OpenMappedScene();
+    }
+
     private void Start()
     {
         OpenMappedScene();

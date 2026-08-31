@@ -1,5 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'search_data.dart';
+import 'screens/simple_search_page.dart';
+import 'services/simple_search_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'screens/grade_revision_screen.dart';
 
 class PhysicsLabHomePage extends StatefulWidget {
   const PhysicsLabHomePage({super.key});
@@ -29,6 +36,50 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
     _searchFocus.addListener(() {
       if (_searchFocus.hasFocus) setState(() => _isSearching = true);
     });
+    _loadGradeFromFirestore();
+  }
+
+  Future<void> _loadGradeFromFirestore() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+      final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      final gradeRaw = doc.data()?['grade'];
+      final gradeInt = (gradeRaw is int) ? gradeRaw : int.tryParse(gradeRaw?.toString() ?? '');
+      if (gradeInt != null && mounted) {
+        setState(() => _grade = 'Grade $gradeInt');
+      }
+    } catch (_) {}
+
+  
+    _loadStudentGrade();
+  }
+
+  Future<void> _loadStudentGrade() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
+        final gradeData = userDoc.data()?['grade'];
+
+        // Handle both integer (9, 10, 11) and string ('Grade 9', 'Grade 10') formats
+        String grade = 'Grade 10'; // default
+        if (gradeData is int) {
+          grade = 'Grade $gradeData';
+        } else if (gradeData is String) {
+          grade = gradeData.startsWith('Grade ') ? gradeData : 'Grade $gradeData';
+        }
+
+        if (mounted) {
+          setState(() => _grade = grade);
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading student grade: $e');
+    }
   }
 
   @override
@@ -36,7 +87,7 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
     super.didChangeDependencies();
     final args = ModalRoute.of(context)?.settings.arguments;
     if (args is Map) {
-      setState(() => _grade = args['grade'] ?? 'Grade 10');
+      setState(() => _grade = args['grade'] ?? _grade);
     }
   }
 
@@ -90,6 +141,12 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
                   _recommendedRow(),
                   const SizedBox(height: 16),
                   _virtualLabsBanner(),
+                  const SizedBox(height: 16),
+                  if (_grade == 'Grade 11') ...[
+                    const SizedBox(height: 16),
+                    _revisionBanner(),
+                  ],
+                  _gamesBanner(),
                 ],
               ),
             ),
@@ -116,6 +173,73 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
     );
   }
 
+  // ── Grade 10 Revision Banner (Grade 11 only) ──────────────────────────────
+  Widget _revisionBanner() => GestureDetector(
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const GradeRevisionScreen(revisionGrade: 10),
+          ),
+        ),
+        child: Container(
+          height: 120,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            gradient: const LinearGradient(
+              begin: Alignment.topRight,
+              end: Alignment.bottomLeft,
+              colors: [Color(0xFF9F67FA), Color(0xFF7C3AED), Color(0xFF5B21B6)],
+            ),
+            boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 2))],
+          ),
+          child: Stack(
+            children: [
+              Positioned(
+                top: -20, right: -20,
+                child: Container(
+                  width: 100, height: 100,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withValues(alpha: 0.07),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Icons.history_edu, color: Colors.white, size: 28),
+                    ),
+                    const SizedBox(width: 16),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text('Revise Grade 10',
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white)),
+                          SizedBox(height: 4),
+                          Text('Practice last year\'s lessons, materials & quizzes',
+                              style: TextStyle(fontSize: 12, color: Colors.white70)),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.arrow_forward_ios, color: Colors.white70, size: 16),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+
   // ── AppBar ────────────────────────────────────────────────────────────────
   AppBar _appBar() => AppBar(
         backgroundColor: Colors.white,
@@ -140,10 +264,13 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16),
-            child: CircleAvatar(
-              radius: 18,
-              backgroundColor: const Color(0xFFCCCCCC),
-              child: const Icon(Icons.person, color: Colors.white, size: 22),
+            child: GestureDetector(
+              onTap: () => Navigator.pushNamed(context, "/profile"),
+              child: CircleAvatar(
+                radius: 18,
+                backgroundColor: const Color(0xFFCCCCCC),
+                child: const Icon(Icons.person, color: Colors.white, size: 22),
+              ),
             ),
           ),
         ],
@@ -164,8 +291,11 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
   // ── Search bar (static) ───────────────────────────────────────────────────
   Widget _searchBarWidget() => GestureDetector(
         onTap: () {
-          setState(() => _isSearching = true);
-          Future.delayed(const Duration(milliseconds: 50), () => _searchFocus.requestFocus());
+          Navigator.pushNamed(
+            context,
+            '/search',
+            arguments: {'grade': _grade},
+          );
         },
         child: Container(
           height: 50,
@@ -193,10 +323,22 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
           children: _keywords.map((kw) {
             return GestureDetector(
               onTap: () {
-                setState(() => _isSearching = true);
-                _searchCtrl.text = kw;
-                _onSearchChanged();
-                Future.delayed(const Duration(milliseconds: 50), () => _searchFocus.requestFocus());
+                // Navigate to search page with keyword pre-filled
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => SimpleSearchPage(grade: _grade),
+                    settings: RouteSettings(
+                      arguments: {'searchQuery': kw},
+                    ),
+                  ),
+                ).then((query) {
+                  // If a search query is returned, update the search box
+                  if (query != null && query is String) {
+                    setState(() => _searchCtrl.text = query);
+                    _onSearchChanged();
+                  }
+                });
               },
               child: Container(
                 margin: const EdgeInsets.only(right: 8),
@@ -332,6 +474,74 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
                 ]),
           ),
         ]),
+      );
+
+  // ── Games Banner ──────────────────────────────────────────────────────────
+  Widget _gamesBanner() => GestureDetector(
+        onTap: () => Navigator.pushNamed(context, '/games', arguments: {'grade': _grade}),
+        child: Container(
+          height: 160,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFFFF6B6B), Color(0xFFEE5A6F), Color(0xFFC44569)],
+            ),
+            boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 2))],
+          ),
+          child: Stack(children: [
+            Positioned(
+              top: -20,
+              right: -20,
+              child: Container(
+                width: 120,
+                height: 120,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.07),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 15,
+              right: 40,
+              child: Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.07),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    '🎮 Play Physics Games',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const Text(
+                    'Learn through interactive gameplay',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.white70,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ]),
+        ),
       );
 
   // ── Search overlay ────────────────────────────────────────────────────────
@@ -506,6 +716,10 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
           currentIndex: _selectedIndex,
           onTap: (i) {
             setState(() => _selectedIndex = i);
+            if (i == 3) {
+              Navigator.pushNamed(context, "/profile");
+            }
+
             if (i == 1) Navigator.pushNamed(context, '/lesson-list');
             if (i == 2) Navigator.pushNamed(context, '/practical-home');
             if (i == 3) Navigator.pushNamed(context, '/profile');
