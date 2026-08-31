@@ -17,14 +17,14 @@ class _SignupScreenState extends State<SignupScreen> {
   static const Color _fieldBorder = Color(0xFFE0E0E0);
 
   final _repo = AuthRepository();
-  final _nameController     = TextEditingController();
-  final _emailController    = TextEditingController();
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _confirmController  = TextEditingController();
+  final _confirmController = TextEditingController();
 
-  bool _agreedToTerms  = false;
-  bool _isLoading      = false;
-  bool _obscurePass    = true;
+  bool _agreedToTerms = false;
+  bool _isLoading = false;
+  bool _obscurePass = true;
   bool _obscureConfirm = true;
   int? _selectedGrade; // stored as int: 9, 10, or 11
 
@@ -39,55 +39,72 @@ class _SignupScreenState extends State<SignupScreen> {
 
   Future<void> _signUp() async {
     final fullName = _nameController.text.trim();
-    final email    = _emailController.text.trim();
+    final email = _emailController.text.trim();
     final password = _passwordController.text;
-    final confirm  = _confirmController.text;
+    final confirm = _confirmController.text;
 
-    if (fullName.isEmpty || email.isEmpty || password.isEmpty || confirm.isEmpty) {
+    if (fullName.isEmpty ||
+        email.isEmpty ||
+        password.isEmpty ||
+        confirm.isEmpty) {
       _showError('Please fill in all fields.');
       return;
     }
+
     if (password != confirm) {
       _showError('Passwords do not match.');
       return;
     }
+
     if (password.length < 6) {
       _showError('Password must be at least 6 characters.');
       return;
     }
+
     if (_selectedGrade == null) {
       _showError('Please select your grade.');
       return;
     }
+
     if (!_agreedToTerms) {
       _showError('Please agree to the Terms & Privacy Policy.');
       return;
     }
 
     setState(() => _isLoading = true);
+
     try {
       await _repo.signUp(
         fullName: fullName,
         email: email,
         password: password,
-        currentGrade: _selectedGrade ?? 9,
+        currentGrade: _selectedGrade!,
       );
+
       if (!mounted) return;
+
       Navigator.of(context).pushReplacementNamed('/home');
     } on ApiException catch (error) {
       if (!mounted) return;
+
       _showError(error.message);
     } catch (error) {
       if (!mounted) return;
+
       _showError(error.toString());
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.red),
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
     );
   }
 
@@ -101,61 +118,143 @@ class _SignupScreenState extends State<SignupScreen> {
           child: Column(
             children: [
               const SizedBox(height: 40),
+
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: const Color(0xFFE8F1FF),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.science, color: Color(0xFF0056D2), size: 40),
+                child: const Icon(
+                  Icons.science,
+                  color: Color(0xFF0056D2),
+                  size: 40,
+                ),
               ),
+
               const SizedBox(height: 12),
-              const Text('PhysicsLab',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+
+              const Text(
+                'PhysicsLab',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+
               const SizedBox(height: 30),
-              const Text('Create Your Account',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: _primaryBlue)),
+
+              const Text(
+                'Create Your Account',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: _primaryBlue,
+                ),
+              ),
+
               const SizedBox(height: 10),
-              const Text('Start learning physics in a fun and\ninteractive way.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey, fontSize: 16)),
+
+              const Text(
+                'Start learning physics in a fun and\ninteractive way.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontSize: 16,
+                ),
+              ),
+
               const SizedBox(height: 40),
-              _buildTextField(_nameController, Icons.person_outline, 'Full Name'),
+
+              _buildTextField(
+                _nameController,
+                Icons.person_outline,
+                'Full Name',
+              ),
+
               const SizedBox(height: 15),
-              _buildTextField(_emailController, Icons.email_outlined, 'Email Address',
-                  keyboardType: TextInputType.emailAddress),
+
+              _buildTextField(
+                _emailController,
+                Icons.email_outlined,
+                'Email Address',
+                keyboardType: TextInputType.emailAddress,
+              ),
+
               const SizedBox(height: 15),
-              _buildTextField(_passwordController, Icons.lock_outline, 'Password',
-                  isPassword: true, obscure: _obscurePass,
-                  onToggle: () => setState(() => _obscurePass = !_obscurePass)),
+
+              _buildTextField(
+                _passwordController,
+                Icons.lock_outline,
+                'Password',
+                isPassword: true,
+                obscure: _obscurePass,
+                onToggle: () =>
+                    setState(() => _obscurePass = !_obscurePass),
+              ),
+
               const SizedBox(height: 15),
-              _buildTextField(_confirmController, Icons.lock_outline, 'Confirm Password',
-                  isPassword: true, obscure: _obscureConfirm,
-                  onToggle: () => setState(() => _obscureConfirm = !_obscureConfirm)),
+
+              _buildTextField(
+                _confirmController,
+                Icons.lock_outline,
+                'Confirm Password',
+                isPassword: true,
+                obscure: _obscureConfirm,
+                onToggle: () =>
+                    setState(() => _obscureConfirm = !_obscureConfirm),
+              ),
+
               const SizedBox(height: 15),
+
               _buildGradeDropdown(),
+
               const SizedBox(height: 10),
+
               Row(
                 children: [
                   Checkbox(
                     value: _agreedToTerms,
-                    onChanged: (val) => setState(() => _agreedToTerms = val ?? false),
+                    onChanged: (val) =>
+                        setState(() => _agreedToTerms = val ?? false),
                     activeColor: _primaryBlue,
                     checkColor: Colors.white,
-                    side: const BorderSide(color: _primaryBlue, width: 1.5),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                    side: const BorderSide(
+                      color: _primaryBlue,
+                      width: 1.5,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(4),
+                    ),
                   ),
                   const Expanded(
-                    child: Text.rich(TextSpan(text: 'I agree to the ', children: [
-                      TextSpan(text: 'Terms', style: TextStyle(color: _primaryBlue)),
-                      TextSpan(text: ' & '),
-                      TextSpan(text: 'Privacy Policy', style: TextStyle(color: _primaryBlue)),
-                    ])),
+                    child: Text.rich(
+                      TextSpan(
+                        text: 'I agree to the ',
+                        children: [
+                          TextSpan(
+                            text: 'Terms',
+                            style: TextStyle(
+                              color: _primaryBlue,
+                            ),
+                          ),
+                          TextSpan(text: ' & '),
+                          TextSpan(
+                            text: 'Privacy Policy',
+                            style: TextStyle(
+                              color: _primaryBlue,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ],
               ),
+
               const SizedBox(height: 30),
+
               SizedBox(
                 width: double.infinity,
                 height: 55,
@@ -163,26 +262,50 @@ class _SignupScreenState extends State<SignupScreen> {
                   onPressed: _isLoading ? null : _signUp,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _primaryBlue,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
                   ),
                   child: _isLoading
-                      ? const SizedBox(height: 22, width: 22,
-                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                      : const Text('Sign Up', style: TextStyle(fontSize: 18, color: Colors.white)),
+                      ? const SizedBox(
+                          height: 22,
+                          width: 22,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text(
+                          'Sign Up',
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: Colors.white,
+                          ),
+                        ),
                 ),
               ),
+
               const SizedBox(height: 30),
+
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Text('Already have an account? '),
+
                   GestureDetector(
-                    onTap: () => Navigator.of(context).maybePop(),
-                    child: const Text('Log In',
-                        style: TextStyle(color: _primaryBlue, fontWeight: FontWeight.bold)),
+                    onTap: () =>
+                        Navigator.of(context).maybePop(),
+                    child: const Text(
+                      'Log In',
+                      style: TextStyle(
+                        color: _primaryBlue,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ],
               ),
+
               const SizedBox(height: 20),
             ],
           ),
@@ -206,27 +329,46 @@ class _SignupScreenState extends State<SignupScreen> {
       keyboardType: keyboardType,
       cursorColor: _primaryBlue,
       decoration: InputDecoration(
-        prefixIcon: Icon(icon, color: Colors.grey),
+        prefixIcon: Icon(
+          icon,
+          color: Colors.grey,
+        ),
         hintText: hint,
-        hintStyle: const TextStyle(color: Colors.grey),
+        hintStyle: const TextStyle(
+          color: Colors.grey,
+        ),
         filled: true,
         fillColor: const Color(0xFFF8F9FE),
         suffixIcon: isPassword
             ? GestureDetector(
                 onTap: onToggle,
-                child: Icon(obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                    color: Colors.grey),
+                child: Icon(
+                  obscure
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined,
+                  color: Colors.grey,
+                ),
               )
             : null,
         border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: _fieldBorder)),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(
+            color: _fieldBorder,
+          ),
+        ),
         enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: _fieldBorder)),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(
+            color: _fieldBorder,
+          ),
+        ),
         focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: _primaryBlue, width: 2)),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(
+            color: _primaryBlue,
+            width: 2,
+          ),
+        ),
       ),
     );
   }
@@ -241,33 +383,63 @@ class _SignupScreenState extends State<SignupScreen> {
       decoration: InputDecoration(
         filled: true,
         fillColor: const Color(0xFFF8F9FE),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 14,
+        ),
         border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: _fieldBorder)),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(
+            color: _fieldBorder,
+          ),
+        ),
         enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: _fieldBorder)),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(
+            color: _fieldBorder,
+          ),
+        ),
         focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: _primaryBlue, width: 2)),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(
+            color: _primaryBlue,
+            width: 2,
+          ),
+        ),
       ),
-      hint: const Row(children: [
-        Icon(Icons.school_outlined, color: Colors.grey),
-        SizedBox(width: 10),
-        Text('Select Grade', style: TextStyle(color: Colors.grey)),
-      ]),
+      hint: const Row(
+        children: [
+          Icon(
+            Icons.school_outlined,
+            color: Colors.grey,
+          ),
+          SizedBox(width: 10),
+          Text(
+            'Select Grade',
+            style: TextStyle(
+              color: Colors.grey,
+            ),
+          ),
+        ],
+      ),
       items: [9, 10, 11].map((int grade) {
         return DropdownMenuItem<int>(
           value: grade,
-          child: Row(children: [
-            const Icon(Icons.school, size: 18, color: Color(0xFF2196F3)),
-            const SizedBox(width: 8),
-            Text('Grade $grade'),
-          ]),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.school,
+                size: 18,
+                color: Color(0xFF2196F3),
+              ),
+              const SizedBox(width: 8),
+              Text('Grade $grade'),
+            ],
+          ),
         );
       }).toList(),
-      onChanged: (val) => setState(() => _selectedGrade = val),
+      onChanged: (val) =>
+          setState(() => _selectedGrade = val),
     );
   }
 }

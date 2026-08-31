@@ -54,9 +54,11 @@ import 'features/games/electronics_game/electronics_game_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
   runApp(const MyApp());
 }
 
@@ -82,7 +84,6 @@ class _MyAppState extends State<MyApp> {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
-        fontFamily: 'Poppins',
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF1A3CBA),
           brightness: Brightness.light,
@@ -91,7 +92,9 @@ class _MyAppState extends State<MyApp> {
         appBarTheme: const AppBarTheme(
           backgroundColor: Colors.white,
           elevation: 0,
-          iconTheme: IconThemeData(color: Color(0xFF1A1A2E)),
+          iconTheme: IconThemeData(
+            color: Color(0xFF1A1A2E),
+          ),
         ),
         scrollbarTheme: ScrollbarThemeData(
           thickness: WidgetStateProperty.all(3),
@@ -102,87 +105,219 @@ class _MyAppState extends State<MyApp> {
           trackColor: WidgetStateProperty.all(
             const Color(0xFF2196F3).withOpacity(0.08),
           ),
-          trackBorderColor: WidgetStateProperty.all(Colors.transparent),
+          trackBorderColor: WidgetStateProperty.all(
+            Colors.transparent,
+          ),
           thumbVisibility: WidgetStateProperty.all(true),
           trackVisibility: WidgetStateProperty.all(true),
           crossAxisMargin: 2,
           mainAxisMargin: 4,
         ),
       ),
+
+      // Preserve the authenticated startup flow.
       initialRoute: FirebaseAuth.instance.currentUser == null
           ? '/get-started'
           : '/home',
+
       routes: {
+        // Root route
+        "/": (context) => const GetStartedPage(),
+
+        // Authentication routes
         "/get-started": (context) => const GetStartedPage(),
         "/login": (context) => const LoginPage(),
-        "/home": (context) => const PhysicsLabHomePage(),
         "/sign-up": (context) => const SignupScreen(),
+
+        // Home
+        "/home": (context) => const PhysicsLabHomePage(),
+
+        // Lessons
         "/lesson-list": (context) => const PhysicsLessonsScreen(),
         "/force-motion": (context) => const ForceLinearMotionPage(),
         "/lesson-quizzes": (context) => const LessonQuizzesPage(),
-        "/lessonDBoard": (context) => const LessonsDashboard(lessonId: ''),
-        "/search": (context) {
-          final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-          final grade = args?['grade'] as String? ?? 'Grade 10';
-          return SimpleSearchPage(grade: grade);
+
+        // Lesson Dashboard
+        "/lessonDBoard": (context) {
+          final args = ModalRoute.of(context)?.settings.arguments
+              as Map<String, dynamic>?;
+
+          return LessonsDashboard(
+            lessonId: args?['lessonId'] ?? '',
+            lessonTitle: args?['lessonTitle'] ?? 'Linear Motion',
+            grade: args?['grade'] ?? 'Grade 9 Physics',
+            lessonDescription: args?['lessonDescription'],
+            practicalId: args?['practicalId'],
+          );
         },
+
+        // Search
+        "/search": (context) {
+          final args = ModalRoute.of(context)?.settings.arguments
+              as Map<String, dynamic>?;
+
+          final grade = args?['grade'] as String? ?? 'Grade 10';
+
+          return SimpleSearchPage(
+            grade: grade,
+          );
+        },
+
+        // Other features
         "/deep-learn": (context) => const DeepLearningScreen(),
+
         "/profile": (context) => const ProfileScreen(),
+
+        // Practical / Experiment routes
         "/practical-home": (context) => const PracticalHomePage(),
-        "/experiment-results": (context) => const ExperimentResultsScreen(),
-        "/experiment-execution": (context) => const ExperimentExecutionScreen(),
+
+        "/experiment-results": (context) =>
+            const ExperimentResultsScreen(),
+
+        "/experiment-execution": (context) =>
+            const ExperimentExecutionScreen(),
+
         "/experiment-in-progress": (context) {
           final args = ModalRoute.of(context)?.settings.arguments;
+
           if (args is PracticalRunArgs) {
-            return ExperimentInProgressScreen(args: args);
+            return ExperimentInProgressScreen(
+              args: args,
+            );
           }
+
           return const Scaffold(
-            body: Center(child: Text('Start this practical from Practical Hub.')),
+            body: Center(
+              child: Text(
+                'Start this practical from Practical Hub.',
+              ),
+            ),
           );
         },
+
         "/practice-experience": (context) {
           final args = ModalRoute.of(context)?.settings.arguments;
+
           if (args is PracticalRunArgs) {
-            return PracticeExperienceScreen(args: args);
+            return PracticeExperienceScreen(
+              args: args,
+            );
           }
+
           return const Scaffold(
-            body: Center(child: Text('Start the trial from Practical Hub.')),
+            body: Center(
+              child: Text(
+                'Start the trial from Practical Hub.',
+              ),
+            ),
           );
         },
-        "/scenario-question": (context) => const ScenarioQuestionScreen(),
-        "/quiz-complete": (context) => const QuizCompleteScreen(
+
+        // Scenario-based question
+        "/scenario-question": (context) =>
+            const ScenarioQuestionScreen(),
+
+        // Quiz complete
+        "/quiz-complete": (context) =>
+            const QuizCompleteScreen(
               completionSeconds: 0,
               overtimeSeconds: 0,
             ),
-        "/step-by-step": (context) => const StepByStepSolutionScreen(),
-        "/upload-image": (context) => const UploadImageScreen(),
-        "/image-preview": (context) => const ImagePreviewConfirmationScreen(),
-        "/comparison-answer": (context) => const ComparisonFinalReturnScreen(),
-        "/chatbot": (context) => const ChatbotScreen(),
-        "/game-intro": (context) => const VectorQuestGameScreen(),
-        "/admin-dashboard": (context) => const AdminDashboard(),
-        "/games": (context) => const GamesListScreen(),
+
+        // Step-by-step solution
+        "/step-by-step": (context) =>
+            const StepByStepSolutionScreen(),
+
+        // Image upload / preview
+        "/upload-image": (context) =>
+            const UploadImageScreen(),
+
+        "/image-preview": (context) =>
+            const ImagePreviewConfirmationScreen(),
+
+        // Comparison answer
+        "/comparison-answer": (context) =>
+            const ComparisonFinalReturnScreen(),
+
+        // Chatbot
+        "/chatbot": (context) =>
+            const ChatbotScreen(),
+
+        // Vector Quest
+        "/game-intro": (context) =>
+            const VectorQuestGameScreen(),
+
+        // Admin
+        "/admin-dashboard": (context) =>
+            const AdminDashboard(),
+
+        // Games list
+        "/games": (context) =>
+            const GamesListScreen(),
+
+        // ─────────────────────────────────────────────
         // Game Routes
-        "/nano-shield": (context) => const NanoShieldScreen(),
-        "/simple-machines-game": (context) => const SimpleMachinesScreen(),
-        "/density-puzzle": (context) => const DensityPuzzleScreen(),
-        "/motion-quest": (context) => const MotionQuestScreen(),
-        "/newton-game": (context) => const NewtonGameScreen(),
-        "/friction-game": (context) => const FrictionGameScreen(),
-        "/resultant-force": (context) => const ResultantForceScreen(),
-        "/turning-effect": (context) => const TurningEffectScreen(),
-        "/equilibrium-forces": (context) => const EquilibriumForcesScreen(),
-        "/hydrostatic-pressure": (context) => const HydrostaticPressureGameScreen(),
-        "/work-power-game": (context) => const WorkPowerGameScreen(),
-        "/power-energy-game": (context) => const PowerEnergyGameScreen(),
-        "/current-electricity-game": (context) => const CurrentElectricityGameScreen(),
-        "/force-game": (context) => const PhysicsGameWrapper(),
-        "/pressure-puzzle": (context) => const PressurePuzzleScreen(),
-        "/waves-game": (context) => const WavesGameScreen(),
-        "/geometrical-optics-game": (context) => const GeometricalOpticsGameScreen(),
-        "/heat-game": (context) => const HeatGameScreen(),
-        "/electromagnetism-game": (context) => const ElectromagnetismGameScreen(),
-        "/electronics-game": (context) => const ElectronicsGameScreen(),
+        // ─────────────────────────────────────────────
+
+        "/nano-shield": (context) =>
+            const NanoShieldScreen(),
+
+        "/simple-machines-game": (context) =>
+            const SimpleMachinesScreen(),
+
+        "/density-puzzle": (context) =>
+            const DensityPuzzleScreen(),
+
+        "/motion-quest": (context) =>
+            const MotionQuestScreen(),
+
+        "/newton-game": (context) =>
+            const NewtonGameScreen(),
+
+        "/friction-game": (context) =>
+            const FrictionGameScreen(),
+
+        "/resultant-force": (context) =>
+            const ResultantForceScreen(),
+
+        "/turning-effect": (context) =>
+            const TurningEffectScreen(),
+
+        "/equilibrium-forces": (context) =>
+            const EquilibriumForcesScreen(),
+
+        "/hydrostatic-pressure": (context) =>
+            const HydrostaticPressureGameScreen(),
+
+        "/work-power-game": (context) =>
+            const WorkPowerGameScreen(),
+
+        "/power-energy-game": (context) =>
+            const PowerEnergyGameScreen(),
+
+        "/current-electricity-game": (context) =>
+            const CurrentElectricityGameScreen(),
+
+        "/force-game": (context) =>
+            const PhysicsGameWrapper(),
+
+        "/pressure-puzzle": (context) =>
+            const PressurePuzzleScreen(),
+
+        "/waves-game": (context) =>
+            const WavesGameScreen(),
+
+        "/geometrical-optics-game": (context) =>
+            const GeometricalOpticsGameScreen(),
+
+        "/heat-game": (context) =>
+            const HeatGameScreen(),
+
+        "/electromagnetism-game": (context) =>
+            const ElectromagnetismGameScreen(),
+
+        "/electronics-game": (context) =>
+            const ElectronicsGameScreen(),
       },
     );
   }

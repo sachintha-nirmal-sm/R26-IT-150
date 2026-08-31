@@ -1,5 +1,4 @@
-import "dart:io";
-
+import "package:flutter/foundation.dart";
 import "package:flutter/material.dart";
 import "package:image_picker/image_picker.dart";
 import "package:permission_handler/permission_handler.dart";
@@ -20,12 +19,15 @@ class _UploadImageScreenState extends State<UploadImageScreen> {
   }
 
   Future<bool> _requestGalleryPermission() async {
-    if (Platform.isIOS) {
+    if (kIsWeb) {
+      return true;
+    }
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
       final status = await Permission.photos.request();
       return status.isGranted;
     }
 
-    if (Platform.isAndroid) {
+    if (defaultTargetPlatform == TargetPlatform.android) {
       final photosStatus = await Permission.photos.request();
       if (photosStatus.isGranted) {
         return true;
