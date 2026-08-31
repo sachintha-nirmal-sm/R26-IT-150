@@ -8,15 +8,15 @@ class MaterialsService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   /// Save material metadata to Firestore
-  Future<bool> saveMaterial(LessonMaterial material) async {
+  Future<String?> saveMaterial(LessonMaterial material) async {
     try {
-      await _firestore
+      final document = await _firestore
           .collection(materialsCollection)
           .add(material.toMap());
-      return true;
+      return document.id;
     } catch (e) {
       print('Error saving material: $e');
-      return false;
+      return null;
     }
   }
 
@@ -143,10 +143,7 @@ class MaterialsService {
   /// Update download count
   Future<void> incrementDownloadCount(String materialId) async {
     try {
-      await _firestore
-          .collection(materialsCollection)
-          .doc(materialId)
-          .update({
+      await _firestore.collection(materialsCollection).doc(materialId).update({
         'downloadCount': FieldValue.increment(1),
       });
     } catch (e) {
@@ -157,10 +154,7 @@ class MaterialsService {
   /// Delete material record (Cloudinary file should be deleted separately)
   Future<bool> deleteMaterial(String materialId) async {
     try {
-      await _firestore
-          .collection(materialsCollection)
-          .doc(materialId)
-          .delete();
+      await _firestore.collection(materialsCollection).doc(materialId).delete();
       return true;
     } catch (e) {
       print('Error deleting material: $e');

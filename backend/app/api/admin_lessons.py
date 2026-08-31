@@ -31,6 +31,11 @@ from app.core.config import LOCAL_UPLOAD_DIR
 from app.core.dependencies import VerifiedUser, require_admin
 from app.core.firebase import db
 from app.rag.ingest import ingest_material
+from app.rag.keyword_extract import extract_keywords
+from app.rag.text_extract import extract_text
+from app.rag.chunking import chunk_text
+from app.rag.embeddings import embed_texts
+from app.rag.vector_store import replace_material
 
 
 cloudinary.config(
@@ -96,6 +101,12 @@ class MaterialResponse(BaseModel):
     ingestionStatus: str
     chunkCount: int
     createdAt: str
+
+
+class SearchIndexResponse(BaseModel):
+    materialId: str
+    keywordCount: int
+    status: str
 
 
 # ---------------------------------------------------------------------------
@@ -386,6 +397,83 @@ async def upload_lesson_pdf(
 # ---------------------------------------------------------------------------
 # Materials — local storage + background RAG ingestion
 # ---------------------------------------------------------------------------
+
+@router.post(
+    "/{lesson_id}/materials/{material_id}/search-index",
+    response_model=SearchIndexResponse,
+    summary="Extract PDF keywords into an existing lesson_materials document",
+)
+async def index_lesson_material_for_search(
+    lesson_id: str,
+    material_id: str,
+    file: UploadFile = File(...),
+    admin: VerifiedUser = Depends(require_admin),
+) -> SearchIndexResponse:
+    material_ref = db.collection("lesson_materials").document(material_id)
+    material_snapshot = material_ref.get()
+    if not material_snapshot.exists:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Learning material not found.",
+        )
+
+    material = material_snapshot.to_dict() or {}
+    if material.get("lessonId") != lesson_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Material does not belong to this lesson.",
+        )
+
+    try:
+        file_bytes = await file.read()
+        text = extract_text(file_bytes, file.filename)
+        keywords = extract_keywords(text)
+        if not keywords:
+            raise ValueError("No searchable text could be extracted from this PDF.")
+
+        pieces = chunk_text(text)
+        vectors = embed_texts(pieces)
+        lesson = db.collection("lessons").document(lesson_id).get().to_dict() or {}
+        chunks = [
+            {
+                "chunkId": f"{material_id}:{index}",
+                "lessonId": lesson_id,
+                "materialId": material_id,
+                "materialType": material.get("materialType") or "pdf",
+                "fileName": material.get("materialName") or file.filename or "",
+                "text": piece,
+                "sourceReference": f"{material_id}#chunk={index}",
+                "grade_level": lesson.get("grade"),
+                "topic": lesson.get("lessonTag") or lesson.get("title") or lesson_id,
+                "difficulty_tier": "medium",
+            }
+            for index, piece in enumerate(pieces)
+        ]
+        replace_material(lesson_id, material_id, chunks, vectors)
+
+        material_ref.update({
+            "keywords": keywords,
+            "keywordCount": len(keywords),
+            "keywordIndexStatus": "indexed",
+            "keywordIndexedAt": firestore.SERVER_TIMESTAMP,
+            "keywordIndexError": None,
+            "semanticIndexStatus": "indexed",
+            "semanticChunkCount": len(chunks),
+        })
+        return SearchIndexResponse(
+            materialId=material_id,
+            keywordCount=len(keywords),
+            status="indexed",
+        )
+    except Exception as exc:
+        material_ref.update({
+            "keywordIndexStatus": "failed",
+            "keywordIndexError": str(exc)[:500],
+        })
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
+        ) from exc
 
 @router.post(
     "/{lesson_id}/materials",

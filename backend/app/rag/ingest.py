@@ -8,6 +8,7 @@ from app.core.config import LOCAL_UPLOAD_DIR
 from app.core.firebase import bucket, db
 from app.rag.chunking import chunk_text
 from app.rag.embeddings import embed_texts
+from app.rag.keyword_extract import extract_keywords
 from app.rag.text_extract import extract_text
 from app.rag.vector_store import replace_material
 
@@ -62,6 +63,23 @@ def ingest_material(lesson_id: str, material_id: str) -> int:
             "formulaSheet": "medium",
             "calculationSheet": "hard",
         }.get(material_type, "medium")
+
+        # A small, answer-free index lets the Flutter search screen find a
+        # lesson by terms that occur inside its uploaded PDF. Full extracted
+        # text remains backend-only and is never exposed to the client.
+        keywords = extract_keywords(text)
+        db.collection("pdf_keywords").document(material_id).set({
+            "lessonId": lesson_id,
+            "lessonTitle": lesson.get("title") or topic,
+            "materialId": material_id,
+            "materialName": file_name,
+            "materialType": material_type,
+            "description": f"PDF material for {lesson.get('title') or topic}",
+            "grade": grade_level,
+            "category": lesson.get("lessonTag") or topic,
+            "keywords": keywords,
+            "updatedAt": firestore.SERVER_TIMESTAMP,
+        })
 
         chunks = []
         for i, piece in enumerate(pieces):

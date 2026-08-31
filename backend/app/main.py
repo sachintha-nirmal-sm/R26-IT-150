@@ -24,6 +24,7 @@ from app.api.analytics import router as analytics_router
 from app.api.learning_path import router as learning_path_router
 from app.api.admin_rag import router as admin_rag_router
 from app.api.chatbot import router as chatbot_router
+from app.api.search import router as search_router
 
 
 # Force UTF-8 on Windows so binary data in tracebacks never crashes the process.
@@ -137,6 +138,7 @@ app.include_router(analytics_router)
 app.include_router(learning_path_router)
 app.include_router(admin_rag_router)
 app.include_router(chatbot_router)
+app.include_router(search_router)
 
 
 # ---------------------------------------------------------------------------

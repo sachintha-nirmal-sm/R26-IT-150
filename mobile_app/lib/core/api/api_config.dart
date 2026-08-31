@@ -31,9 +31,12 @@ class ApiConfig {
         defaultTargetPlatform == TargetPlatform.windows ||
         defaultTargetPlatform == TargetPlatform.macOS ||
         defaultTargetPlatform == TargetPlatform.linux) {
-      return const ['http://127.0.0.1:8000'];
+      return const ['http://127.0.0.1:9000', 'http://127.0.0.1:8000'];
     }
     return [
+      'http://127.0.0.1:9000',
+      'http://10.0.2.2:9000',
+      'http://$_lanHost:9000',
       'http://127.0.0.1:8000',
       'http://10.0.2.2:8000',
       'http://$_lanHost:8000',

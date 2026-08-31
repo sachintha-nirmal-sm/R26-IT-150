@@ -75,15 +75,44 @@ class _AdminMaterialsScreenState extends State<AdminMaterialsScreen>
   // ─── Load lessons (Backend API with Firestore fallback) ─────────────────────
   static const _backendUrl = 'http://localhost:9000';
 
+  Future<bool> _indexPdfForSearch({
+    required String lessonId,
+    required String materialId,
+    required _PickedFile file,
+  }) async {
+    if (!file.name.toLowerCase().endsWith('.pdf')) return true;
+
+    try {
+      final token = await FirebaseAuth.instance.currentUser?.getIdToken();
+      final request = http.MultipartRequest(
+        'POST',
+        Uri.parse(
+          '$_backendUrl/admin/lessons/$lessonId/materials/$materialId/search-index',
+        ),
+      )
+        ..headers['Authorization'] = 'Bearer $token'
+        ..files.add(http.MultipartFile.fromBytes(
+          'file',
+          file.bytes,
+          filename: file.name,
+        ));
+
+      final response =
+          await request.send().timeout(const Duration(seconds: 120));
+      return response.statusCode == 200;
+    } catch (error) {
+      debugPrint('PDF search indexing failed: $error');
+      return false;
+    }
+  }
+
   Future<List<Map<String, dynamic>>> _fetchLessonsForGrade(String grade) async {
-    final gradeNum =
-        int.tryParse(grade.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+    final gradeNum = int.tryParse(grade.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
     List<Map<String, dynamic>> lessons = [];
 
     // 1. Try Backend API (if running)
     try {
-      final token =
-          await FirebaseAuth.instance.currentUser?.getIdToken();
+      final token = await FirebaseAuth.instance.currentUser?.getIdToken();
       final response = await http.get(
         Uri.parse('$_backendUrl/admin/lessons'),
         headers: {'Authorization': 'Bearer $token'},
@@ -161,7 +190,8 @@ class _AdminMaterialsScreenState extends State<AdminMaterialsScreen>
       lessons = result;
       loadingLessons = false;
       if (result.isEmpty) {
-        lessonLoadError = 'No lessons found for $grade. Add lessons in the Lessons tab first.';
+        lessonLoadError =
+            'No lessons found for $grade. Add lessons in the Lessons tab first.';
       }
     }).catchError((e) {
       loadingLessons = false;
@@ -190,7 +220,8 @@ class _AdminMaterialsScreenState extends State<AdminMaterialsScreen>
             });
           }
           return AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
             contentPadding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
             title: Row(
@@ -201,13 +232,15 @@ class _AdminMaterialsScreenState extends State<AdminMaterialsScreen>
                     color: _primaryBlue.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(Icons.upload_file, color: _primaryBlue, size: 20),
+                  child: const Icon(Icons.upload_file,
+                      color: _primaryBlue, size: 20),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     'Upload Material — $grade',
-                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                        fontSize: 15, fontWeight: FontWeight.bold),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -233,7 +266,8 @@ class _AdminMaterialsScreenState extends State<AdminMaterialsScreen>
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               SizedBox(
-                                width: 16, height: 16,
+                                width: 16,
+                                height: 16,
                                 child: CircularProgressIndicator(
                                     strokeWidth: 2, color: _primaryBlue),
                               ),
@@ -279,16 +313,14 @@ class _AdminMaterialsScreenState extends State<AdminMaterialsScreen>
                           contentPadding: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 12),
                           hintText: 'Choose a lesson',
-                          hintStyle:
-                              TextStyle(color: Colors.grey.shade400),
+                          hintStyle: TextStyle(color: Colors.grey.shade400),
                         ),
                         // Build items from backend lesson list
                         items: lessons.map((lesson) {
                           final id = lesson['id'] as String? ??
                               lesson['lessonTag'] as String? ??
                               '';
-                          final title =
-                              lesson['title'] as String? ?? id;
+                          final title = lesson['title'] as String? ?? id;
                           return DropdownMenuItem<String>(
                             value: id,
                             child: Text(
@@ -303,14 +335,13 @@ class _AdminMaterialsScreenState extends State<AdminMaterialsScreen>
                             : (val) {
                                 setDialogState(() {
                                   selectedLessonId = val;
-                                  selectedLessonTitle = lessons
-                                      .firstWhere(
-                                        (l) =>
-                                            (l['id'] as String? ??
-                                                l['lessonTag']) ==
-                                            val,
-                                        orElse: () => {},
-                                      )['title'] as String?;
+                                  selectedLessonTitle = lessons.firstWhere(
+                                    (l) =>
+                                        (l['id'] as String? ??
+                                            l['lessonTag']) ==
+                                        val,
+                                    orElse: () => {},
+                                  )['title'] as String?;
                                 });
                               },
                       ),
@@ -510,12 +541,11 @@ class _AdminMaterialsScreenState extends State<AdminMaterialsScreen>
                           return;
                         }
 
-                        setDialogState(
-                            () => uploading = true);
+                        setDialogState(() => uploading = true);
 
                         try {
-                          final fileType = CloudinaryService.getFileType(
-                              pickedFile!.name);
+                          final fileType =
+                              CloudinaryService.getFileType(pickedFile!.name);
 
                           // Upload to Cloudinary
                           final result = await CloudinaryService.uploadFile(
@@ -527,8 +557,7 @@ class _AdminMaterialsScreenState extends State<AdminMaterialsScreen>
                           if (!result['success']) {
                             setDialogState(() {
                               uploading = false;
-                              uploadError =
-                                  'Upload failed: ${result['error']}';
+                              uploadError = 'Upload failed: ${result['error']}';
                             });
                             return;
                           }
@@ -555,7 +584,18 @@ class _AdminMaterialsScreenState extends State<AdminMaterialsScreen>
                             description: description,
                           );
 
-                          await _service.saveMaterial(material);
+                          final materialId =
+                              await _service.saveMaterial(material);
+                          if (materialId == null) {
+                            throw Exception(
+                                'Could not save material metadata.');
+                          }
+
+                          final indexed = await _indexPdfForSearch(
+                            lessonId: selectedLessonId!,
+                            materialId: materialId,
+                            file: pickedFile!,
+                          );
 
                           if (ctx.mounted) Navigator.pop(ctx);
                           if (mounted) {
@@ -566,8 +606,9 @@ class _AdminMaterialsScreenState extends State<AdminMaterialsScreen>
                                       color: Colors.white, size: 18),
                                   const SizedBox(width: 8),
                                   Expanded(
-                                    child: Text(
-                                        '${pickedFile!.name} uploaded successfully!'),
+                                    child: Text(indexed
+                                        ? '${pickedFile!.name} uploaded and indexed for search!'
+                                        : '${pickedFile!.name} uploaded. Search indexing will need a retry.'),
                                   ),
                                 ]),
                                 backgroundColor: Colors.green.shade600,
@@ -613,8 +654,7 @@ class _AdminMaterialsScreenState extends State<AdminMaterialsScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              content: Text('Material deleted.'),
-              backgroundColor: Colors.red),
+              content: Text('Material deleted.'), backgroundColor: Colors.red),
         );
       }
     }
@@ -675,7 +715,8 @@ class _PickedFile {
   final String name;
   final Uint8List bytes;
   final int size;
-  const _PickedFile({required this.name, required this.bytes, required this.size});
+  const _PickedFile(
+      {required this.name, required this.bytes, required this.size});
 }
 
 // ─── Per-grade materials tab ──────────────────────────────────────────────────
@@ -740,8 +781,7 @@ class _GradeMaterialsTabState extends State<_GradeMaterialsTab>
             },
             backgroundColor: _primaryBlue,
             icon: const Icon(Icons.upload_file, color: Colors.white),
-            label:
-                const Text('Upload', style: TextStyle(color: Colors.white)),
+            label: const Text('Upload', style: TextStyle(color: Colors.white)),
           ),
           body: _buildBody(snap),
         );
@@ -886,8 +926,7 @@ class _GradeMaterialsTabState extends State<_GradeMaterialsTab>
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Center(
-                child:
-                    Text(m.getIcon(), style: const TextStyle(fontSize: 22)),
+                child: Text(m.getIcon(), style: const TextStyle(fontSize: 22)),
               ),
             ),
             const SizedBox(width: 12),
@@ -948,8 +987,8 @@ class _GradeMaterialsTabState extends State<_GradeMaterialsTab>
 
             // Delete button
             IconButton(
-              icon: const Icon(Icons.delete_outline,
-                  color: Colors.red, size: 20),
+              icon:
+                  const Icon(Icons.delete_outline, color: Colors.red, size: 20),
               tooltip: 'Delete',
               onPressed: () async {
                 await widget.onDelete(m);
