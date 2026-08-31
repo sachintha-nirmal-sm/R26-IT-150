@@ -1,13 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../LessonList/lesson_list_page.dart';
 import '../../lessons/Lessons_Dashboard.dart';
 import '../../admin/models/lesson_material.dart';
 import '../../admin/services/materials_service.dart';
-// ignore: avoid_web_libraries_in_flutter
-import 'dart:html' as html;
 
 class GradeRevisionScreen extends StatefulWidget {
   final int revisionGrade; // always 10 for Grade 11 students
@@ -266,22 +262,10 @@ class _RevisionMaterialsTabState extends State<_RevisionMaterialsTab> {
     _future = _service.getMaterialsForGrade('Grade ${widget.grade}');
   }
 
-  void _download(String url, String name) {
-    if (kIsWeb) {
-      html.HttpRequest.request(url, responseType: 'blob').then((req) {
-        final blob = req.response as html.Blob;
-        final blobUrl = html.Url.createObjectUrlFromBlob(blob);
-        final anchor = html.AnchorElement(href: blobUrl)
-          ..setAttribute(
-              'download', name.endsWith('.pdf') ? name : '$name.pdf');
-        html.document.body?.append(anchor);
-        anchor.click();
-        anchor.remove();
-        html.Url.revokeObjectUrl(blobUrl);
-      }).catchError((_) => html.window.open(url, '_blank'));
-    } else {
-      launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
-    }
+  Future<void> _download(String url, String name) async {
+    final uri = Uri.tryParse(url);
+    if (uri == null) return;
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
   @override

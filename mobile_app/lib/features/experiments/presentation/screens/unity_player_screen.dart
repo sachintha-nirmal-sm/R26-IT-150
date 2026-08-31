@@ -126,24 +126,37 @@ class _UnityPlayerScreenState extends State<UnityPlayerScreen>
       if (_session.isDemo) {
         await _finishTrial(result);
       } else {
-        await _repo.recordOfficialScore(
-          session: _session,
-          score: result.score,
-          durationSeconds: result.timeUsed,
-          measurements: {
-            ...result.measurements,
-            'mode': 'start',
-            'timeUsed': result.timeUsed,
-            'completed': result.completed,
-          },
-        );
+        Object? lastError;
+        for (var attempt = 0; attempt < 2; attempt++) {
+          try {
+            await _repo.recordOfficialScore(
+              session: _session,
+              score: result.score,
+              durationSeconds: result.timeUsed,
+              measurements: {
+                ...result.measurements,
+                'mode': 'start',
+                'timeUsed': result.timeUsed,
+                'completed': result.completed,
+              },
+            );
+            lastError = null;
+            break;
+          } catch (error) {
+            lastError = error;
+            if (attempt < 1) {
+              await Future<void>.delayed(const Duration(seconds: 2));
+            }
+          }
+        }
+        if (lastError != null) throw lastError;
       }
       if (!mounted) return;
       if (_session.isDemo) {
         Navigator.pop(context, result);
         return;
       }
-      Navigator.of(context).pushNamedAndRemoveUntil(
+      Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
         '/profile',
         (route) => false,
       );

@@ -10,7 +10,7 @@ APP_DIR = Path(__file__).resolve().parent.parent
 BACKEND_DIR = APP_DIR.parent
 ROOT_DIR = BACKEND_DIR.parent
 
-PROJECT_ID: str = os.getenv("FIREBASE_PROJECT_ID", "physics-learning-platform")
+PROJECT_ID: str = os.getenv("FIREBASE_PROJECT_ID", "physicslab-eaa8a")
 
 # New Firebase projects (created after Oct 2024) use firebasestorage.app
 # Old projects used appspot.com. Override via STORAGE_BUCKET env var if needed.

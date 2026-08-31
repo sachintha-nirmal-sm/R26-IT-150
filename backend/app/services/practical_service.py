@@ -438,7 +438,9 @@ def finish_demo(uid: str, practical_id: str, body: DemoFinishRequest) -> Practic
     return _to_result(body.resultId, data, data.get("_finalState") or STATE_PRACTICAL_AVAILABLE)
 
 
-def start_practical(uid: str, practical_id: str) -> SessionResponse:
+def start_practical(
+    uid: str, practical_id: str, *, ignore_attempt_limit: bool = False
+) -> SessionResponse:
     student = _require_active_student(uid)
     practical = _get_practical(practical_id)
     _assert_grade_allowed(student, practical)
@@ -466,7 +468,11 @@ def start_practical(uid: str, practical_id: str) -> SessionResponse:
         # Demo is optional. Students may start the official practical immediately.
         # First official attempt is limited by config. After an official
         # completion, every practical can be retried; bestScore is kept.
-        if not already_completed and used >= practical_max:
+        if (
+            not ignore_attempt_limit
+            and not already_completed
+            and used >= practical_max
+        ):
             raise HTTPException(
                 status.HTTP_409_CONFLICT,
                 "Official practical attempt limit reached. Attempt limits come from practical configuration.",
@@ -626,7 +632,7 @@ def complete_official(uid: str, practical_id: str, body: CompletePracticalReques
     Opens or resumes an official session, then writes the score to
     practicalResults, studentPracticals, and studentProgress.
     """
-    session = start_practical(uid, practical_id)
+    session = start_practical(uid, practical_id, ignore_attempt_limit=True)
     return submit_practical(
         uid,
         practical_id,

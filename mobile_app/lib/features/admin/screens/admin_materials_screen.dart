@@ -1,8 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
-// ignore: avoid_web_libraries_in_flutter
-import 'dart:html' as html;
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -38,44 +37,27 @@ class _AdminMaterialsScreenState extends State<AdminMaterialsScreen>
     super.dispose();
   }
 
-  // ─── Web-safe file picker using dart:html ────────────────────────────────────
-  Future<_PickedFile?> _pickFile() {
-    final completer = Completer<_PickedFile?>();
-
-    final input = html.FileUploadInputElement()
-      ..accept = '.pdf,.jpg,.jpeg,.png,.mp4,.doc,.docx,.ppt,.pptx'
-      ..multiple = false;
-
-    // Listen before click to avoid GC
-    input.onChange.listen((event) {
-      final files = input.files;
-      if (files == null || files.isEmpty) {
-        completer.complete(null);
-        return;
-      }
-      final file = files[0];
-      final reader = html.FileReader();
-      reader.readAsArrayBuffer(file);
-      reader.onLoad.listen((_) {
-        final bytes = reader.result as Uint8List;
-        completer.complete(_PickedFile(
-          name: file.name,
-          bytes: bytes,
-          size: file.size,
-        ));
-      });
-      reader.onError.listen((_) => completer.complete(null));
-    });
-
-    // Also handle cancel (focus returns to window)
-    html.window.onFocus.first.then((_) {
-      Future.delayed(const Duration(milliseconds: 500), () {
-        if (!completer.isCompleted) completer.complete(null);
-      });
-    });
-
-    input.click();
-    return completer.future;
+  Future<_PickedFile?> _pickFile() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: const [
+        'pdf',
+        'jpg',
+        'jpeg',
+        'png',
+        'mp4',
+        'doc',
+        'docx',
+        'ppt',
+        'pptx',
+      ],
+      withData: true,
+    );
+    if (result == null || result.files.isEmpty) return null;
+    final file = result.files.first;
+    final bytes = file.bytes;
+    if (bytes == null) return null;
+    return _PickedFile(name: file.name, bytes: bytes, size: file.size);
   }
 
   // ─── Load lessons (Backend API with Firestore fallback) ─────────────────────

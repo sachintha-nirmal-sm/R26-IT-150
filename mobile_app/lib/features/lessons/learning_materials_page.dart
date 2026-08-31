@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-// ignore: avoid_web_libraries_in_flutter
-import 'dart:html' as html;
+import 'package:url_launcher/url_launcher.dart';
 import '../admin/models/lesson_material.dart';
 import '../admin/services/materials_service.dart';
 
@@ -75,14 +74,10 @@ class _LearningMaterialsPageState extends State<LearningMaterialsPage> {
       downloadUrl = downloadUrl.replaceAll('/upload/', '/upload/fl_attachment/');
     }
 
-    // Trigger direct native browser download via HTML anchor element
-    final anchor = html.AnchorElement(href: downloadUrl)
-      ..setAttribute('download', fileName)
-      ..target = '_blank'
-      ..style.display = 'none';
-    html.document.body?.children.add(anchor);
-    anchor.click();
-    anchor.remove();
+    final uri = Uri.tryParse(downloadUrl);
+    if (uri != null) {
+      launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
   }
 
   // ─── Build ───────────────────────────────────────────────────────────────────

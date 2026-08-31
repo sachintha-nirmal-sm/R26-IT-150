@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -102,38 +104,141 @@ class PracticalsRepository {
     return PracticalResult.fromJson(_asMap(decoded));
   }
 
-  /// Official Start always writes Firestore via FastAPI, even if Unity ran
-  /// on a local fallback session (`local-…` resultId).
+  /// Official Start saves to the same Firebase project the student signed into.
   Future<PracticalResult> recordOfficialScore({
     required PracticalSession session,
     required int score,
     int? durationSeconds,
     Map<String, dynamic>? measurements,
   }) async {
-    final practicalId = session.practicalId;
-    final payload = {
-      'score': score,
-      if (durationSeconds != null) 'durationSeconds': durationSeconds,
-      if (measurements != null) 'measurements': _jsonSafe(measurements),
-    };
+    final saved = await _saveOfficialToFirestore(
+      session: session,
+      score: score,
+      durationSeconds: durationSeconds,
+      measurements: measurements,
+    );
     try {
-      final decoded = await _api.post(
-        '/api/practicals/$practicalId/complete',
-        body: payload,
+      await _api.post(
+        '/api/practicals/${session.practicalId}/complete',
+        body: {
+          'score': score.clamp(0, 100),
+          if (durationSeconds != null)
+            'durationSeconds': durationSeconds < 0 ? 0 : durationSeconds,
+          if (measurements != null) 'measurements': _jsonSafe(measurements),
+        },
       );
-      return PracticalResult.fromJson(_asMap(decoded));
-    } on ApiException catch (error) {
-      if (error.statusCode != 404) rethrow;
-      final started = await startPractical(practicalId);
-      return submitPractical(
-        practicalId: practicalId,
-        resultId: started.resultId,
-        attemptNumber: started.attemptNumber,
-        score: score,
-        durationSeconds: durationSeconds,
-        measurements: measurements,
-      );
+    } catch (_) {}
+    return saved;
+  }
+
+  Future<PracticalResult> _saveOfficialToFirestore({
+    required PracticalSession session,
+    required int score,
+    int? durationSeconds,
+    Map<String, dynamic>? measurements,
+  }) async {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) {
+      throw ApiException('Sign in required', statusCode: 401);
     }
+    final practicalId = session.practicalId;
+    final local = LocalPracticals.byId(practicalId);
+    final clamped = score.clamp(0, 100);
+    final maxScore = local?.maxScore ?? 100;
+    final percentage = maxScore <= 0 ? 0.0 : (100.0 * clamped / maxScore);
+    final resultId =
+        (session.resultId.isEmpty || session.resultId.startsWith('local-'))
+            ? 'pr_${DateTime.now().microsecondsSinceEpoch}'
+            : session.resultId;
+    final now = DateTime.now().toUtc().toIso8601String();
+    final spId = '${uid}_$practicalId';
+    final spSnap = await _db.collection('studentPracticals').doc(spId).get();
+    final prev = spSnap.data() ?? {};
+    final previousBest = (prev['bestScore'] as num?)?.toInt() ?? 0;
+    final best = clamped > previousBest ? clamped : previousBest;
+    final firstCompletion = prev['completed'] != true;
+
+    await _db.collection('practicalResults').doc(resultId).set({
+      'studentId': uid,
+      'practicalId': practicalId,
+      'lessonId': local?.lessonId ?? '',
+      'grade': local?.grade ?? 0,
+      'attemptType': 'practical',
+      'mode': 'start',
+      'attemptNumber': session.attemptNumber,
+      'score': clamped,
+      'maxScore': maxScore,
+      'percentage': percentage,
+      'startedAt': prev['activeStartedAt'] ?? now,
+      'completedAt': now,
+      'durationSeconds': durationSeconds ?? 0,
+      'status': 'completed',
+      if (measurements != null) 'measurements': _jsonSafe(measurements),
+    });
+
+    await _db.collection('studentPracticals').doc(spId).set({
+      'studentId': uid,
+      'practicalId': practicalId,
+      'grade': local?.grade ?? 0,
+      'completed': true,
+      'bestScore': best,
+      'latestScore': clamped,
+      'percentage': maxScore <= 0 ? 0.0 : (100.0 * best / maxScore),
+      'practicalAttemptsUsed':
+          ((prev['practicalAttemptsUsed'] as num?)?.toInt() ?? 0) + 1,
+      'currentState': 'SUBMITTED',
+      'lastAttemptAt': now,
+      'activeResultId': null,
+    }, SetOptions(merge: true));
+
+    await _bumpStudentProgress(
+      uid: uid,
+      grade: local?.grade ?? 0,
+      firstCompletion: firstCompletion,
+      score: clamped,
+    );
+
+    return PracticalResult(
+      resultId: resultId,
+      practicalId: practicalId,
+      attemptType: 'practical',
+      attemptNumber: session.attemptNumber,
+      score: clamped,
+      maxScore: maxScore,
+      percentage: percentage,
+      status: 'completed',
+      durationSeconds: durationSeconds,
+      currentState: 'SUBMITTED',
+      title: local?.title,
+    );
+  }
+
+  Future<void> _bumpStudentProgress({
+    required String uid,
+    required int grade,
+    required bool firstCompletion,
+    required int score,
+  }) async {
+    final ref = _db.collection('studentProgress').doc(uid);
+    await _db.runTransaction((tx) async {
+      final snap = await tx.get(ref);
+      final data = snap.data() ?? {};
+      final completed = (data['completedPracticals'] as num?)?.toInt() ?? 0;
+      final totalScore = (data['totalScore'] as num?)?.toInt() ?? 0;
+      final nextCompleted = firstCompletion ? completed + 1 : completed;
+      final nextTotal = firstCompletion ? totalScore + score : totalScore;
+      final average =
+          nextCompleted <= 0 ? 0.0 : nextTotal / nextCompleted;
+      tx.set(ref, {
+        'studentId': uid,
+        'grade': data['grade'] ?? grade,
+        'totalPracticals': data['totalPracticals'] ?? LocalPracticals.all.length,
+        'completedPracticals': nextCompleted,
+        'totalScore': nextTotal,
+        'averagePercentage': average,
+        'updatedAt': DateTime.now().toUtc().toIso8601String(),
+      }, SetOptions(merge: true));
+    });
   }
 
   Map<String, dynamic> _jsonSafe(Map<String, dynamic> input) {
@@ -165,8 +270,58 @@ class PracticalsRepository {
   }
 
   Future<StudentPracticalProgress> fetchMyProgress() async {
+    try {
+      return await _progressFromFirestore();
+    } catch (_) {}
     final decoded = await _api.get('/api/students/me/progress');
     return StudentPracticalProgress.fromJson(_asMap(decoded));
+  }
+
+  Future<StudentPracticalProgress> _progressFromFirestore() async {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) {
+      throw ApiException('Sign in required', statusCode: 401);
+    }
+    final snap = await _db.collection('studentProgress').doc(uid).get()
+        .timeout(const Duration(seconds: 5));
+    final data = Map<String, dynamic>.from(snap.data() ?? {});
+    data['studentId'] = uid;
+
+    final results = await _db
+        .collection('practicalResults')
+        .where('studentId', isEqualTo: uid)
+        .get()
+        .timeout(const Duration(seconds: 5));
+    final rows = <Map<String, dynamic>>[];
+    for (final doc in results.docs) {
+      final item = doc.data();
+      if (item['attemptType'] != 'practical') continue;
+      final status = item['status'] as String? ?? '';
+      if (status != 'completed' && status != 'timeExpired') continue;
+      final practicalId = item['practicalId'] as String? ?? '';
+      rows.add({
+        'practicalId': practicalId,
+        'title': LocalPracticals.byId(practicalId)?.title ?? practicalId,
+        'score': item['score'] ?? 0,
+        'percentage': item['percentage'] ?? 0,
+        'completedAt': _asIso(item['completedAt'] ?? item['startedAt']),
+        'attemptType': 'practical',
+      });
+    }
+    rows.sort((a, b) {
+      final left = a['completedAt'] as String? ?? '';
+      final right = b['completedAt'] as String? ?? '';
+      return right.compareTo(left);
+    });
+    data['recentResults'] = rows.take(12).toList();
+    return StudentPracticalProgress.fromJson(data);
+  }
+
+  String? _asIso(dynamic value) {
+    if (value == null) return null;
+    if (value is Timestamp) return value.toDate().toUtc().toIso8601String();
+    if (value is DateTime) return value.toUtc().toIso8601String();
+    return value.toString();
   }
 
   Future<List<Practical>> _fetchActiveFromApi({String? lessonId}) async {

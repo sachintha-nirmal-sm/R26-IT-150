@@ -60,20 +60,22 @@ async def error_handling_middleware(request: Request, call_next):
 
 # --- Routers ---
 from app.api.auth import router as auth_router
-from app.api.admin_lessons import router as admin_lessons_router
-from app.api.admin_sub_lessons import router as sub_lessons_router
-from app.api.generate_questions import router as generate_router
-from app.api.ml_analytics import router as ml_analytics_router
-from app.api.recommendations import router as recommendations_router
 from app.api import practicals
 
 app.include_router(auth_router)
-app.include_router(admin_lessons_router)
-app.include_router(sub_lessons_router)
-app.include_router(generate_router)
-app.include_router(ml_analytics_router)
-app.include_router(recommendations_router)
 app.include_router(practicals.router)
+
+def _include_optional(label: str, loader):
+    try:
+        app.include_router(loader())
+    except Exception as exc:
+        print(f"[FastAPI] Skipping {label} router: {exc}")
+
+_include_optional("admin_lessons", lambda: __import__("app.api.admin_lessons", fromlist=["router"]).router)
+_include_optional("admin_sub_lessons", lambda: __import__("app.api.admin_sub_lessons", fromlist=["router"]).router)
+_include_optional("generate_questions", lambda: __import__("app.api.generate_questions", fromlist=["router"]).router)
+_include_optional("ml_analytics", lambda: __import__("app.api.ml_analytics", fromlist=["router"]).router)
+_include_optional("recommendations", lambda: __import__("app.api.recommendations", fromlist=["router"]).router)
 
 @app.get("/health", tags=["Health"])
 def health_check():

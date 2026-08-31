@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// FastAPI base URL for the practicals backend.
 ///
@@ -14,10 +15,12 @@ class ApiConfig {
   static const _fromDefine = String.fromEnvironment('API_BASE_URL');
   static const _lanHost = String.fromEnvironment(
     'API_HOST',
-    defaultValue: '172.28.10.87',
+    defaultValue: '172.28.4.53',
   );
 
+  static const _prefsKey = 'api_base_url';
   static String? _resolved;
+  static Future<void>? _prefsLoad;
 
   static String get baseUrl => _resolved ?? candidateBaseUrls.first;
 
@@ -40,8 +43,47 @@ class ApiConfig {
     ];
   }
 
+  static Future<List<String>> liveCandidateBaseUrls() async {
+    await ensureLoaded();
+    final urls = <String>[];
+    void add(String raw) {
+      final url = _trimSlash(raw);
+      if (url.isEmpty || urls.contains(url)) return;
+      urls.add(url);
+    }
+
+    final override = _fromDefine.trim();
+    if (override.isNotEmpty) {
+      add(override);
+      return urls;
+    }
+
+    if (_resolved != null) add(_resolved!);
+    for (final item in candidateBaseUrls) {
+      add(item);
+    }
+    return urls;
+  }
+
+  static Future<void> ensureLoaded() {
+    return _prefsLoad ??= _loadPrefs();
+  }
+
+  static Future<void> _loadPrefs() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final saved = prefs.getString(_prefsKey);
+      if (saved != null && saved.trim().isNotEmpty) {
+        _resolved = _trimSlash(saved);
+      }
+    } catch (_) {}
+  }
+
   static void rememberWorkingUrl(String url) {
     _resolved = _trimSlash(url);
+    SharedPreferences.getInstance()
+        .then((prefs) => prefs.setString(_prefsKey, _resolved!))
+        .catchError((_) => false);
   }
 
   static String _trimSlash(String value) {
