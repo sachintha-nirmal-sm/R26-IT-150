@@ -32,6 +32,7 @@ public class PracticalManager : MonoBehaviour
         { "grade11_heat", "HeatExpansionExperiment" },
         { "grade11_power_appliances", "PowerEnergyAppliancesExperiment" },
         { "grade11_electronics", "ElectronicsDiodeExperiment" },
+        { "grade11_electronics_diode", "ElectronicsDiodeExperiment" },
     };
 
     static readonly HashSet<string> KnownScenes = new HashSet<string>(ExactScenes.Values);

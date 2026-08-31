@@ -64,6 +64,14 @@ class _PracticalHomePageState extends State<PracticalHomePage> {
 
   Future<List<Practical>> _load() async {
     _grade ??= await _repo.currentStudentGrade();
+
+    // LessonsDashboard already resolves the correct id — never swap it.
+    final routed = LocalPracticals.byId(_practicalId ?? '');
+    if (routed != null) {
+      _grade ??= routed.grade;
+      return [routed];
+    }
+
     final wanted = LocalPracticals.forTopic(
       practicalId: _practicalId,
       lessonId: _lessonId,
@@ -71,13 +79,6 @@ class _PracticalHomePageState extends State<PracticalHomePage> {
       grade: _grade,
     );
     if (wanted != null) {
-      final items = await _repo.fetchActiveForCurrentStudent(
-        lessonId: wanted.lessonId,
-        grade: _grade,
-      );
-      for (final item in items) {
-        if (item.id == wanted.id) return [LocalPracticals.align(item)];
-      }
       return [wanted];
     }
     if (_openedFromLesson) {

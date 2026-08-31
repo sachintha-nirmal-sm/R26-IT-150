@@ -125,4 +125,35 @@ void main() {
       'grade9_density_water',
     );
   });
+
+  test('electronics maps from lesson, title, and legacy practical id', () {
+    expect(
+      LocalPracticals.forTopic(
+        lessonId: 'phy-g11-electronics-doc',
+        grade: 11,
+      )?.id,
+      'grade11_electronics',
+    );
+    expect(
+      LocalPracticals.forTopic(
+        title: 'Electronics: Diode Properties & Circuit Behavior',
+        grade: 11,
+      )?.id,
+      'grade11_electronics',
+    );
+    expect(
+      LocalPracticals.forTopic(
+        practicalId: 'grade11_electronics_diode',
+        title: 'Electronics',
+        grade: 11,
+      )?.id,
+      'grade11_electronics',
+    );
+    expect(LocalPracticals.canonicalId('grade11_electronics_diode'),
+        'grade11_electronics');
+    expect(
+      LocalPracticals.sceneFor('grade11_electronics_diode'),
+      'ElectronicsDiodeExperiment',
+    );
+  });
 }

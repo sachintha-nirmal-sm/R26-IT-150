@@ -731,8 +731,8 @@ class LocalPracticals {
       final n = raw.toInt();
       return (n == 9 || n == 10 || n == 11) ? n : null;
     }
-    final cleaned = '$raw'.toLowerCase().replaceAll('grade', '').trim();
-    final n = int.tryParse(cleaned);
+    final match = RegExp(r'(\d{1,2})').firstMatch('$raw');
+    final n = int.tryParse(match?.group(1) ?? '');
     return (n == 9 || n == 10 || n == 11) ? n : null;
   }
 
@@ -748,8 +748,9 @@ class LocalPracticals {
   }
 
   static Practical? byId(String id) {
+    final canonical = canonicalId(id);
     for (final item in all) {
-      if (item.id == id) return item;
+      if (item.id == canonical) return item;
     }
     return null;
   }
@@ -774,10 +775,17 @@ class LocalPracticals {
     'grade11_heat': 'HeatExpansionExperiment',
     'grade11_power_appliances': 'PowerEnergyAppliancesExperiment',
     'grade11_electronics': 'ElectronicsDiodeExperiment',
+    'grade11_electronics_diode': 'ElectronicsDiodeExperiment',
   };
 
+  static const _idAliases = <String, String>{
+    'grade11_electronics_diode': 'grade11_electronics',
+  };
+
+  static String canonicalId(String id) => _idAliases[id] ?? id;
+
   static String sceneFor(String practicalId, [String fallback = '']) {
-    return sceneById[practicalId] ?? fallback;
+    return sceneById[practicalId] ?? sceneById[canonicalId(practicalId)] ?? fallback;
   }
 
   static Practical align(Practical live) {
@@ -858,6 +866,7 @@ class LocalPracticals {
     'force basic concepts': 'grade9_force_basic',
     'pressure exerted by solid': 'grade9_pressure_solid',
     'pressure exerted by solids': 'grade9_pressure_solid',
+    'density': 'grade9_density_water',
     'density of water': 'grade9_density_water',
     'density of water 1': 'grade9_density_water',
     'reflection and refraction of waves': 'grade9_reflection_prism',
@@ -886,10 +895,17 @@ class LocalPracticals {
     'power and energy of electric appliances': 'grade11_power_appliances',
     'electronics': 'grade11_electronics',
     'electronics logic gates': 'grade11_electronics',
+    'electronics diode properties circuit behavior': 'grade11_electronics',
+    'electronics diode properties': 'grade11_electronics',
+    'investigation of forward bias and reverse bias of a diode': 'grade11_electronics',
   };
 
   static const _lessonIdAliases = <String, String>{
     'phy-g10-motion-doc': 'grade10_motion_straight_line',
+    'phy-g9-force': 'grade9_force_basic',
+    'phy-g9-pressure': 'grade9_pressure_solid',
+    'phy-g9-density': 'grade9_density_water',
+    'phy-g11-electronics': 'grade11_electronics',
   };
 
   static Practical? _fromLessonId(String? lessonId) {
@@ -933,17 +949,19 @@ class LocalPracticals {
     String? title,
     int? grade,
   }) {
-    final fromLesson = _fromLessonId(lessonId);
+    // Title / lessonId win over a stale Firestore practicalId (often wrong or shared).
     final fromTitle = _fromTitle(title, extra: lessonId ?? '', grade: grade);
-    if (fromLesson != null && fromTitle != null && fromLesson.id != fromTitle.id) {
-      return fromLesson;
+    final fromLesson = _fromLessonId(lessonId);
+    if (fromTitle != null && fromLesson != null && fromTitle.id != fromLesson.id) {
+      return fromTitle;
     }
-    if (fromLesson != null) return fromLesson;
     if (fromTitle != null) return fromTitle;
+    if (fromLesson != null) return fromLesson;
 
     final fromId = byId(practicalId ?? '');
     if (fromId == null) return null;
     if (grade != null && fromId.grade != grade) return null;
+    // Only accept practicalId alone when we have no title to verify against.
     if (title == null || title.trim().isEmpty) return fromId;
     return null;
   }

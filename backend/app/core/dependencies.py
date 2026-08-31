@@ -20,6 +20,8 @@ import json
 import os
 import urllib.error
 import urllib.request
+from dataclasses import dataclass
+from typing import Literal
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials

@@ -105,14 +105,22 @@ class _LessonsDashboardState extends State<LessonsDashboard> {
       title: widget.lessonTitle,
       grade: LocalPracticals.parseGrade(widget.grade),
     );
+    if (mapped == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('This lesson does not have its own virtual lab yet.'),
+        ),
+      );
+      return;
+    }
     Navigator.pushNamed(
       context,
       '/practical-home',
       arguments: {
-        if (mapped != null) 'practicalId': mapped.id,
-        if (mapped != null) 'lessonId': mapped.lessonId,
-        'lessonTitle': widget.lessonTitle,
-        'grade': widget.grade,
+        'practicalId': mapped.id,
+        'lessonId': mapped.lessonId,
+        'lessonTitle': mapped.title,
+        'grade': mapped.grade,
       },
     );
   }

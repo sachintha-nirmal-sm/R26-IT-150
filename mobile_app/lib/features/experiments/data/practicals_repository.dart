@@ -153,7 +153,7 @@ class PracticalsRepository {
     if (uid == null) {
       throw ApiException('Sign in required', statusCode: 401);
     }
-    final practicalId = session.practicalId;
+    final practicalId = LocalPracticals.canonicalId(session.practicalId);
     final local = LocalPracticals.byId(practicalId);
     final clamped = score.clamp(0, 100);
     final maxScore = local?.maxScore ?? 100;
@@ -310,7 +310,9 @@ class PracticalsRepository {
       if (item['attemptType'] != 'practical') continue;
       final status = item['status'] as String? ?? '';
       if (status != 'completed' && status != 'timeExpired') continue;
-      final practicalId = item['practicalId'] as String? ?? '';
+      final practicalId = LocalPracticals.canonicalId(
+        item['practicalId'] as String? ?? '',
+      );
       rows.add({
         'practicalId': practicalId,
         'title': LocalPracticals.byId(practicalId)?.title ?? practicalId,
