@@ -556,7 +556,11 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
             Navigator.pushNamed(context, '/lesson-list');
             break;
           case 2:
-            Navigator.pushNamed(context, '/practical-home');
+            Navigator.pushNamed(
+              context,
+              '/practical-home',
+              arguments: {'grade': _grade},
+            );
             break;
           case 3:
             break;

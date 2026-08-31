@@ -21,17 +21,29 @@ class PracticalsRepository {
 
   /// Hub list is read from Firestore so Practical Hub opens without FastAPI.
   /// An empty Firestore result is not treated as success — try API, then local.
-  Future<List<Practical>> fetchActiveForCurrentStudent({String? lessonId}) async {
+  /// Labs (no lessonId) always stay inside the student's current grade.
+  Future<List<Practical>> fetchActiveForCurrentStudent({
+    String? lessonId,
+    int? grade,
+  }) async {
+    final resolvedGrade = grade ?? await _tryCurrentGrade();
     List<Practical> items = const [];
     try {
-      items = await _fetchActiveFromFirestore(lessonId: lessonId);
+      items = await _fetchActiveFromFirestore(
+        lessonId: lessonId,
+        grade: resolvedGrade,
+      );
     } catch (_) {}
     if (items.isEmpty) {
       try {
         items = await _fetchActiveFromApi(lessonId: lessonId);
       } catch (_) {}
     }
-    return _withLocalFallbacks(items, lessonId);
+    return _withLocalFallbacks(
+      items,
+      lessonId: lessonId,
+      grade: resolvedGrade,
+    );
   }
 
   Future<Practical> fetchById(String practicalId) async {
@@ -338,13 +350,17 @@ class PracticalsRepository {
         .toList();
   }
 
-  Future<List<Practical>> _fetchActiveFromFirestore({String? lessonId}) async {
-    final grade = await _currentGrade();
+  Future<List<Practical>> _fetchActiveFromFirestore({
+    String? lessonId,
+    int? grade,
+  }) async {
     Query<Map<String, dynamic>> query = _db.collection('practicals');
     if (lessonId != null && lessonId.isNotEmpty) {
       query = query.where('lessonId', isEqualTo: lessonId);
-    } else {
+    } else if (grade != null) {
       query = query.where('grade', isEqualTo: grade);
+    } else {
+      return const [];
     }
     QuerySnapshot<Map<String, dynamic>> snap;
     try {
@@ -369,13 +385,40 @@ class PracticalsRepository {
     return _fromDoc(snap);
   }
 
-  List<Practical> _withLocalFallbacks(List<Practical> items, String? lessonId) {
-    final locals = LocalPracticals.forLesson(lessonId);
-    if (items.isEmpty) return locals;
-    final ids = items.map((item) => item.id).toSet();
+  List<Practical> _withLocalFallbacks(
+    List<Practical> items, {
+    String? lessonId,
+    int? grade,
+  }) {
+    final scopedLesson = lessonId != null && lessonId.isNotEmpty;
+    final locals = scopedLesson
+        ? LocalPracticals.forLesson(lessonId)
+        : (grade == null ? const <Practical>[] : LocalPracticals.forGrade(grade));
+
+    var filtered = items.map(LocalPracticals.align).toList();
+    if (scopedLesson) {
+      filtered = filtered.where((item) => item.lessonId == lessonId).toList();
+    } else if (grade != null) {
+      filtered = filtered.where((item) => item.grade == grade).toList();
+    } else {
+      filtered = const [];
+    }
+
+    if (filtered.isEmpty) return locals;
+    final ids = filtered.map((item) => item.id).toSet();
     final extra = locals.where((item) => !ids.contains(item.id)).toList();
-    if (extra.isEmpty) return items;
-    return [...items, ...extra]..sort((a, b) => a.order.compareTo(b.order));
+    if (extra.isEmpty) return filtered;
+    return [...filtered, ...extra]..sort((a, b) => a.order.compareTo(b.order));
+  }
+
+  Future<int?> currentStudentGrade() => _tryCurrentGrade();
+
+  Future<int?> _tryCurrentGrade() async {
+    try {
+      return await _currentGrade();
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<int> _currentGrade() async {
@@ -384,8 +427,9 @@ class PracticalsRepository {
       throw ApiException('Sign in required', statusCode: 401);
     }
     final snap = await _db.collection('users').doc(user.uid).get();
-    final raw = snap.data()?['currentGrade'];
-    final grade = raw is num ? raw.toInt() : int.tryParse('$raw');
+    final data = snap.data() ?? {};
+    final grade = LocalPracticals.parseGrade(data['currentGrade']) ??
+        LocalPracticals.parseGrade(data['grade']);
     if (grade == null) {
       throw ApiException('Student grade is not set.');
     }

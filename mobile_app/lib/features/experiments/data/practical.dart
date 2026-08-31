@@ -725,9 +725,24 @@ class LocalPracticals {
     electronicsDiode,
   ];
 
+  static int? parseGrade(dynamic raw) {
+    if (raw == null) return null;
+    if (raw is num) {
+      final n = raw.toInt();
+      return (n == 9 || n == 10 || n == 11) ? n : null;
+    }
+    final cleaned = '$raw'.toLowerCase().replaceAll('grade', '').trim();
+    final n = int.tryParse(cleaned);
+    return (n == 9 || n == 10 || n == 11) ? n : null;
+  }
+
+  static List<Practical> forGrade(int grade) {
+    return all.where((item) => item.grade == grade).toList();
+  }
+
   static List<Practical> forLesson(String? lessonId) {
     if (lessonId == null || lessonId.isEmpty) {
-      return all;
+      return const [];
     }
     return all.where((item) => item.lessonId == lessonId).toList();
   }

@@ -27,6 +27,7 @@ class _PracticalHomePageState extends State<PracticalHomePage> {
   String? _lessonId;
   String? _lessonTitle;
   String? _practicalId;
+  int? _grade;
   bool _readRouteArgs = false;
 
   static const Color _primaryBlue = Color(0xFF2196F3);
@@ -51,17 +52,22 @@ class _PracticalHomePageState extends State<PracticalHomePage> {
       _lessonId = args['lessonId'] as String? ?? _lessonId;
       _lessonTitle = args['lessonTitle'] as String? ?? _lessonTitle;
       _practicalId = args['practicalId'] as String? ?? _practicalId;
+      _grade = LocalPracticals.parseGrade(args['grade']) ?? _grade;
     }
     _practicalsFuture = _load();
   }
 
   Future<List<Practical>> _load() async {
+    _grade ??= await _repo.currentStudentGrade();
     final wanted = LocalPracticals.forTopic(
       practicalId: _practicalId,
       lessonId: _lessonId,
       title: _lessonTitle,
     );
-    final items = await _repo.fetchActiveForCurrentStudent(lessonId: _lessonId);
+    final items = await _repo.fetchActiveForCurrentStudent(
+      lessonId: _lessonId,
+      grade: _grade,
+    );
     if (wanted != null) {
       for (final item in items) {
         if (item.id == wanted.id) return [LocalPracticals.align(item)];
@@ -69,9 +75,11 @@ class _PracticalHomePageState extends State<PracticalHomePage> {
       return [wanted];
     }
     if (items.isNotEmpty) {
-      return items.map(LocalPracticals.align).toList();
+      _grade ??= items.first.grade;
+      return items;
     }
-    return LocalPracticals.forLesson(_lessonId);
+    if (_grade != null) return LocalPracticals.forGrade(_grade!);
+    return const [];
   }
 
   void _reload() {
@@ -153,7 +161,9 @@ class _PracticalHomePageState extends State<PracticalHomePage> {
               const SizedBox(height: 8),
               Text(
                 _lessonId == null
-                    ? 'Select an experiment to start your virtual lab'
+                    ? (_grade == null
+                        ? 'Select an experiment to start your virtual lab'
+                        : 'Grade $_grade experiments for your lessons')
                     : 'Related practicals for this lesson',
                 style: const TextStyle(fontSize: 14, color: Colors.grey),
               ),
