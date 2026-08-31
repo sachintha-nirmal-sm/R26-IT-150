@@ -24,6 +24,7 @@ from app.api.analytics import router as analytics_router
 from app.api.learning_path import router as learning_path_router
 from app.api.admin_rag import router as admin_rag_router
 from app.api.chatbot import router as chatbot_router
+from app.api.news_scenario import router as news_scenario_router
 
 
 # Force UTF-8 on Windows so binary data in tracebacks never crashes the process.
@@ -59,6 +60,14 @@ async def lifespan(app: FastAPI):
 
         ensure_catalogue(firestore_db)
         print("[FastAPI] Practical catalogue ready in Firestore.")
+
+        from app.ml_news.runtime import load_models, models_ready
+
+        if models_ready():
+            load_models()
+            print("[FastAPI] News Model 1 and Model 2 loaded.")
+        else:
+            print("[FastAPI] News models missing. Run: python -m app.ml_news.train")
 
     except Exception as exc:
         print(
@@ -137,6 +146,7 @@ app.include_router(analytics_router)
 app.include_router(learning_path_router)
 app.include_router(admin_rag_router)
 app.include_router(chatbot_router)
+app.include_router(news_scenario_router)
 
 
 # ---------------------------------------------------------------------------
@@ -157,6 +167,8 @@ def root():
         "docs": "/docs",
         "health": "/health",
         "chat": "POST /chat/rag",
+        "newsScenario": "POST /news/scenario",
+        "newsEvaluate": "POST /news/evaluate",
     }
 
 

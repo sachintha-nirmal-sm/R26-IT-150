@@ -48,8 +48,10 @@ class _LoginPageState extends State<LoginPage> {
       final userDoc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
       final data = userDoc.data() ?? {};
       final role = data['role'] ?? 'student';
-      final gradeRaw = data['grade'];
-      final gradeInt = (gradeRaw is int) ? gradeRaw : int.tryParse(gradeRaw?.toString() ?? '');
+      final gradeRaw = data['currentGrade'] ?? data['grade'];
+      final gradeInt = (gradeRaw is int)
+          ? gradeRaw
+          : int.tryParse(RegExp(r'\d{1,2}').firstMatch(gradeRaw?.toString() ?? '')?.group(0) ?? '');
       final gradeLabel = gradeInt != null ? 'Grade $gradeInt' : 'Grade 10';
 
       if (mounted) {

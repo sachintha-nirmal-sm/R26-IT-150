@@ -59,6 +59,7 @@ class _SignupScreenState extends State<SignupScreen> {
       _showError('Please select your grade.');
       return;
     }
+    final selectedGrade = _selectedGrade!;
     if (!_agreedToTerms) {
       _showError('Please agree to the Terms & Privacy Policy.');
       return;
@@ -70,7 +71,7 @@ class _SignupScreenState extends State<SignupScreen> {
         fullName: fullName,
         email: email,
         password: password,
-        currentGrade: _selectedGrade,
+        currentGrade: selectedGrade,
       );
       if (!mounted) return;
       Navigator.of(context).pushReplacementNamed('/home');

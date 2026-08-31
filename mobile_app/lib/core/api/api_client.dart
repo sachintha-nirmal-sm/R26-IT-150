@@ -29,16 +29,28 @@ class ApiClient {
   final FirebaseAuth _auth;
   final String? _forcedBaseUrl;
 
-  Future<dynamic> get(String path, {Map<String, String>? query}) {
-    return _send('GET', path, query: query);
+  Future<dynamic> get(
+    String path, {
+    Map<String, String>? query,
+    bool requireAuth = true,
+  }) {
+    return _send('GET', path, query: query, requireAuth: requireAuth);
   }
 
-  Future<dynamic> post(String path, {Map<String, dynamic>? body}) {
-    return _send('POST', path, body: body);
+  Future<dynamic> post(
+    String path, {
+    Map<String, dynamic>? body,
+    Duration timeout = const Duration(seconds: 20),
+  }) {
+    return _send('POST', path, body: body, timeout: timeout);
   }
 
-  Future<dynamic> postPublic(String path, {Map<String, dynamic>? body}) {
-    return _send('POST', path, body: body, requireAuth: false);
+  Future<dynamic> postPublic(
+    String path, {
+    Map<String, dynamic>? body,
+    Duration timeout = const Duration(seconds: 20),
+  }) {
+    return _send('POST', path, body: body, requireAuth: false, timeout: timeout);
   }
 
   Future<dynamic> _send(
@@ -48,6 +60,7 @@ class ApiClient {
     Map<String, dynamic>? body,
     bool retried = false,
     bool requireAuth = true,
+    Duration timeout = const Duration(seconds: 20),
   }) async {
     final bases = _forcedBaseUrl != null
         ? [_forcedBaseUrl!]
@@ -64,6 +77,7 @@ class ApiClient {
           body: body,
           retried: retried,
           requireAuth: requireAuth,
+          timeout: timeout,
         );
       } on ApiException catch (error) {
         if (!_isUnreachable(error)) rethrow;
@@ -86,6 +100,7 @@ class ApiClient {
     Map<String, dynamic>? body,
     bool retried = false,
     bool requireAuth = true,
+    Duration timeout = const Duration(seconds: 20),
   }) async {
     final uri = Uri.parse('$baseUrl$path').replace(queryParameters: query);
     final headers = <String, String>{
@@ -101,9 +116,7 @@ class ApiClient {
 
       late http.Response response;
       if (method == 'GET') {
-        response = await _http.get(uri, headers: headers).timeout(
-              const Duration(seconds: 12),
-            );
+        response = await _http.get(uri, headers: headers).timeout(timeout);
       } else {
         response = await _http
             .post(
@@ -111,7 +124,7 @@ class ApiClient {
               headers: headers,
               body: body == null ? null : jsonEncode(body),
             )
-            .timeout(const Duration(seconds: 20));
+            .timeout(timeout);
       }
 
       if (requireAuth && response.statusCode == 401 && !retried) {
@@ -123,6 +136,7 @@ class ApiClient {
           body: body,
           retried: true,
           requireAuth: requireAuth,
+          timeout: timeout,
         );
       }
 

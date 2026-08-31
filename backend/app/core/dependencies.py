@@ -22,13 +22,19 @@ from typing import Literal
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from firebase_admin.auth import (
-    verify_id_token,
     ExpiredIdTokenError,
     InvalidIdTokenError,
     RevokedIdTokenError,
     CertificateFetchError,
 )
 
+from app.core.auth_users import (
+    load_user_profile,
+    profile_grade,
+    service_account_project_id,
+    verify_flutter_id_token,
+)
+from app.core.config import FIREBASE_AUTH_PROJECT_ID
 from app.core.firebase import auth
 from app.core.firebase import db as firestore_db
 
@@ -46,13 +52,15 @@ class VerifiedUser:
     Carries the verified identity of the authenticated caller.
 
     Attributes:
-        uid   : Firebase Auth UID (document ID in users/{uid}).
-        role  : Custom claim value — either "admin" or "student".
-        email : Email address from the ID token (informational).
+        uid           : Firebase Auth UID (document ID in users/{uid}).
+        role          : Custom claim value — either "admin" or "student".
+        email         : Email address from the ID token (informational).
+        current_grade : Syllabus grade from the login project's user profile.
     """
     uid: str
     role: Literal["admin", "student"]
     email: str | None
+    current_grade: int | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -94,9 +102,10 @@ async def require_auth(
     
     id_token = credentials.credentials.strip()
 
-    # 2. Verify token via Firebase Admin SDK
+    # 2. Verify token against the Flutter Firebase project (physicslab-eaa8a),
+    #    not only the Admin SDK service-account project.
     try:
-        decoded_token = verify_id_token(id_token, check_revoked=True)
+        decoded_token = verify_flutter_id_token(id_token)
     except ExpiredIdTokenError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -128,9 +137,10 @@ async def require_auth(
         )
 
     # 3. Extract uid and role custom claim
-    uid: str = decoded_token.get("uid") or decoded_token.get("user_id")
+    uid: str = decoded_token.get("uid") or decoded_token.get("user_id") or decoded_token.get("sub")
     role: str | None = decoded_token.get("role")
     email: str | None = decoded_token.get("email")
+    auth_project = decoded_token.get("_auth_project") or FIREBASE_AUTH_PROJECT_ID
 
     if not uid:
         raise HTTPException(
@@ -139,28 +149,36 @@ async def require_auth(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    profile = load_user_profile(uid, id_token, auth_project)
     if role not in ("admin", "student"):
-        snap = firestore_db.collection("users").document(uid).get()
-        profile = snap.to_dict() if snap.exists else {}
         role = profile.get("role")
         if role not in ("admin", "student"):
             role = "student"
-            try:
-                auth.set_custom_user_claims(uid, {"role": "student"})
-            except Exception:
-                pass
-            firestore_db.collection("users").document(uid).set(
-                {
-                    "role": "student",
-                    "status": profile.get("status") or "active",
-                    "currentGrade": profile.get("currentGrade") or 10,
-                    "email": profile.get("email") or email or "",
-                    "fullName": profile.get("fullName") or "",
-                },
-                merge=True,
-            )
+            admin_project = service_account_project_id()
+            # Only write a stub profile when Auth and Admin share the same project.
+            # Otherwise we would create a Grade-10 user in the wrong Firebase project.
+            if admin_project and auth_project == admin_project:
+                try:
+                    auth.set_custom_user_claims(uid, {"role": "student"})
+                except Exception:
+                    pass
+                firestore_db.collection("users").document(uid).set(
+                    {
+                        "role": "student",
+                        "status": profile.get("status") or "active",
+                        "currentGrade": profile.get("currentGrade") or 10,
+                        "email": profile.get("email") or email or "",
+                        "fullName": profile.get("fullName") or "",
+                    },
+                    merge=True,
+                )
 
-    return VerifiedUser(uid=uid, role=role, email=email)
+    return VerifiedUser(
+        uid=uid,
+        role=role,
+        email=email,
+        current_grade=profile_grade(profile),
+    )
 
 
 # ---------------------------------------------------------------------------

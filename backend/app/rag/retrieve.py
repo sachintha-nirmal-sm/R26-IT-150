@@ -27,12 +27,29 @@ def retrieve_for_chat(
     topic: str | None = None,
     k: int = RAG_TOP_K,
 ) -> list[dict]:
-    """Grade-adaptive retrieval for the chatbot."""
+    """Grade-adaptive retrieval for the chatbot (admin lessons tagged by grade)."""
     vector = embed_query(query)
     return search_adaptive(
         vector,
         k=k,
         grade=grade,
+        lesson_id=lesson_id,
+        topic=topic,
+    )
+
+
+def retrieve_across_grades(
+    query: str,
+    lesson_id: str | None = None,
+    topic: str | None = None,
+    k: int = RAG_TOP_K,
+) -> list[dict]:
+    """Search all ingested lesson PDFs, any grade (to detect higher/lower syllabus)."""
+    vector = embed_query(query)
+    return search_adaptive(
+        vector,
+        k=k,
+        grade=None,
         lesson_id=lesson_id,
         topic=topic,
     )

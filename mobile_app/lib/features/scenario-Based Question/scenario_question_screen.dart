@@ -1,132 +1,279 @@
-import "dart:async";
-
+import "package:cloud_firestore/cloud_firestore.dart";
+import "package:firebase_auth/firebase_auth.dart";
 import "package:flutter/material.dart";
-import "../quiz-complete/quiz_complete_screen.dart";
+
+import "news_scenario_service.dart";
 
 class ScenarioQuestionScreen extends StatefulWidget {
   const ScenarioQuestionScreen({super.key});
 
   @override
-  State<ScenarioQuestionScreen> createState() =>
-      _ScenarioQuestionScreenState();
+  State<ScenarioQuestionScreen> createState() => _ScenarioQuestionScreenState();
 }
 
 class _ScenarioQuestionScreenState extends State<ScenarioQuestionScreen> {
-  static const int _startSeconds = -60;
-  static const int _maxSeconds = 600;
-  Timer? _timer;
-  int _seconds = _startSeconds;
-  bool _navigated = false;
+  final NewsScenarioService _service = NewsScenarioService();
+  final TextEditingController _newsController = TextEditingController();
+  final TextEditingController _answerController = TextEditingController();
+
+  List<NewsSample> _samples = [];
+  int? _grade;
+  bool _loading = false;
+  String? _error;
+  NewsScenarioResult? _scenario;
+  NewsEvalResult? _eval;
 
   @override
   void initState() {
     super.initState();
-    _startTimer();
+    _bootstrap();
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
+    _newsController.dispose();
+    _answerController.dispose();
     super.dispose();
   }
 
-  void _startTimer() {
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+  Future<void> _bootstrap() async {
+    try {
+      final samples = await _service.samples();
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      int? grade;
+      if (uid != null) {
+        final snap = await FirebaseFirestore.instance.collection("users").doc(uid).get();
+        final data = snap.data() ?? {};
+        final raw = data["currentGrade"] ?? data["grade"];
+        if (raw is int) {
+          grade = raw;
+        } else {
+          grade = int.tryParse(RegExp(r"\d{1,2}").firstMatch("$raw")?.group(0) ?? "");
+        }
+      }
       if (!mounted) {
-        timer.cancel();
         return;
       }
-
       setState(() {
-        _seconds += 1;
+        _samples = samples;
+        _grade = grade;
+        if (samples.isNotEmpty) {
+          _newsController.text = samples.first.text;
+        }
       });
-
-    });
+    } catch (error) {
+      if (mounted) {
+        setState(() => _error = error.toString());
+      }
+    }
   }
 
-  void _navigateToQuizComplete() {
-    if (_navigated || !mounted) {
+  Future<void> _generate() async {
+    final text = _newsController.text.trim();
+    if (text.isEmpty || _loading) {
       return;
     }
-
-    _navigated = true;
-    final completionSeconds = _seconds < 0 ? 0 : _seconds;
-    final overtimeSeconds = completionSeconds > _maxSeconds
-        ? completionSeconds - _maxSeconds
-        : 0;
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (context) => QuizCompleteScreen(
-          completionSeconds: completionSeconds,
-          overtimeSeconds: overtimeSeconds,
-        ),
-      ),
-    );
+    setState(() {
+      _loading = true;
+      _error = null;
+      _eval = null;
+      _scenario = null;
+      _answerController.clear();
+    });
+    try {
+      final result = await _service.generate(text: text, grade: _grade);
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _scenario = result;
+        _loading = false;
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _loading = false;
+        _error = error.toString();
+      });
+    }
   }
 
-  String _formatTimer(int totalSeconds) {
-    final isNegative = totalSeconds < 0;
-    final absSeconds = totalSeconds.abs();
-    final minutes = absSeconds ~/ 60;
-    final seconds = absSeconds % 60;
-    final sign = isNegative ? "-" : "";
-    return "$sign${minutes.toString().padLeft(2, "0")}:${seconds.toString().padLeft(2, "0")}";
+  Future<void> _submit() async {
+    final scenario = _scenario;
+    final answer = _answerController.text.trim();
+    if (scenario == null || !scenario.accepted || answer.isEmpty || _loading) {
+      return;
+    }
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final result = await _service.evaluate(
+        question: scenario.question ?? "",
+        referenceAnswer: scenario.referenceAnswer ?? "",
+        studentAnswer: answer,
+        scenario: scenario.scenario,
+      );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _eval = result;
+        _loading = false;
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _loading = false;
+        _error = error.toString();
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final isReadingTime = _seconds < 0;
-    final isOvertime = _seconds >= _maxSeconds;
-    final timerColor = isReadingTime || isOvertime ? Colors.red : Colors.blue;
-
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F7),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const _TopBar(),
-              const SizedBox(height: 20),
-              _TimerRow(
-                timeText: _formatTimer(_seconds),
-                timeColor: timerColor,
-                showReadingLabel: isReadingTime,
+              if (_grade != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Chip(label: Text("Answering as Grade $_grade")),
+                ),
+              const Text(
+                "News-based physics question",
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.blue),
               ),
-              const SizedBox(height: 30),
-              _QuestionCard(onFinish: _navigateToQuizComplete),
-              const SizedBox(height: 20),
-              const _CalculatorShortcut(),
-              const SizedBox(height: 20),
+              const SizedBox(height: 8),
+              const Text(
+                "Paste a news item. Model 1 checks if it is physics. If it is, you get a scenario and question. Model 2 then marks your answer.",
+              ),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: _samples
+                    .map(
+                      (sample) => ActionChip(
+                        label: Text(sample.title),
+                        onPressed: _loading
+                            ? null
+                            : () {
+                                _newsController.text = sample.text;
+                                setState(() {
+                                  _scenario = null;
+                                  _eval = null;
+                                });
+                              },
+                      ),
+                    )
+                    .toList(),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _newsController,
+                minLines: 3,
+                maxLines: 6,
+                enabled: !_loading,
+                decoration: InputDecoration(
+                  hintText: "Paste a news headline or short description...",
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: _loading ? null : _generate,
+                  child: Text(_loading && _scenario == null ? "Checking news..." : "Generate question"),
+                ),
+              ),
+              if (_error != null) ...[
+                const SizedBox(height: 12),
+                Text(_error!, style: const TextStyle(color: Colors.red)),
+              ],
+              if (_scenario != null) ...[
+                const SizedBox(height: 20),
+                _InfoCard(
+                  title: _scenario!.accepted
+                      ? "Model 1: Physics (${(_scenario!.confidence * 100).round()}%)"
+                      : "Model 1: Non-Physics (${(_scenario!.confidence * 100).round()}%)",
+                  body: _scenario!.accepted
+                      ? "${_scenario!.topic ?? 'Physics topic'}\n${_scenario!.gradeNote ?? ''}"
+                      : (_scenario!.message ?? "This news is not physics."),
+                  color: _scenario!.accepted ? Colors.green : Colors.orange,
+                ),
+              ],
+              if (_scenario?.accepted == true) ...[
+                const SizedBox(height: 16),
+                _InfoCard(title: "Scenario", body: _scenario!.scenario ?? ""),
+                const SizedBox(height: 12),
+                _InfoCard(title: "Question", body: _scenario!.question ?? ""),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _answerController,
+                  minLines: 4,
+                  maxLines: 8,
+                  enabled: !_loading,
+                  decoration: InputDecoration(
+                    hintText: "Type your answer...",
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: ElevatedButton(
+                    onPressed: _loading ? null : _submit,
+                    child: Text(_loading && _eval == null ? "Marking..." : "Submit answer"),
+                  ),
+                ),
+              ],
+              if (_eval != null) ...[
+                const SizedBox(height: 20),
+                _ResultCard(result: _eval!),
+              ],
+              const SizedBox(height: 28),
             ],
           ),
         ),
       ),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 2,
+        currentIndex: 1,
         type: BottomNavigationBarType.fixed,
         onTap: (index) {
-          if (index == 3) {
+          if (index == 0) {
+            Navigator.pushNamed(context, "/home");
+          } else if (index == 1) {
+            Navigator.pushNamed(context, "/lesson-list");
+          } else if (index == 2) {
+            Navigator.pushNamed(context, "/practical-home");
+          } else if (index == 3) {
             Navigator.pushNamed(context, "/profile");
           }
         },
         items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            label: "Home",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.menu_book_outlined),
-            label: "Lessons",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.science),
-            label: "Labs",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            label: "Profile",
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: "Home"),
+          BottomNavigationBarItem(icon: Icon(Icons.menu_book_outlined), label: "Lessons"),
+          BottomNavigationBarItem(icon: Icon(Icons.science), label: "Labs"),
+          BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: "Profile"),
         ],
       ),
     );
@@ -142,224 +289,70 @@ class _TopBar extends StatelessWidget {
       children: [
         IconButton(
           onPressed: () => Navigator.pop(context),
-          icon: const Icon(
-            Icons.arrow_back_ios_new,
-            color: Colors.blue,
-          ),
+          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.blue),
         ),
         const Expanded(
           child: Center(
             child: Text(
               "Scenario Question",
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.blue,
-              ),
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.blue),
             ),
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.only(right: 16),
-          child: GestureDetector(
-            onTap: () => Navigator.pushNamed(context, "/profile"),
-            child: const CircleAvatar(
-              radius: 18,
-              backgroundColor: Color(0xFFCCCCCC),
-              child: Icon(Icons.person, color: Colors.white, size: 22),
-            ),
-          ),
-        ),
+        const SizedBox(width: 48),
       ],
     );
   }
 }
 
-class _TimerRow extends StatelessWidget {
-  const _TimerRow({
-    required this.timeText,
-    required this.timeColor,
-    required this.showReadingLabel,
+class _InfoCard extends StatelessWidget {
+  const _InfoCard({
+    required this.title,
+    required this.body,
+    this.color = Colors.blue,
   });
 
-  final String timeText;
-  final Color timeColor;
-  final bool showReadingLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.info, color: timeColor),
-            const SizedBox(width: 8),
-            Text(
-              timeText,
-              style: TextStyle(
-                fontSize: 22,
-                color: timeColor,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-        if (showReadingLabel) ...[
-          const SizedBox(height: 6),
-          const Text(
-            "Reading Time",
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.red,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-}
-
-class _QuestionCard extends StatelessWidget {
-  const _QuestionCard({required this.onFinish});
-
-  final VoidCallback onFinish;
+  final String title;
+  final String body;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
     return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(18),
+        border: Border(left: BorderSide(color: color, width: 4)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(24),
-            ),
-            child: Image.asset(
-              "assets/images/projectile_motion.png",
-              height: 200,
-              width: double.infinity,
-              fit: BoxFit.cover,
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(18),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const _QuestionTitle(),
-                const SizedBox(height: 16),
-                const _QuestionDescription(),
-                const SizedBox(height: 24),
-                const _FormulaBox(),
-                const SizedBox(height: 28),
-                SizedBox(
-                  width: double.infinity,
-                  height: 58,
-                  child: ElevatedButton(
-                    onPressed: onFinish,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                    ),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          "Finish",
-                          style: TextStyle(
-                            fontSize: 22,
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        SizedBox(width: 8),
-                        Icon(
-                          Icons.check_circle_outline,
-                          color: Colors.white,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+          Text(title, style: TextStyle(color: color, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          Text(body, style: const TextStyle(height: 1.45)),
         ],
       ),
     );
   }
 }
 
-class _QuestionTitle extends StatelessWidget {
-  const _QuestionTitle();
+class _ResultCard extends StatelessWidget {
+  const _ResultCard({required this.result});
 
-  @override
-  Widget build(BuildContext context) {
-    return const Row(
-      children: [
-        Icon(Icons.science, color: Colors.blue),
-        SizedBox(width: 8),
-        Text(
-          "Projectile Motion",
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ],
-    );
+  final NewsEvalResult result;
+
+  Color get _color {
+    switch (result.label) {
+      case "correct":
+        return Colors.green;
+      case "partial":
+        return Colors.orange;
+      default:
+        return Colors.red;
+    }
   }
-}
-
-class _QuestionDescription extends StatelessWidget {
-  const _QuestionDescription();
-
-  @override
-  Widget build(BuildContext context) {
-    return RichText(
-      text: TextSpan(
-        style: TextStyle(
-          color: Colors.black87,
-          fontSize: 16,
-          height: 1.6,
-        ),
-        children: [
-          TextSpan(
-            text:
-                "A particle is projected from the ground with an initial velocity ",
-          ),
-          TextSpan(
-            text: "v = 25 m/s",
-            style: TextStyle(fontStyle: FontStyle.italic),
-          ),
-          TextSpan(
-            text: " at an angle of theta = 30 deg above the horizontal. ",
-          ),
-          TextSpan(
-            text: "Calculate the maximum height ",
-          ),
-          TextSpan(
-            text: "H",
-            style: TextStyle(fontStyle: FontStyle.italic),
-          ),
-          TextSpan(text: " reached by the particle."),
-        ],
-      ),
-    );
-  }
-}
-
-class _FormulaBox extends StatelessWidget {
-  const _FormulaBox();
 
   @override
   Widget build(BuildContext context) {
@@ -367,71 +360,25 @@ class _FormulaBox extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: const Color(0xFFF1F2F6),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(18),
-        border: const Border(
-          left: BorderSide(color: Colors.blue, width: 4),
-        ),
+        border: Border.all(color: _color.withOpacity(0.4)),
       ),
-      child: const Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "RELEVANT FORMULA",
-            style: TextStyle(
-              color: Colors.blue,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1,
-            ),
+            "Model 2: ${result.displayLabel}",
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: _color),
           ),
-          SizedBox(height: 16),
-          Center(
-            child: Text(
-              "H = (v^2 * sin^2(theta)) / (2g)",
-              style: TextStyle(
-                fontSize: 24,
-                fontStyle: FontStyle.italic,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _CalculatorShortcut extends StatelessWidget {
-  const _CalculatorShortcut();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 170,
-      padding: const EdgeInsets.symmetric(vertical: 20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: Column(
-        children: [
-          CircleAvatar(
-            radius: 24,
-            backgroundColor: const Color(0xFFE8ECF7),
-            child: Icon(
-              Icons.calculate,
-              color: Colors.grey.shade700,
-            ),
-          ),
+          const SizedBox(height: 8),
+          Text("Confidence ${(result.confidence * 100).round()}%"),
           const SizedBox(height: 12),
-          const Text(
-            "Calculator",
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
+          Text(result.feedback, style: const TextStyle(height: 1.45)),
+          const SizedBox(height: 16),
+          Text("Relevance ${result.relevance}%   Completeness ${result.completeness}%   Creativity ${result.creativity}%"),
+          if (result.elapsedMs != null)
+            Text("Marked in ${result.elapsedMs} ms", style: const TextStyle(color: Colors.black54)),
         ],
       ),
     );

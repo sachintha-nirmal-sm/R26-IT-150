@@ -1,3 +1,5 @@
+import "package:cloud_firestore/cloud_firestore.dart";
+import "package:firebase_auth/firebase_auth.dart";
 import "package:flutter/material.dart";
 
 import "rag_chat_service.dart";
@@ -14,24 +16,32 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   final TextEditingController _inputController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
-  final List<_ChatMessage> _messages = [
-    const _ChatMessage(
-      text:
-          "Hi! Ask a physics question. I will answer from your syllabus notes for the selected grade.",
-      isUser: false,
-    ),
-  ];
+  final List<_ChatMessage> _messages = [];
 
-  final List<String> _quickQuestions = [
-    "Explain Newton's First Law",
-    "What is the formula for momentum?",
-    "How does friction affect motion?",
-    "Define kinetic energy",
-  ];
-
-  int _grade = 10;
+  int? _grade;
   String? _sessionId;
   bool _sending = false;
+  bool _loadingGrade = true;
+  String? _gradeError;
+
+  List<String> get _quickQuestions {
+    final items = [
+      "Explain Newton's First Law",
+      "What is the formula for momentum?",
+      "How does friction affect motion?",
+      "Define kinetic energy",
+    ];
+    if (_grade != null && _grade! > 6) {
+      items.add("Explain more simply");
+    }
+    return items;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStudentGrade();
+  }
 
   @override
   void dispose() {
@@ -40,9 +50,73 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     super.dispose();
   }
 
+  int? _parseGrade(dynamic raw) {
+    if (raw is int) {
+      return raw;
+    }
+    final match = RegExp(r"(\d{1,2})").firstMatch(raw?.toString() ?? "");
+    if (match == null) {
+      return null;
+    }
+    final value = int.tryParse(match.group(1)!);
+    if (value == null || value < 6 || value > 13) {
+      return null;
+    }
+    return value;
+  }
+
+  Future<void> _loadStudentGrade() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      setState(() {
+        _loadingGrade = false;
+        _gradeError = "Sign in as a student to use the grade-adaptive chatbot.";
+      });
+      return;
+    }
+
+    try {
+      final snap = await FirebaseFirestore.instance
+          .collection("users")
+          .doc(user.uid)
+          .get();
+      final data = snap.data() ?? {};
+      final grade = _parseGrade(data["currentGrade"]) ?? _parseGrade(data["grade"]);
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _grade = grade;
+        _loadingGrade = false;
+        _gradeError = grade == null
+            ? "Your profile has no grade. Ask an admin to set currentGrade."
+            : null;
+        _messages.add(
+          _ChatMessage(
+            text: grade == null
+                ? "I cannot answer yet because your account has no grade."
+                : "Hi! You are signed in as Grade $grade. "
+                    "I will answer from the Grade $grade lesson PDFs your teacher uploaded. "
+                    "If a topic is only in a higher grade, I will tell you. "
+                    "If you need it simpler, ask me to explain more simply and I will use Grade ${grade - 1} notes.",
+            isUser: false,
+          ),
+        );
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _loadingGrade = false;
+        _gradeError = "Could not load your grade.\n$error";
+      });
+    }
+  }
+
   Future<void> _send(String question) async {
     final text = question.trim();
-    if (text.isEmpty || _sending) {
+    if (text.isEmpty || _sending || _grade == null) {
       return;
     }
 
@@ -56,7 +130,6 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     try {
       final result = await _chatService.send(
         message: text,
-        grade: _grade,
         sessionId: _sessionId,
       );
       if (!mounted) {
@@ -64,6 +137,9 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
       }
       setState(() {
         _sessionId = result.sessionId;
+        if (result.grade != null) {
+          _grade = result.grade;
+        }
         _messages.add(_ChatMessage(text: result.answer, isUser: false));
         _sending = false;
       });
@@ -116,27 +192,17 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
           ],
         ),
         actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<int>(
-                value: _grade,
-                items: [
-                  for (final g in [6, 7, 8, 9, 10, 11])
-                    DropdownMenuItem(value: g, child: Text("G$g")),
-                ],
-                onChanged: (value) {
-                  if (value == null) {
-                    return;
-                  }
-                  setState(() {
-                    _grade = value;
-                    _sessionId = null;
-                  });
-                },
+          if (_grade != null)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Center(
+                child: Chip(
+                  label: Text("Grade $_grade notes"),
+                  backgroundColor: const Color(0xFFE3F2FD),
+                  visualDensity: VisualDensity.compact,
+                ),
               ),
             ),
-          ),
           Padding(
             padding: const EdgeInsets.only(right: 12),
             child: GestureDetector(
@@ -146,48 +212,64 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: _quickQuestions
-                    .map(
-                      (question) => ActionChip(
-                        label: Text(question),
-                        onPressed: _sending ? null : () => _send(question),
+      body: _loadingGrade
+          ? const Center(child: CircularProgressIndicator())
+          : _gradeError != null && _messages.isEmpty
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(
+                      _gradeError!,
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                )
+              : Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: _quickQuestions
+                              .map(
+                                (question) => ActionChip(
+                                  label: Text(question),
+                                  onPressed:
+                                      _sending ? null : () => _send(question),
+                                ),
+                              )
+                              .toList(),
+                        ),
                       ),
-                    )
-                    .toList(),
-              ),
-            ),
-          ),
-          Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.all(16),
-              itemCount: _messages.length + (_sending ? 1 : 0),
-              itemBuilder: (context, index) {
-                if (index >= _messages.length) {
-                  return const _ChatBubble(
-                    message: _ChatMessage(text: "Thinking…", isUser: false),
-                  );
-                }
-                return _ChatBubble(message: _messages[index]);
-              },
-            ),
-          ),
-          _InputBar(
-            controller: _inputController,
-            enabled: !_sending,
-            onSend: () => _send(_inputController.text),
-          ),
-        ],
-      ),
+                    ),
+                    Expanded(
+                      child: ListView.builder(
+                        controller: _scrollController,
+                        padding: const EdgeInsets.all(16),
+                        itemCount: _messages.length + (_sending ? 1 : 0),
+                        itemBuilder: (context, index) {
+                          if (index >= _messages.length) {
+                            return const _ChatBubble(
+                              message: _ChatMessage(
+                                text: "Thinking…",
+                                isUser: false,
+                              ),
+                            );
+                          }
+                          return _ChatBubble(message: _messages[index]);
+                        },
+                      ),
+                    ),
+                    _InputBar(
+                      controller: _inputController,
+                      enabled: !_sending && _grade != null,
+                      onSend: () => _send(_inputController.text),
+                    ),
+                  ],
+                ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: 0,
         type: BottomNavigationBarType.fixed,

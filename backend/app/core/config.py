@@ -12,6 +12,10 @@ ROOT_DIR = BACKEND_DIR.parent
 
 PROJECT_ID: str = os.getenv("FIREBASE_PROJECT_ID", "physics-learning-platform")
 
+# Flutter app login project. ID tokens from the mobile app use this audience.
+# Can differ from PROJECT_ID when the Admin SDK key is from another Firebase project.
+FIREBASE_AUTH_PROJECT_ID: str = os.getenv("FIREBASE_AUTH_PROJECT_ID", "physicslab-eaa8a")
+
 # New Firebase projects (created after Oct 2024) use firebasestorage.app
 # Old projects used appspot.com. Override via STORAGE_BUCKET env var if needed.
 STORAGE_BUCKET: str = os.getenv(

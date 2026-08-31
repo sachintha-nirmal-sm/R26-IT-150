@@ -1,0 +1,173 @@
+{
+  "model1": {
+    "accuracy": 0.9531,
+    "precision_weighted": 0.9571,
+    "recall_weighted": 0.9531,
+    "f1_weighted": 0.953,
+    "report": "              precision    recall  f1-score   support\n\n non_physics       1.00      0.91      0.95        32\n     physics       0.91      1.00      0.96        32\n\n    accuracy                           0.95        64\n   macro avg       0.96      0.95      0.95        64\nweighted avg       0.96      0.95      0.95        64\n",
+    "confusion_matrix": [
+      [
+        29,
+        3
+      ],
+      [
+        0,
+        32
+      ]
+    ],
+    "labels": [
+      "non_physics",
+      "physics"
+    ],
+    "dataset_size": 320,
+    "class_distribution": {
+      "physics": 160,
+      "non_physics": 160
+    },
+    "train_size": 256,
+    "test_size": 64,
+    "split": "80/20 stratified",
+    "model": "TF-IDF + Logistic Regression",
+    "examples": [
+      {
+        "text": "University of Colombo physicists calculated voltage drop across a resistor in a simple circuit during a public science week.",
+        "true": "physics",
+        "predicted": "physics"
+      },
+      {
+        "text": "University of Colombo physicists calculated nuclear fusion energy output in a tokamak pulse and compared results with theory.",
+        "true": "physics",
+        "predicted": "physics"
+      },
+      {
+        "text": "A painting by a local artist sells at auction.",
+        "true": "non_physics",
+        "predicted": "physics"
+      },
+      {
+        "text": "Colombo FC confirmed the opening of a shopping mall food court according to a press release.",
+        "true": "non_physics",
+        "predicted": "non_physics"
+      },
+      {
+        "text": "Colombo FC confirmed a spring clothing collection during a live television interview.",
+        "true": "non_physics",
+        "predicted": "non_physics"
+      },
+      {
+        "text": "Colombo FC confirmed a court ban on a newspaper cartoon according to a press release.",
+        "true": "non_physics",
+        "predicted": "non_physics"
+      },
+      {
+        "text": "Japanese scientists reported momentum change in a vehicle collision test with improved sensors.",
+        "true": "physics",
+        "predicted": "physics"
+      },
+      {
+        "text": "CERN researchers simulated specific heat capacity of coconut oil in a lab test and compared results with theory.",
+        "true": "physics",
+        "predicted": "physics"
+      }
+    ]
+  },
+  "model2": {
+    "accuracy": 0.8611,
+    "precision_weighted": 0.8741,
+    "recall_weighted": 0.8611,
+    "f1_weighted": 0.8589,
+    "report": "              precision    recall  f1-score   support\n\n   incorrect       0.73      0.92      0.81        12\n     partial       0.89      0.67      0.76        12\n     correct       1.00      1.00      1.00        12\n\n    accuracy                           0.86        36\n   macro avg       0.87      0.86      0.86        36\nweighted avg       0.87      0.86      0.86        36\n",
+    "confusion_matrix": [
+      [
+        11,
+        1,
+        0
+      ],
+      [
+        4,
+        8,
+        0
+      ],
+      [
+        0,
+        0,
+        12
+      ]
+    ],
+    "labels": [
+      "incorrect",
+      "partial",
+      "correct"
+    ],
+    "dataset_size": 180,
+    "class_distribution": {
+      "correct": 60,
+      "partial": 60,
+      "incorrect": 60
+    },
+    "train_size": 144,
+    "test_size": 36,
+    "split": "80/20 stratified",
+    "model": "TF-IDF cosine + overlap features + Logistic Regression",
+    "feature_names": [
+      "sim_reference",
+      "sim_question",
+      "jaccard_reference",
+      "jaccard_question",
+      "ref_token_coverage",
+      "length_ratio",
+      "number_overlap",
+      "char_norm"
+    ],
+    "examples": [
+      {
+        "question": "What is pressure? Give the formula and SI unit.",
+        "student": "According to the syllabus, Pressure is force per unit area. P = F/A. The SI unit is the pascal (Pa), which is N/m^2.",
+        "true": "correct",
+        "predicted": "correct"
+      },
+      {
+        "question": "Write the formula for kinetic energy and name the quantities.",
+        "student": "This is caused by photosynthesis in green plants.",
+        "true": "incorrect",
+        "predicted": "incorrect"
+      },
+      {
+        "question": "Write the formula for kinetic energy and name the quantities.",
+        "student": "I remember energy from class, yet I forgot the formula and the SI unit.",
+        "true": "partial",
+        "predicted": "partial"
+      },
+      {
+        "question": "Write the formula for kinetic energy and name the quantities.",
+        "student": "Kinetic energy KE = 1/2 mv^2, where m is mass in kilograms and v is speed in metres per second.",
+        "true": "correct",
+        "predicted": "correct"
+      },
+      {
+        "question": "State the law of reflection of light.",
+        "student": "The angle of incidence is the angle of reflection, and the incident ray, reflected ray and normal all lie in the same plane.",
+        "true": "correct",
+        "predicted": "correct"
+      },
+      {
+        "question": "State the difference between heat and temperature.",
+        "student": "Heat is energy transferred because of a temperature difference. Temperature measures how hot or cold a body is, related to average kinetic energy of particles.",
+        "true": "correct",
+        "predicted": "correct"
+      },
+      {
+        "question": "Write the formula for kinetic energy and name the quantities.",
+        "student": "It is about energy, but I cannot write the full definition.",
+        "true": "partial",
+        "predicted": "partial"
+      },
+      {
+        "question": "Define electric current.",
+        "student": "The answer is the number of people voting in an election.",
+        "true": "incorrect",
+        "predicted": "incorrect"
+      }
+    ]
+  }
+}

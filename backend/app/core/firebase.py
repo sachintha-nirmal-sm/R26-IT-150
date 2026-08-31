@@ -16,6 +16,10 @@ if not firebase_admin._apps:
     firebase_admin.initialize_app(_cred, {
         "storageBucket": STORAGE_BUCKET
     })
+    print(
+        f"[Firebase] Admin SDK project: {_cred.project_id} "
+        f"(service account: {_service_account_path})"
+    )
 
 # Expose Firestore client, Firebase Auth, and Storage bucket
 db: firestore.Client = firestore.client()

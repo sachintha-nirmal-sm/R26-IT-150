@@ -127,7 +127,17 @@ class _MyAppState extends State<MyApp> {
         "/lesson-list": (context) => const PhysicsLessonsScreen(),
         "/force-motion": (context) => const ForceLinearMotionPage(),
         "/lesson-quizzes": (context) => const LessonQuizzesPage(),
-        "/lessonDBoard": (context) => const LessonsDashboard(),
+        "/lessonDBoard": (context) {
+          final args =
+              ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+          return LessonsDashboard(
+            lessonId: args?['lessonId'] as String? ?? '',
+            lessonTitle: args?['lessonTitle'] as String? ?? 'Linear Motion',
+            grade: args?['grade'] as String? ?? 'Grade 9 Physics',
+            lessonDescription: args?['lessonDescription'] as String?,
+            practicalId: args?['practicalId'] as String?,
+          );
+        },
 
         "/search": (context) {
           final args =

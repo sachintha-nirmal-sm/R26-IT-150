@@ -6,6 +6,7 @@ from google.cloud import firestore
 
 from app.core.config import LOCAL_UPLOAD_DIR
 from app.core.firebase import bucket, db
+from app.core.grade import parse_grade
 from app.rag.chunking import chunk_text
 from app.rag.embeddings import embed_texts
 from app.rag.text_extract import extract_text
@@ -54,7 +55,7 @@ def ingest_material(lesson_id: str, material_id: str) -> int:
 
         vectors = embed_texts(pieces)
         lesson = db.collection("lessons").document(lesson_id).get().to_dict() or {}
-        grade_level = lesson.get("grade")
+        grade_level = parse_grade(lesson.get("grade"))
         topic = lesson.get("lessonTag") or lesson.get("title") or lesson_id
         material_type = data.get("materialType")
         difficulty_tier = {

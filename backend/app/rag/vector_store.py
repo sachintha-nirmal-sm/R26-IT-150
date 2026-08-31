@@ -9,6 +9,7 @@ from typing import Any
 import numpy as np
 
 from app.core.config import VECTOR_STORE_DIR
+from app.core.grade import parse_grade
 
 
 def _lesson_dir(lesson_id: str) -> Path:
@@ -79,8 +80,8 @@ def _matches_filters(chunk: dict[str, Any], grade: int | None, lesson_id: str | 
     if lesson_id and chunk.get("lessonId") and chunk.get("lessonId") != lesson_id:
         return False
     if grade is not None:
-        chunk_grade = chunk.get("grade_level")
-        if chunk_grade is not None and int(chunk_grade) != int(grade):
+        chunk_grade = parse_grade(chunk.get("grade_level"))
+        if chunk_grade != int(grade):
             return False
     if topic:
         topic_l = topic.lower()
