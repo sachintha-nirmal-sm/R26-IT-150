@@ -388,7 +388,10 @@ class SimpleSearchService {
           .whereType<Map>()
           .map((item) => Map<String, dynamic>.from(item))
           .toList();
-      print('Semantic PDF search returned ${results.length} result(s).');
+      print(
+        'Semantic PDF search returned ${results.length} result(s) '
+        '(backend grade: ${response['grade']}).',
+      );
       return results;
     } catch (error) {
       // Semantic search is an accuracy enhancement. Exact lesson, keyword,

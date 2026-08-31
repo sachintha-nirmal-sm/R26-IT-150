@@ -51,6 +51,18 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/users/$(uid)).data.currentGrade;
     }
 
+    // Supports both grade formats currently present in the project:
+    // lessons/topics commonly use 9, while legacy materials use "Grade 9".
+    function matchesUserGrade(contentGrade) {
+      return contentGrade == getUserGrade(request.auth.uid)
+        || (getUserGrade(request.auth.uid) == 9 && contentGrade == "Grade 9")
+        || (getUserGrade(request.auth.uid) == 10 && contentGrade == "Grade 10")
+        || (getUserGrade(request.auth.uid) == 11 && contentGrade == "Grade 11")
+        || (getUserGrade(request.auth.uid) == "Grade 9" && contentGrade == 9)
+        || (getUserGrade(request.auth.uid) == "Grade 10" && contentGrade == 10)
+        || (getUserGrade(request.auth.uid) == "Grade 11" && contentGrade == 11);
+    }
+
     // Reads the parent lesson document to check grade + status.
     // Used by quizzes rules to avoid repeating the cross-document lookup.
     function getLessonData(lessonId) {
@@ -154,7 +166,7 @@ service cloud.firestore {
       allow read: if isAdmin()
         || (isAuthenticated()
             && resource.data.status == 'published'
-            && resource.data.grade == getUserGrade(request.auth.uid));
+            && matchesUserGrade(resource.data.grade));
       allow write: if isAdmin();
 
       // materials — raw PDFs/notes for RAG ingestion; client never reads these.
@@ -164,6 +176,16 @@ service cloud.firestore {
         allow read, write: if isAdmin();
       }
 
+      // Published lesson sections contain display content only. Students may
+      // read them when the parent lesson belongs to their current grade.
+      match /subLessons/{subLessonId} {
+        allow read: if isAdmin()
+          || (isAuthenticated()
+              && getLessonData(lessonId).status == 'published'
+              && matchesUserGrade(getLessonData(lessonId).grade));
+        allow write: if isAdmin();
+      }
+
       // quizzes — same grade-check as the parent lesson.
       // The client only reads quiz metadata (title, status, maxAttempts,
       // activeQuestionBankVersionId). Questions are never served from here.
@@ -171,7 +193,7 @@ service cloud.firestore {
         allow read: if isAdmin()
           || (isAuthenticated()
               && getLessonData(lessonId).status == 'published'
-              && getLessonData(lessonId).grade == getUserGrade(request.auth.uid));
+              && matchesUserGrade(getLessonData(lessonId).grade));
         allow write: if isAdmin();
 
         // questionBankVersions + their questions — client NEVER reads these.
@@ -227,7 +249,7 @@ service cloud.firestore {
     match /pdf_keywords/{indexId} {
       allow read: if isAdmin()
         || (isAuthenticated()
-            && resource.data.grade == getUserGrade(request.auth.uid));
+            && matchesUserGrade(resource.data.grade));
       allow write: if isAdmin();
     }
 
@@ -236,13 +258,20 @@ service cloud.firestore {
     match /lesson_materials/{materialId} {
       allow read: if isAdmin()
         || (isAuthenticated()
-            && ((getUserGrade(request.auth.uid) == 9
-                 && resource.data.grade == "Grade 9")
-                || (getUserGrade(request.auth.uid) == 10
-                    && resource.data.grade == "Grade 10")
-                || (getUserGrade(request.auth.uid) == 11
-                    && resource.data.grade == "Grade 11")));
+            && matchesUserGrade(resource.data.grade));
       allow create, update, delete: if isAdmin();
+    }
+
+    // Supplementary educational content used by the unified search screen.
+    // These documents do not contain answer keys or private student data.
+    match /experiments/{experimentId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /learning_paths/{pathId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
     }
 
     // --------------------------------------------------------
@@ -284,7 +313,7 @@ service cloud.firestore {
       allow read: if isAdmin()
         || (isAuthenticated()
             && resource.data.isActive == true
-            && resource.data.grade == getUserGrade(request.auth.uid));
+            && matchesUserGrade(resource.data.grade));
       allow write: if isAdmin();
     }
 
@@ -297,7 +326,7 @@ service cloud.firestore {
       allow read: if isAdmin()
         || (isAuthenticated()
             && resource.data.isActive == true
-            && (resource.data.grade == getUserGrade(request.auth.uid)
+            && (matchesUserGrade(resource.data.grade)
                 || practicalId == "grade9_density_water"
                 || practicalId == "grade9_force_basic"
                 || practicalId == "grade9_pressure_solid"));

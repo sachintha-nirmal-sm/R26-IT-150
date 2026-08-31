@@ -30,6 +30,8 @@ class _SimpleSearchPageState extends State<SimpleSearchPage> {
   bool _showSuggestions = false;
   String _selectedCategory = 'All';
   Timer? _debounceTimer;
+  int _queryVersion = 0;
+  int _searchRequestId = 0;
 
   final List<String> _categories = [
     'All',
@@ -46,7 +48,8 @@ class _SimpleSearchPageState extends State<SimpleSearchPage> {
 
     // Check if a search query was passed (from keyword chips)
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+      final args = ModalRoute.of(context)?.settings.arguments
+          as Map<String, dynamic>?;
       if (args != null && args['searchQuery'] != null) {
         _controller.text = args['searchQuery'];
         Future.delayed(const Duration(milliseconds: 100), () {
@@ -57,10 +60,9 @@ class _SimpleSearchPageState extends State<SimpleSearchPage> {
   }
 
   Future<void> _onQueryChanged() async {
-    // Cancel previous timer
     _debounceTimer?.cancel();
-
     final query = _controller.text;
+    final version = ++_queryVersion;
 
     if (query.isEmpty) {
       setState(() {
@@ -72,20 +74,28 @@ class _SimpleSearchPageState extends State<SimpleSearchPage> {
       return;
     }
 
-    // Get suggestions from history (fast, no debounce needed)
+    // Schedule the search immediately. Autocomplete is asynchronous and must
+    // not create an additional timer after a newer query has been entered.
+    _debounceTimer = Timer(const Duration(milliseconds: 500), () {
+      if (version == _queryVersion) _performSearch();
+    });
+
     final suggestions = await _searchService.getAutocompleteSuggestions(query);
+    if (!mounted || version != _queryVersion || _controller.text != query) {
+      return;
+    }
     setState(() {
       _suggestions = suggestions;
       _showSuggestions = suggestions.isNotEmpty;
     });
-
-    // Debounce search: wait 500ms before searching
-    _debounceTimer = Timer(const Duration(milliseconds: 500), () {
-      _performSearch();
-    });
   }
 
   Future<void> _performSearch() async {
+    _debounceTimer?.cancel();
+    final query = _controller.text.trim();
+    if (query.isEmpty) return;
+    final requestId = ++_searchRequestId;
+
     setState(() {
       _isLoading = true;
       _showSuggestions = false;
@@ -94,32 +104,38 @@ class _SimpleSearchPageState extends State<SimpleSearchPage> {
 
     try {
       final results = await _searchService.search(
-        _controller.text,
+        query,
         widget.grade,
         category: _selectedCategory,
       );
 
       // If no results, try to find similar query (typo correction)
+      String? suggestion;
       if (results.isEmpty) {
-        final suggestion =
-            await _searchService.findSimilarQuery(_controller.text, widget.grade);
-        setState(() => _correctedSpelling = suggestion);
+        suggestion = await _searchService.findSimilarQuery(query, widget.grade);
       }
 
-      // Store ALL results (unfiltered)
+      if (!mounted ||
+          requestId != _searchRequestId ||
+          _controller.text.trim() != query) {
+        return;
+      }
       setState(() {
+        _correctedSpelling = suggestion;
         _allResults = results;
-        _filterResults(); // Apply current category filter
       });
+      _filterResults();
     } catch (e) {
       print('Error: $e');
-      if (mounted) {
+      if (mounted && requestId == _searchRequestId) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Search failed: $e')),
         );
       }
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted && requestId == _searchRequestId) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
