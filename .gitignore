@@ -19,6 +19,7 @@ __pycache__/
 venv/
 .env
 .env.*
+!.env.example
 
 # Flutter/Dart
 **/.dart_tool/
@@ -75,3 +76,21 @@ ui-debug.log
 # Firebase Admin SDK service account key — NEVER commit this
 **/serviceAccountKey.json
 **/serviceAccountKey*.json
+
+# Local uploads (PDF files saved on disk)
+backend/uploads/
+
+# Local runtime data (lesson material metadata with local paths — not for repo)
+backend/data/
+
+# One-time scripts
+backend/fix_admin_role.py
+
+# Separate admin panel app (admin screens are inside mobile_app)
+admin_panel/
+
+# Research/notebooks
+research/
+
+# ML large synthetic data files (regenerate with ml/run_simulation.py)
+ml/data/*.csv
