@@ -49,9 +49,10 @@ class ApiClient {
     bool retried = false,
     bool requireAuth = true,
   }) async {
+    await ApiConfig.ensureLoaded();
     final bases = _forcedBaseUrl != null
         ? [_forcedBaseUrl!]
-        : ApiConfig.candidateBaseUrls;
+        : await ApiConfig.liveCandidateBaseUrls();
     Object? lastError;
 
     for (final base in bases) {
@@ -64,6 +65,7 @@ class ApiClient {
           body: body,
           retried: retried,
           requireAuth: requireAuth,
+          timeout: const Duration(seconds: 3),
         );
       } on ApiException catch (error) {
         if (!_isUnreachable(error)) rethrow;
@@ -86,12 +88,17 @@ class ApiClient {
     Map<String, dynamic>? body,
     bool retried = false,
     bool requireAuth = true,
+    Duration? timeout,
   }) async {
     final uri = Uri.parse('$baseUrl$path').replace(queryParameters: query);
     final headers = <String, String>{
       'Accept': 'application/json',
       'Content-Type': 'application/json',
     };
+    final wait = timeout ??
+        (method == 'GET'
+            ? const Duration(seconds: 12)
+            : const Duration(seconds: 20));
 
     try {
       if (requireAuth) {
@@ -101,9 +108,7 @@ class ApiClient {
 
       late http.Response response;
       if (method == 'GET') {
-        response = await _http.get(uri, headers: headers).timeout(
-              const Duration(seconds: 12),
-            );
+        response = await _http.get(uri, headers: headers).timeout(wait);
       } else {
         response = await _http
             .post(
@@ -111,7 +116,7 @@ class ApiClient {
               headers: headers,
               body: body == null ? null : jsonEncode(body),
             )
-            .timeout(const Duration(seconds: 20));
+            .timeout(wait);
       }
 
       if (requireAuth && response.statusCode == 401 && !retried) {
@@ -123,6 +128,7 @@ class ApiClient {
           body: body,
           retried: true,
           requireAuth: requireAuth,
+          timeout: timeout,
         );
       }
 

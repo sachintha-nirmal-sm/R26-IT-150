@@ -84,7 +84,7 @@ class Practical {
       currentState == 'TIME_EXPIRED';
 
   factory Practical.fromJson(Map<String, dynamic> json) {
-    return Practical(
+    final parsed = Practical(
       id: json['id'] as String? ?? '',
       title: json['title'] as String? ?? 'Untitled practical',
       description: json['description'] as String? ?? '',
@@ -109,6 +109,7 @@ class Practical {
       latestScore: _asInt(json['latestScore']),
       percentage: _asDouble(json['percentage']),
     );
+    return LocalPracticals.align(parsed);
   }
 
   static int _asInt(dynamic value, {int fallback = 0}) {
@@ -162,7 +163,7 @@ class PracticalSession {
       mode: isDemo ? 'demo' : 'practical',
       attemptNumber: 1,
       currentState: isDemo ? 'DEMO_IN_PROGRESS' : 'PRACTICAL_IN_PROGRESS',
-      unitySceneId: practical.unitySceneId,
+      unitySceneId: LocalPracticals.sceneFor(practical.id, practical.unitySceneId),
       unityBuildUrl: practical.unityBuildUrl,
       durationSeconds: practical.durationSeconds,
       startedAt: DateTime.now().toIso8601String(),
@@ -179,7 +180,10 @@ class PracticalSession {
       durationSeconds: json['durationSeconds'] == null
           ? null
           : Practical._asInt(json['durationSeconds']),
-      unitySceneId: json['unitySceneId'] as String? ?? '',
+      unitySceneId: LocalPracticals.sceneFor(
+        json['practicalId'] as String? ?? '',
+        json['unitySceneId'] as String? ?? '',
+      ),
       unityBuildUrl: json['unityBuildUrl'] as String? ?? '',
       startedAt: json['startedAt'] as String?,
     );
@@ -721,10 +725,310 @@ class LocalPracticals {
     electronicsDiode,
   ];
 
+  static int? parseGrade(dynamic raw) {
+    if (raw == null) return null;
+    if (raw is num) {
+      final n = raw.toInt();
+      return (n == 9 || n == 10 || n == 11) ? n : null;
+    }
+    final match = RegExp(r'(\d{1,2})').firstMatch('$raw');
+    final n = int.tryParse(match?.group(1) ?? '');
+    return (n == 9 || n == 10 || n == 11) ? n : null;
+  }
+
+  static List<Practical> forGrade(int grade) {
+    return all.where((item) => item.grade == grade).toList();
+  }
+
   static List<Practical> forLesson(String? lessonId) {
     if (lessonId == null || lessonId.isEmpty) {
-      return all;
+      return const [];
     }
     return all.where((item) => item.lessonId == lessonId).toList();
+  }
+
+  static Practical? byId(String id) {
+    final canonical = canonicalId(id);
+    for (final item in all) {
+      if (item.id == canonical) return item;
+    }
+    return null;
+  }
+
+  static const sceneById = <String, String>{
+    'grade9_force_basic': 'ForceBasicConcepts',
+    'grade9_density_water': 'DensityWaterExperiment',
+    'grade9_pressure_solid': 'PressureExertedBySolid',
+    'grade9_reflection_prism': 'ReflectionPrismExperiment',
+    'grade9_lever_15_1': 'LeverActivity15_1',
+    'grade10_hydrostatic_pressure': 'HydrostaticPressureExperiment',
+    'grade10_work_energy_power': 'WorkEnergyPowerExperiment',
+    'grade10_current_electricity': 'CurrentElectricityExperiment',
+    'grade10_motion_straight_line': 'MotionStraightLineExperiment',
+    'grade10_newtons_laws': 'NewtonsLawsExperiment',
+    'grade10_friction': 'FrictionExperiment',
+    'grade10_resultant_force': 'ResultantForceExperiment',
+    'grade10_turning_effect': 'TurningEffectExperiment',
+    'grade10_equilibrium': 'EquilibriumOfForcesExperiment',
+    'grade11_waves': 'WavesApplicationsExperiment',
+    'grade11_geometrical_optics': 'GeometricalOpticsExperiment',
+    'grade11_heat': 'HeatExpansionExperiment',
+    'grade11_power_appliances': 'PowerEnergyAppliancesExperiment',
+    'grade11_electronics': 'ElectronicsDiodeExperiment',
+    'grade11_electronics_diode': 'ElectronicsDiodeExperiment',
+  };
+
+  static const _idAliases = <String, String>{
+    'grade11_electronics_diode': 'grade11_electronics',
+  };
+
+  static String canonicalId(String id) => _idAliases[id] ?? id;
+
+  static String sceneFor(String practicalId, [String fallback = '']) {
+    return sceneById[practicalId] ?? sceneById[canonicalId(practicalId)] ?? fallback;
+  }
+
+  static Practical align(Practical live) {
+    final local = byId(live.id);
+    if (local == null) {
+      final scene = sceneFor(live.id, live.unitySceneId);
+      if (scene == live.unitySceneId) return live;
+      return _copy(live, unitySceneId: scene);
+    }
+    return Practical(
+      id: local.id,
+      title: local.title,
+      description: local.description,
+      grade: local.grade,
+      lessonId: local.lessonId,
+      topicId: local.topicId,
+      unitySceneId: local.unitySceneId,
+      unityBuildUrl: local.unityBuildUrl,
+      maxScore: local.maxScore,
+      durationSeconds: local.durationSeconds,
+      demoAllowed: local.demoAllowed,
+      demoMaxAttempts: local.demoMaxAttempts,
+      practicalMaxAttempts: local.practicalMaxAttempts,
+      order: local.order,
+      isActive: local.isActive,
+      currentState: live.currentState,
+      demoAttemptsUsed: live.demoAttemptsUsed,
+      practicalAttemptsUsed: live.practicalAttemptsUsed,
+      demoCompleted: live.demoCompleted,
+      completed: live.completed,
+      bestScore: live.bestScore,
+      latestScore: live.latestScore,
+      percentage: live.percentage,
+    );
+  }
+
+  static Practical _copy(Practical live, {required String unitySceneId}) {
+    return Practical(
+      id: live.id,
+      title: live.title,
+      description: live.description,
+      grade: live.grade,
+      lessonId: live.lessonId,
+      topicId: live.topicId,
+      unitySceneId: unitySceneId,
+      unityBuildUrl: live.unityBuildUrl,
+      maxScore: live.maxScore,
+      durationSeconds: live.durationSeconds,
+      demoAllowed: live.demoAllowed,
+      demoMaxAttempts: live.demoMaxAttempts,
+      practicalMaxAttempts: live.practicalMaxAttempts,
+      order: live.order,
+      isActive: live.isActive,
+      currentState: live.currentState,
+      demoAttemptsUsed: live.demoAttemptsUsed,
+      practicalAttemptsUsed: live.practicalAttemptsUsed,
+      demoCompleted: live.demoCompleted,
+      completed: live.completed,
+      bestScore: live.bestScore,
+      latestScore: live.latestScore,
+      percentage: live.percentage,
+    );
+  }
+
+  static String _norm(String value) {
+    return value
+        .toLowerCase()
+        .replaceAll("'", '')
+        .replaceAll('&', ' ')
+        .replaceAll(RegExp(r'[^a-z0-9]+'), ' ')
+        .trim()
+        .replaceAll(RegExp(r'\s+'), ' ');
+  }
+
+  /// Extra titles used in Lessons / search that must not share another topic's lab.
+  static const _titleAliases = <String, String>{
+    'basic concepts associated with force': 'grade9_force_basic',
+    'force basic concepts': 'grade9_force_basic',
+    'pressure exerted by solid': 'grade9_pressure_solid',
+    'pressure exerted by solids': 'grade9_pressure_solid',
+    'density': 'grade9_density_water',
+    'density of water': 'grade9_density_water',
+    'density of water 1': 'grade9_density_water',
+    'reflection and refraction of waves': 'grade9_reflection_prism',
+    'dispersion of white light through a glass prism': 'grade9_reflection_prism',
+    'lever activity 15 1': 'grade9_lever_15_1',
+    'simple machines': 'grade9_lever_15_1',
+    'motion in a straight line': 'grade10_motion_straight_line',
+    'linear motion': 'grade10_motion_straight_line',
+    'newtons laws of motion': 'grade10_newtons_laws',
+    'forces and newtons laws': 'grade10_newtons_laws',
+    'friction': 'grade10_friction',
+    'resultant force': 'grade10_resultant_force',
+    'turning effect of a force': 'grade10_turning_effect',
+    'equilibrium of forces': 'grade10_equilibrium',
+    'hydrostatic pressure and its applications': 'grade10_hydrostatic_pressure',
+    'hydrostatic pressure': 'grade10_hydrostatic_pressure',
+    'work energy and power': 'grade10_work_energy_power',
+    'current electricity': 'grade10_current_electricity',
+    'waves and their applications': 'grade11_waves',
+    'waves': 'grade11_waves',
+    'geometrical optics': 'grade11_geometrical_optics',
+    'light and optics': 'grade11_geometrical_optics',
+    'heat': 'grade11_heat',
+    'heat temperature changes': 'grade11_heat',
+    'heat temperature': 'grade11_heat',
+    'power and energy of electric appliances': 'grade11_power_appliances',
+    'electronics': 'grade11_electronics',
+    'electronics logic gates': 'grade11_electronics',
+    'electronics diode properties circuit behavior': 'grade11_electronics',
+    'electronics diode properties': 'grade11_electronics',
+    'investigation of forward bias and reverse bias of a diode': 'grade11_electronics',
+  };
+
+  static const _lessonIdAliases = <String, String>{
+    'phy-g10-motion-doc': 'grade10_motion_straight_line',
+    'phy-g9-force': 'grade9_force_basic',
+    'phy-g9-pressure': 'grade9_pressure_solid',
+    'phy-g9-density': 'grade9_density_water',
+    'phy-g11-electronics': 'grade11_electronics',
+  };
+
+  static Practical? _fromLessonId(String? lessonId) {
+    if (lessonId == null || lessonId.isEmpty) return null;
+    final exact = forLesson(lessonId);
+    if (exact.length == 1) return exact.first;
+    return byId(_lessonIdAliases[lessonId] ?? '');
+  }
+
+  static Practical? _fromTitle(String? title, {String extra = '', int? grade}) {
+    if (title == null || title.trim().isEmpty) {
+      final id = _keywordMatch(_norm(extra), grade);
+      return id == null ? null : byId(id);
+    }
+    final key = _norm(title);
+    final combined = _norm('$title $extra');
+    var id = _titleAliases[key];
+    if (id == null) {
+      for (final item in all) {
+        if (_norm(item.title) == key) {
+          id = item.id;
+          break;
+        }
+      }
+    }
+    if (id != null) {
+      final matched = byId(id);
+      if (matched == null) return null;
+      if (grade != null && matched.grade != grade) return null;
+      return matched;
+    }
+    final keywordId = _keywordMatch(combined, grade);
+    return keywordId == null ? null : byId(keywordId);
+  }
+
+  /// Resolve exactly one practical for a lesson/topic. Returns null when the
+  /// topic has no lab of its own — never reuses another topic's practical.
+  static Practical? forTopic({
+    String? practicalId,
+    String? lessonId,
+    String? title,
+    int? grade,
+  }) {
+    // Title / lessonId win over a stale Firestore practicalId (often wrong or shared).
+    final fromTitle = _fromTitle(title, extra: lessonId ?? '', grade: grade);
+    final fromLesson = _fromLessonId(lessonId);
+    if (fromTitle != null && fromLesson != null && fromTitle.id != fromLesson.id) {
+      return fromTitle;
+    }
+    if (fromTitle != null) return fromTitle;
+    if (fromLesson != null) return fromLesson;
+
+    final fromId = byId(practicalId ?? '');
+    if (fromId == null) return null;
+    if (grade != null && fromId.grade != grade) return null;
+    // Only accept practicalId alone when we have no title to verify against.
+    if (title == null || title.trim().isEmpty) return fromId;
+    return null;
+  }
+
+  static String? matchTopicId(String title, [String extra = '', int? grade]) {
+    return _fromTitle(title, extra: extra, grade: grade)?.id;
+  }
+
+  /// Exclusive keyword rules. Broad words such as force / pressure / wave
+  /// must not steal another topic's lab.
+  static String? _keywordMatch(String t, int? grade) {
+    if (t.isEmpty) return null;
+    bool has(String s) => t.contains(s);
+
+    if (has('newton')) return 'grade10_newtons_laws';
+    if (has('friction')) return 'grade10_friction';
+    if (has('resultant')) return 'grade10_resultant_force';
+    if (has('turning') || (has('moment') && has('force'))) {
+      return 'grade10_turning_effect';
+    }
+    if (has('equilibrium')) return 'grade10_equilibrium';
+    if (has('hydrostatic') || has('upthrust') || has('archimedes')) {
+      return 'grade10_hydrostatic_pressure';
+    }
+    if (has('appliance')) return 'grade11_power_appliances';
+    if (has('electronics') || has('diode') || has('logic gate')) {
+      return 'grade11_electronics';
+    }
+    if (has('current') && has('electric') && !has('electronics')) {
+      return 'grade10_current_electricity';
+    }
+    if ((has('geometrical') ||
+            (has('optic') && !has('prism')) ||
+            has('concave mirror') ||
+            has('focal length')) &&
+        !has('prism')) {
+      return 'grade11_geometrical_optics';
+    }
+    if (has('heat') && !has('work')) return 'grade11_heat';
+    if (has('wave') && (has('application') || has('slinky') || has('transverse'))) {
+      return 'grade11_waves';
+    }
+    if (has('prism') || has('dispersion') || has('roygbiv')) {
+      return 'grade9_reflection_prism';
+    }
+    if ((has('reflect') || has('refract')) && has('wave') && !has('application')) {
+      return 'grade9_reflection_prism';
+    }
+    if (has('lever') || has('simple machine')) return 'grade9_lever_15_1';
+    if (has('density') && !has('hydrostatic')) {
+      if (grade == 10) return null;
+      if (grade == 9 || grade == null) return 'grade9_density_water';
+      return null;
+    }
+    if (has('work') && has('energy') && !has('appliance')) {
+      return 'grade10_work_energy_power';
+    }
+    if ((has('straight') && has('line')) || has('linear motion')) {
+      return 'grade10_motion_straight_line';
+    }
+    if (has('pressure') && (has('solid') || has('soap') || has('wire'))) {
+      return 'grade9_pressure_solid';
+    }
+    if (has('force') &&
+        (has('basic') || has('weight') || has('mass') || has('spring'))) {
+      return 'grade9_force_basic';
+    }
+    return null;
   }
 }

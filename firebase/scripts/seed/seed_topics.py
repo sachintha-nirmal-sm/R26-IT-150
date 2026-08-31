@@ -88,12 +88,65 @@ PRACTICAL_LESSONS = [
     {
         "id": "phy-g11-waves-doc",
         "data": {
-            "title": "Waves",
+            "title": "Waves and their applications",
             "subject": "Physics",
             "grade": 11,
             "lessonTag": "phy-g11-waves",
             "description": "Wave properties, ripple tanks, frequency and wavelength.",
+            "practicalId": "grade11_waves",
             "order": 1,
+            "status": "published",
+        },
+    },
+    {
+        "id": "phy-g11-electronics-doc",
+        "data": {
+            "title": "Electronics",
+            "subject": "Physics",
+            "grade": 11,
+            "lessonTag": "phy-g11-electronics",
+            "description": "Diode properties, forward and reverse bias, rectification, and circuit analysis in electronics.",
+            "practicalId": "grade11_electronics",
+            "order": 6,
+            "status": "published",
+        },
+    },
+    {
+        "id": "phy-g11-optics-doc",
+        "data": {
+            "title": "Geometrical Optics",
+            "subject": "Physics",
+            "grade": 11,
+            "lessonTag": "phy-g11-optics",
+            "description": "Reflection, refraction, mirrors, and lenses.",
+            "practicalId": "grade11_geometrical_optics",
+            "order": 3,
+            "status": "published",
+        },
+    },
+    {
+        "id": "phy-g11-heat-doc",
+        "data": {
+            "title": "Heat",
+            "subject": "Physics",
+            "grade": 11,
+            "lessonTag": "phy-g11-heat",
+            "description": "Thermal expansion and heat transfer.",
+            "practicalId": "grade11_heat",
+            "order": 4,
+            "status": "published",
+        },
+    },
+    {
+        "id": "phy-g11-power-appliances-doc",
+        "data": {
+            "title": "Power and Energy of Electric Appliances",
+            "subject": "Physics",
+            "grade": 11,
+            "lessonTag": "phy-g11-power-appliances",
+            "description": "Electrical power, energy consumption, and kilowatt-hours.",
+            "practicalId": "grade11_power_appliances",
+            "order": 5,
             "status": "published",
         },
     },
@@ -177,6 +230,17 @@ TOPICS = [
             "isActive": True,
         },
     },
+    {
+        "id": "topic-g11-electronics",
+        "data": {
+            "grade": 11,
+            "lessonId": "phy-g11-electronics-doc",
+            "name": "Electronics: Diode Properties",
+            "description": "Virtual electronics lab for studying diode behavior, forward/reverse bias, and circuit applications.",
+            "order": 2,
+            "isActive": True,
+        },
+    },
 ]
 
 
@@ -185,8 +249,19 @@ def ensure_lessons(admin_uid):
     lessons_ref = db.collection("lessons")
     for lesson in PRACTICAL_LESSONS:
         doc_ref = lessons_ref.document(lesson["id"])
-        if doc_ref.get().exists:
-            print(f"  [skip] lessons/{lesson['id']} already exists")
+        snap = doc_ref.get()
+        practical_id = lesson["data"].get("practicalId")
+        if snap.exists:
+            patch = {}
+            existing = snap.to_dict() or {}
+            if practical_id and not existing.get("practicalId"):
+                patch["practicalId"] = practical_id
+            if patch:
+                patch["updatedAt"] = firestore.SERVER_TIMESTAMP
+                doc_ref.set(patch, merge=True)
+                print(f"  [patch] lessons/{lesson['id']} practicalId={practical_id}")
+            else:
+                print(f"  [skip] lessons/{lesson['id']} already exists")
             continue
         payload = {
             **lesson["data"],

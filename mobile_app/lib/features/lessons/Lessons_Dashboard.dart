@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../LessonList/lesson_list_page.dart';
 import '../quizzes/student_quiz_screen.dart';
+import '../experiments/data/practical.dart';
 import '../experiments/presentation/screens/experiment_execution_screen.dart';
 import '../games/vector_quest/presentation/pages/vector_quest_game_screen.dart';
 import '../games/lesson_games_screen.dart';
@@ -98,12 +99,28 @@ class _LessonsDashboardState extends State<LessonsDashboard> {
   }
 
   void _openLinkedPractical() {
+    final mapped = LocalPracticals.forTopic(
+      practicalId: widget.practicalId,
+      lessonId: widget.lessonId,
+      title: widget.lessonTitle,
+      grade: LocalPracticals.parseGrade(widget.grade),
+    );
+    if (mapped == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('This lesson does not have its own virtual lab yet.'),
+        ),
+      );
+      return;
+    }
     Navigator.pushNamed(
       context,
       '/practical-home',
       arguments: {
-        if (widget.lessonId.isNotEmpty) 'lessonId': widget.lessonId,
-        'lessonTitle': widget.lessonTitle,
+        'practicalId': mapped.id,
+        'lessonId': mapped.lessonId,
+        'lessonTitle': mapped.title,
+        'grade': mapped.grade,
       },
     );
   }

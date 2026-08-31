@@ -16,6 +16,10 @@ Usage in a route:
         return {"uid": user.uid, "role": user.role}
 """
 
+import json
+import os
+import urllib.error
+import urllib.request
 from dataclasses import dataclass
 from typing import Literal
 
@@ -110,11 +114,14 @@ async def require_auth(
             headers={"WWW-Authenticate": "Bearer"},
         )
     except InvalidIdTokenError as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Firebase ID token is invalid: {e}",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        looked_up = _lookup_token_with_client_api(id_token)
+        if looked_up is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=f"Firebase ID token is invalid: {e}",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        decoded_token = looked_up
     except CertificateFetchError:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -161,6 +168,39 @@ async def require_auth(
             )
 
     return VerifiedUser(uid=uid, role=role, email=email)
+
+
+def _lookup_token_with_client_api(id_token: str) -> dict | None:
+    """Verify a token issued by the Flutter Firebase project (physicslab-eaa8a)."""
+    api_key = os.getenv(
+        "FIREBASE_WEB_API_KEY",
+        "AIzaSyBXGMZOCCdAL3WVEnBg_mCS-dbo0kfd1sY",
+    )
+    url = (
+        "https://identitytoolkit.googleapis.com/v1/accounts:lookup"
+        f"?key={api_key}"
+    )
+    request = urllib.request.Request(
+        url,
+        data=json.dumps({"idToken": id_token}).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=8) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError):
+        return None
+    users = payload.get("users") or []
+    if not users:
+        return None
+    user = users[0]
+    return {
+        "uid": user.get("localId"),
+        "user_id": user.get("localId"),
+        "email": user.get("email"),
+        "role": "student",
+    }
 
 
 # ---------------------------------------------------------------------------

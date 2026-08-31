@@ -70,8 +70,14 @@ public class FlutterBridge : MonoBehaviour
         PracticalManager.EnsureLoaded();
     }
 
-    private void Start()
+    private void OnApplicationFocus(bool hasFocus)
     {
+        if (!hasFocus)
+        {
+            return;
+        }
+
+        TryReadAndroidSession();
         OpenMappedScene();
     }
 
@@ -153,12 +159,27 @@ public class FlutterBridge : MonoBehaviour
 #if UNITY_ANDROID && !UNITY_EDITOR
         try
         {
+            string json = null;
             using (var bridge = new AndroidJavaClass("com.example.mobile_app.UnityBridge"))
             {
-                string json = bridge.CallStatic<string>("takePendingSession");
-                if (!string.IsNullOrEmpty(json))
+                json = bridge.CallStatic<string>("peekPendingSession");
+                if (string.IsNullOrEmpty(json))
                 {
-                    ApplySessionJson(json);
+                    json = bridge.CallStatic<string>("takePendingSession");
+                }
+            }
+
+            if (string.IsNullOrEmpty(json))
+            {
+                json = ReadSessionFromIntent();
+            }
+
+            if (!string.IsNullOrEmpty(json))
+            {
+                ApplySessionJson(json);
+                using (var bridge = new AndroidJavaClass("com.example.mobile_app.UnityBridge"))
+                {
+                    bridge.CallStatic("clearPendingSession");
                 }
             }
         }
@@ -168,6 +189,70 @@ public class FlutterBridge : MonoBehaviour
         }
 #endif
     }
+
+#if UNITY_ANDROID && !UNITY_EDITOR
+    private static string ReadSessionFromIntent()
+    {
+        try
+        {
+            using (var unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
+            using (var activity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity"))
+            {
+                if (activity == null)
+                {
+                    return null;
+                }
+
+                using (var intent = activity.Call<AndroidJavaObject>("getIntent"))
+                {
+                    if (intent == null)
+                    {
+                        return null;
+                    }
+
+                    return intent.Call<string>("getStringExtra", "flutter_session");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning("[FlutterBridge] Intent session read failed: " + ex.Message);
+            return null;
+        }
+    }
+#endif
+
+    private void Start()
+    {
+        OpenMappedScene();
+#if UNITY_ANDROID && !UNITY_EDITOR
+        StartCoroutine(PollAndroidSession());
+#endif
+    }
+
+#if UNITY_ANDROID && !UNITY_EDITOR
+    private System.Collections.IEnumerator PollAndroidSession()
+    {
+        // Cold start / process race: keep looking for the Flutter session briefly.
+        for (int i = 0; i < 20; i++)
+        {
+            if (HasSession && !string.IsNullOrEmpty(PracticalId))
+            {
+                OpenMappedScene();
+                yield break;
+            }
+
+            TryReadAndroidSession();
+            if (HasSession)
+            {
+                OpenMappedScene();
+                yield break;
+            }
+
+            yield return new WaitForSecondsRealtime(0.35f);
+        }
+    }
+#endif
 
     private void ApplyField(string key, string value)
     {

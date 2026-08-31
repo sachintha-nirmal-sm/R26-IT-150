@@ -72,20 +72,19 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
       return;
     }
 
-    // 1. Fetch Practical / Lab Progress
     try {
-      final progress = await PracticalsRepository().fetchMyProgress();
-      if (mounted) _progress = progress;
-    } catch (_) {
-      // Gracefully handle if practical API fails
-    }
+      try {
+        final progress = await PracticalsRepository()
+            .fetchMyProgress()
+            .timeout(const Duration(seconds: 8));
+        if (mounted) _progress = progress;
+      } catch (_) {}
 
-    // 2. Fetch Quiz and User Data
-    try {
       final userDoc = await FirebaseFirestore.instance
           .collection('users')
           .doc(uid)
-          .get();
+          .get()
+          .timeout(const Duration(seconds: 8));
       final u = userDoc.data() ?? {};
 
       final gradeRaw = u['currentGrade'] ?? u['grade'];
@@ -93,13 +92,25 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
           ? 'Grade $gradeRaw'
           : (gradeRaw?.toString() ?? '');
 
-      final snap = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .collection('quizAttempts')
-          .orderBy('submittedAt', descending: true)
-          .limit(50)
-          .get();
+      QuerySnapshot<Map<String, dynamic>> snap;
+      try {
+        snap = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(uid)
+            .collection('quizAttempts')
+            .orderBy('submittedAt', descending: true)
+            .limit(50)
+            .get()
+            .timeout(const Duration(seconds: 8));
+      } catch (_) {
+        snap = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(uid)
+            .collection('quizAttempts')
+            .limit(50)
+            .get()
+            .timeout(const Duration(seconds: 8));
+      }
 
       final attempts =
           snap.docs.map((d) => Map<String, dynamic>.from(d.data())).toList();
@@ -158,10 +169,10 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
           _totalAttempts   = attempts.length;
           _recentAttempts  = recent;
           _weakAreas       = weak.take(5).toList();
-          _loading         = false;
         });
       }
     } catch (_) {
+    } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
@@ -545,7 +556,11 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
             Navigator.pushNamed(context, '/lesson-list');
             break;
           case 2:
-            Navigator.pushNamed(context, '/practical-home');
+            Navigator.pushNamed(
+              context,
+              '/practical-home',
+              arguments: {'grade': _grade},
+            );
             break;
           case 3:
             break;

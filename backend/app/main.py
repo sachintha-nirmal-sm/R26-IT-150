@@ -27,7 +27,10 @@ from app.api.chatbot import router as chatbot_router
 from app.api.search import router as search_router
 
 
-# Force UTF-8 on Windows so binary data in tracebacks never crashes the process.
+# ---------------------------------------------------------------------------
+# Force UTF-8 on Windows
+# ---------------------------------------------------------------------------
+
 if hasattr(sys.stdout, "buffer"):
     sys.stdout = io.TextIOWrapper(
         sys.stdout.buffer,
@@ -43,12 +46,17 @@ if hasattr(sys.stderr, "buffer"):
     )
 
 
+# ---------------------------------------------------------------------------
+# Application Lifespan
+# ---------------------------------------------------------------------------
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("[FastAPI] App starting up...")
 
     try:
         _ = db.project
+
         print(
             "[FastAPI] Firebase Admin SDK initialized successfully "
             f"(Project: {db.project})."
@@ -59,6 +67,7 @@ async def lifespan(app: FastAPI):
         from app.services.practical_catalogue import ensure_catalogue
 
         ensure_catalogue(firestore_db)
+
         print("[FastAPI] Practical catalogue ready in Firestore.")
 
     except Exception as exc:
@@ -72,19 +81,27 @@ async def lifespan(app: FastAPI):
     print("[FastAPI] App shutting down...")
 
 
+# ---------------------------------------------------------------------------
+# FastAPI Application
+# ---------------------------------------------------------------------------
+
 app = FastAPI(
     title="Physics Learning Platform API",
     description=(
-        "FastAPI + Firestore backend for the grade-based physics learning platform: "
-        "auth, lesson/material admin, quiz start/submit (server-side grading), "
-        "weak-topic analytics, feedback, and RAG generation jobs."
+        "FastAPI + Firestore backend for the grade-based physics learning "
+        "platform: auth, lesson/material admin, quiz start/submit "
+        "(server-side grading), weak-topic analytics, feedback, and RAG "
+        "generation jobs."
     ),
     version="1.0.0",
     lifespan=lifespan,
 )
 
 
-# Use standard CORSMiddleware for robust preflight and header handling.
+# ---------------------------------------------------------------------------
+# CORS Middleware
+# ---------------------------------------------------------------------------
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -94,14 +111,22 @@ app.add_middleware(
 )
 
 
-# Custom error handling middleware to safely catch and print tracebacks.
+# ---------------------------------------------------------------------------
+# Custom Error Handling Middleware
+# ---------------------------------------------------------------------------
+
 @app.middleware("http")
-async def error_handling_middleware(request: Request, call_next):
+async def error_handling_middleware(
+    request: Request,
+    call_next,
+):
     try:
         return await call_next(request)
+
     except Exception as exc:
         try:
             traceback.print_exc()
+
         except Exception:
             print(
                 f"[error] {type(exc).__name__}: {repr(exc)[:200]}",
@@ -110,21 +135,33 @@ async def error_handling_middleware(request: Request, call_next):
 
         return JSONResponse(
             status_code=500,
-            content={"detail": "Internal server error"},
+            content={
+                "detail": "Internal server error"
+            },
         )
+
+
+# ---------------------------------------------------------------------------
+# Routers
+#
+# Both branches contained the auth and practical routers.
+# Keep one registration of each router to avoid duplicate route registration.
+# ---------------------------------------------------------------------------
+
+# Game-Based-Measurement-and-Calculation
+app.include_router(auth_router)
+app.include_router(practicals_router)
 
 
 # ---------------------------------------------------------------------------
 # Routers from develop_main
 # ---------------------------------------------------------------------------
 
-app.include_router(auth_router)
 app.include_router(admin_lessons_router)
 app.include_router(sub_lessons_router)
 app.include_router(generate_router)
 app.include_router(ml_analytics_router)
 app.include_router(recommendations_router)
-app.include_router(practicals_router)
 
 
 # ---------------------------------------------------------------------------
@@ -142,7 +179,7 @@ app.include_router(search_router)
 
 
 # ---------------------------------------------------------------------------
-# Health / root endpoints
+# Health / Root Endpoints
 # ---------------------------------------------------------------------------
 
 @app.get("/", tags=["Health"])
@@ -161,6 +198,69 @@ def root():
         "chat": "POST /chat/rag",
     }
 
+
+# ---------------------------------------------------------------------------
+# Optional Router Loader
+#
+# Preserved from the existing merged file.
+# These routers are attempted again only through the existing optional-loader
+# mechanism. No new functionality has been added here.
+# ---------------------------------------------------------------------------
+
+def _include_optional(label: str, loader):
+    try:
+        app.include_router(loader())
+
+    except Exception as exc:
+        print(
+            f"[FastAPI] Skipping {label} router: {exc}"
+        )
+
+
+_include_optional(
+    "admin_lessons",
+    lambda: __import__(
+        "app.api.admin_lessons",
+        fromlist=["router"],
+    ).router,
+)
+
+_include_optional(
+    "admin_sub_lessons",
+    lambda: __import__(
+        "app.api.admin_sub_lessons",
+        fromlist=["router"],
+    ).router,
+)
+
+_include_optional(
+    "generate_questions",
+    lambda: __import__(
+        "app.api.generate_questions",
+        fromlist=["router"],
+    ).router,
+)
+
+_include_optional(
+    "ml_analytics",
+    lambda: __import__(
+        "app.api.ml_analytics",
+        fromlist=["router"],
+    ).router,
+)
+
+_include_optional(
+    "recommendations",
+    lambda: __import__(
+        "app.api.recommendations",
+        fromlist=["router"],
+    ).router,
+)
+
+
+# ---------------------------------------------------------------------------
+# Health Check
+# ---------------------------------------------------------------------------
 
 @app.get("/health", tags=["Health"])
 def health_check():

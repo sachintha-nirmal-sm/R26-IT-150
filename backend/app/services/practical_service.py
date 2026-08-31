@@ -88,6 +88,20 @@ def _sp_id(uid: str, practical_id: str) -> str:
     return f"{uid}_{practical_id}"
 
 
+def _parse_grade(raw) -> int | None:
+    if raw is None or isinstance(raw, bool):
+        return None
+    if isinstance(raw, (int, float)):
+        grade = int(raw)
+        return grade if grade in (9, 10, 11) else None
+    text = str(raw).lower().replace("grade", "").strip()
+    try:
+        grade = int(text)
+    except ValueError:
+        return None
+    return grade if grade in (9, 10, 11) else None
+
+
 def _require_active_student(uid: str) -> dict:
     snap = db.collection("users").document(uid).get()
     data = snap.to_dict() or {}
@@ -105,9 +119,11 @@ def _require_active_student(uid: str) -> dict:
     if data.get("role") not in (None, "", "student"):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Student access required.")
     data["role"] = "student"
-    if data.get("currentGrade") is None:
-        data["currentGrade"] = 10
+    grade = _parse_grade(data.get("currentGrade")) or _parse_grade(data.get("grade"))
+    if grade is None:
+        grade = 10
         db.collection("users").document(uid).set({"currentGrade": 10, "role": "student"}, merge=True)
+    data["currentGrade"] = grade
     return data
 
 
@@ -115,14 +131,23 @@ def _get_practical(practical_id: str) -> dict:
     data = ensure_practical(db, practical_id)
     if not data:
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"Practical '{practical_id}' not found.")
-    return data
+    return _with_canonical_mapping(data)
+
+
+def _with_canonical_mapping(data: dict) -> dict:
+    spec = CATALOGUE.get(str(data.get("id") or ""))
+    if not spec:
+        return data
+    merged = dict(data)
+    for field in ("unitySceneId", "lessonId", "topicId", "title"):
+        if spec.get(field):
+            merged[field] = spec[field]
+    return merged
 
 
 def _assert_grade_allowed(student: dict, practical: dict) -> None:
     if not practical.get("isActive", False):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "This practical is not active.")
-    if practical.get("id") in ALWAYS_AVAILABLE_PRACTICAL_IDS:
-        return
     if int(practical.get("grade")) != int(student.get("currentGrade")):
         raise HTTPException(
             status.HTTP_403_FORBIDDEN,
@@ -165,6 +190,7 @@ def _get_or_create_student_practical(uid: str, practical: dict) -> tuple[str, di
 
 
 def _to_summary(practical: dict) -> PracticalSummary:
+    practical = _with_canonical_mapping(practical)
     return PracticalSummary(
         id=practical["id"],
         title=practical.get("title", ""),
@@ -229,14 +255,26 @@ def list_practicals(uid: str, grade: int | None, lesson_id: str | None = None) -
         items.append(_to_summary(data))
         seen.add(snap.id)
 
-    for extra_id in ALWAYS_AVAILABLE_PRACTICAL_IDS:
+    for extra_id, spec in CATALOGUE.items():
+        if extra_id in seen:
+            continue
+        if int(spec.get("grade", 0)) != student_grade:
+            continue
         extra_snap = db.collection("practicals").document(extra_id).get()
-        if extra_snap.exists and extra_id not in seen:
+        if extra_snap.exists:
             extra = extra_snap.to_dict() or {}
-            if extra.get("isActive", False):
-                extra["id"] = extra_id
-                items.append(_to_summary(extra))
-                seen.add(extra_id)
+            extra["id"] = extra_id
+            extra_grade = extra.get("grade", spec.get("grade"))
+            if extra.get("isActive", False) is False:
+                continue
+            if int(extra_grade) != student_grade:
+                continue
+            items.append(_to_summary(extra))
+        else:
+            extra = dict(spec)
+            extra["id"] = extra_id
+            items.append(_to_summary(extra))
+        seen.add(extra_id)
 
     items.sort(
         key=lambda item: (0 if item.id in ALWAYS_AVAILABLE_PRACTICAL_IDS else 1, item.order)
@@ -426,7 +464,9 @@ def finish_demo(uid: str, practical_id: str, body: DemoFinishRequest) -> Practic
     return _to_result(body.resultId, data, data.get("_finalState") or STATE_PRACTICAL_AVAILABLE)
 
 
-def start_practical(uid: str, practical_id: str) -> SessionResponse:
+def start_practical(
+    uid: str, practical_id: str, *, ignore_attempt_limit: bool = False
+) -> SessionResponse:
     student = _require_active_student(uid)
     practical = _get_practical(practical_id)
     _assert_grade_allowed(student, practical)
@@ -454,7 +494,11 @@ def start_practical(uid: str, practical_id: str) -> SessionResponse:
         # Demo is optional. Students may start the official practical immediately.
         # First official attempt is limited by config. After an official
         # completion, every practical can be retried; bestScore is kept.
-        if not already_completed and used >= practical_max:
+        if (
+            not ignore_attempt_limit
+            and not already_completed
+            and used >= practical_max
+        ):
             raise HTTPException(
                 status.HTTP_409_CONFLICT,
                 "Official practical attempt limit reached. Attempt limits come from practical configuration.",
@@ -614,7 +658,7 @@ def complete_official(uid: str, practical_id: str, body: CompletePracticalReques
     Opens or resumes an official session, then writes the score to
     practicalResults, studentPracticals, and studentProgress.
     """
-    session = start_practical(uid, practical_id)
+    session = start_practical(uid, practical_id, ignore_attempt_limit=True)
     return submit_practical(
         uid,
         practical_id,

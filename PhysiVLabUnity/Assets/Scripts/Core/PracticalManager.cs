@@ -1,13 +1,41 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 /// <summary>
 /// Maps practicalId → Unity scene. Only the selected practical scene is loaded.
+/// Exact IDs always win so a stale or generic unitySceneId cannot open the wrong lab.
 /// </summary>
 [DefaultExecutionOrder(-700)]
 public class PracticalManager : MonoBehaviour
 {
     public static PracticalManager Instance { get; private set; }
+
+    static readonly Dictionary<string, string> ExactScenes = new Dictionary<string, string>
+    {
+        { "grade9_force_basic", "ForceBasicConcepts" },
+        { "grade9_density_water", "DensityWaterExperiment" },
+        { "grade9_pressure_solid", "PressureExertedBySolid" },
+        { "grade9_reflection_prism", "ReflectionPrismExperiment" },
+        { "grade9_lever_15_1", "LeverActivity15_1" },
+        { "grade10_hydrostatic_pressure", "HydrostaticPressureExperiment" },
+        { "grade10_work_energy_power", "WorkEnergyPowerExperiment" },
+        { "grade10_current_electricity", "CurrentElectricityExperiment" },
+        { "grade10_motion_straight_line", "MotionStraightLineExperiment" },
+        { "grade10_newtons_laws", "NewtonsLawsExperiment" },
+        { "grade10_friction", "FrictionExperiment" },
+        { "grade10_resultant_force", "ResultantForceExperiment" },
+        { "grade10_turning_effect", "TurningEffectExperiment" },
+        { "grade10_equilibrium", "EquilibriumOfForcesExperiment" },
+        { "grade11_waves", "WavesApplicationsExperiment" },
+        { "grade11_geometrical_optics", "GeometricalOpticsExperiment" },
+        { "grade11_heat", "HeatExpansionExperiment" },
+        { "grade11_power_appliances", "PowerEnergyAppliancesExperiment" },
+        { "grade11_electronics", "ElectronicsDiodeExperiment" },
+        { "grade11_electronics_diode", "ElectronicsDiodeExperiment" },
+    };
+
+    static readonly HashSet<string> KnownScenes = new HashSet<string>(ExactScenes.Values);
 
     public static void EnsureLoaded()
     {
@@ -35,12 +63,17 @@ public class PracticalManager : MonoBehaviour
 
     public string SceneFor(string practicalId, string unitySceneId)
     {
-        if (!string.IsNullOrEmpty(unitySceneId))
+        string id = (practicalId ?? "").Trim().ToLowerInvariant();
+        if (ExactScenes.TryGetValue(id, out string fromId))
+        {
+            return fromId;
+        }
+
+        if (IsKnownScene(unitySceneId))
         {
             return unitySceneId;
         }
 
-        string id = (practicalId ?? "").ToLowerInvariant();
         if (id.Contains("newton"))
         {
             return "NewtonsLawsExperiment";
@@ -77,6 +110,11 @@ public class PracticalManager : MonoBehaviour
             return "CurrentElectricityExperiment";
         }
 
+        if (id.Contains("electronics") || id.Contains("diode"))
+        {
+            return "ElectronicsDiodeExperiment";
+        }
+
         if (id.Contains("appliance") || id.Contains("power_appliances"))
         {
             return "PowerEnergyAppliancesExperiment";
@@ -97,11 +135,6 @@ public class PracticalManager : MonoBehaviour
             return "LeverActivity15_1";
         }
 
-        if (id.Contains("reflection") || id.Contains("prism") || id.Contains("dispersion"))
-        {
-            return "ReflectionPrismExperiment";
-        }
-
         if (id.Contains("optics") || id.Contains("geometrical"))
         {
             return "GeometricalOpticsExperiment";
@@ -112,14 +145,14 @@ public class PracticalManager : MonoBehaviour
             return "HeatExpansionExperiment";
         }
 
-        if (id.Contains("electronics") || id.Contains("diode"))
-        {
-            return "ElectronicsDiodeExperiment";
-        }
-
         if (id.Contains("waves"))
         {
             return "WavesApplicationsExperiment";
+        }
+
+        if (id.Contains("reflection") || id.Contains("prism") || id.Contains("dispersion"))
+        {
+            return "ReflectionPrismExperiment";
         }
 
         if (id.Contains("density"))
@@ -140,11 +173,22 @@ public class PracticalManager : MonoBehaviour
         return SceneManager.GetActiveScene().name;
     }
 
+    static bool IsKnownScene(string scene)
+    {
+        return !string.IsNullOrEmpty(scene) && KnownScenes.Contains(scene);
+    }
+
     public void OpenPractical(string practicalId, string unitySceneId)
     {
         string scene = SceneFor(practicalId, unitySceneId);
         if (string.IsNullOrEmpty(scene))
         {
+            return;
+        }
+
+        if (!Application.CanStreamedLevelBeLoaded(scene))
+        {
+            Debug.LogError("[PracticalManager] scene not in build: " + scene + " for " + practicalId);
             return;
         }
 

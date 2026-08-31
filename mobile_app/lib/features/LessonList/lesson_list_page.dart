@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import '../experiments/data/practical.dart';
 import '../lessons/Lessons_Dashboard.dart';
 
 class PhysicsLessonsScreen extends StatefulWidget {
@@ -34,7 +35,7 @@ class _PhysicsLessonsScreenState extends State<PhysicsLessonsScreen> {
       return;
     }
     final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-    final grade = doc.data()?['grade'];
+    final grade = doc.data()?['currentGrade'] ?? doc.data()?['grade'];
     final parsed = (grade is int) ? grade : int.tryParse(grade?.toString() ?? '');
 
     if (parsed == null) {
@@ -222,13 +223,18 @@ class _LessonListBody extends StatelessWidget {
                           final doc = docs[index];
                           final data = doc.data() as Map<String, dynamic>;
                           final title = data['title'] as String? ?? 'Lesson ${index + 1}';
-                          final practicalId = data['practicalId'] as String?;
+                          final mapped = LocalPracticals.forTopic(
+                            practicalId: data['practicalId'] as String?,
+                            lessonId: doc.id,
+                            title: title,
+                            grade: grade,
+                          );
                           return _LessonCard(
                             index: index,
                             lessonId: doc.id,
                             title: title,
                             gradeLabel: gradeLabel,
-                            practicalId: practicalId,
+                            practicalId: mapped?.id,
                             isSelected: title == selectedLessonTitle,
                             onTap: () => onLessonSelected(title),
                           );

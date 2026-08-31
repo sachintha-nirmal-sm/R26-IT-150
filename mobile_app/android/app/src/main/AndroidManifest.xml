@@ -8,11 +8,12 @@
 
     <application
         android:label="mobile_app"
-        android:name="${applicationName}"
+        android:name=".PhysiVLabApp"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true"
         android:enableOnBackInvokedCallback="true"
-        tools:replace="android:enableOnBackInvokedCallback">
+        tools:replace="android:name,android:enableOnBackInvokedCallback">
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -67,4 +68,5 @@
             <data android:scheme="https" />
         </intent>
     </queries>
+
 </manifest>

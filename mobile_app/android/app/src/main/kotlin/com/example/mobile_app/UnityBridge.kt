@@ -7,18 +7,20 @@ import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import io.flutter.plugin.common.MethodChannel
 import java.io.File
 
 /**
  * Flutter (main process) ↔ Unity (`:unity` process) bridge.
- * Unity native quit kills only the Unity process; the result is written to a
- * shared file and delivered to Flutter through an Intent extra.
+ * Session JSON is written to a shared file; UnitySendMessage is only safe from
+ * the `:unity` process after native libs are loaded.
  */
 object UnityBridge {
     const val EXTRA_RESULT = "unity_pending_result"
     const val EXTRA_SESSION = "flutter_session"
 
+    private const val TAG = "UnityBridge"
     private const val SESSION_FILE = "unity_pending_session.json"
     private const val RESULT_FILE = "unity_pending_result.json"
 
@@ -36,6 +38,10 @@ object UnityBridge {
     private val main = Handler(Looper.getMainLooper())
     private var lifecycleRegistered = false
     private var app: Application? = null
+    private var deliverToken = 0
+
+    @Volatile
+    private var lastDeliveredSession: String? = null
 
     @JvmStatic
     fun attach(application: Application) {
@@ -49,15 +55,24 @@ object UnityBridge {
         lifecycleRegistered = true
         application.registerActivityLifecycleCallbacks(object : Application.ActivityLifecycleCallbacks {
             override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
-                if (isUnityHost(activity)) unityActivity = activity
+                if (isUnityHost(activity)) {
+                    unityActivity = activity
+                    maybeDeliverFromActivity(activity)
+                }
             }
 
             override fun onActivityStarted(activity: Activity) {
-                if (isUnityHost(activity)) unityActivity = activity
+                if (isUnityHost(activity)) {
+                    unityActivity = activity
+                    maybeDeliverFromActivity(activity)
+                }
             }
 
             override fun onActivityResumed(activity: Activity) {
-                if (isUnityHost(activity)) unityActivity = activity
+                if (isUnityHost(activity)) {
+                    unityActivity = activity
+                    maybeDeliverFromActivity(activity)
+                }
             }
 
             override fun onActivityPaused(activity: Activity) {}
@@ -69,36 +84,70 @@ object UnityBridge {
         })
     }
 
+    private fun maybeDeliverFromActivity(activity: Activity) {
+        val fromIntent = activity.intent?.getStringExtra(EXTRA_SESSION)
+        val session = when {
+            !fromIntent.isNullOrBlank() -> fromIntent
+            else -> peekPendingSession()
+        }
+        if (session.isNullOrBlank()) return
+        if (session == lastDeliveredSession) return
+        lastDeliveredSession = session
+        deliverSessionInUnityProcess(session)
+    }
+
     @JvmStatic
     fun stashSession(sessionJson: String) {
         pendingSession = sessionJson
         writeFile(SESSION_FILE, sessionJson)
     }
 
+    /** Flutter/main process: only persist the session. Do not UnitySendMessage here. */
     @JvmStatic
     fun deliverSession(sessionJson: String) {
         stashSession(sessionJson)
-        main.postDelayed({
-            try {
-                val unityPlayer = Class.forName("com.unity3d.player.UnityPlayer")
-                val send = unityPlayer.getMethod(
-                    "UnitySendMessage",
-                    String::class.java,
-                    String::class.java,
-                    String::class.java,
-                )
-                send.invoke(null, "FlutterBridge", "ReceiveSession", sessionJson)
-            } catch (_: Exception) {
-            }
-        }, 1200)
+    }
+
+    /** Call only from the `:unity` process after natives are loaded. */
+    @JvmStatic
+    fun deliverSessionInUnityProcess(sessionJson: String) {
+        stashSession(sessionJson)
+        val token = ++deliverToken
+        fun attempt(remaining: Int, delayMs: Long) {
+            if (token != deliverToken) return
+            main.postDelayed({
+                if (token != deliverToken) return@postDelayed
+                if (trySendReceiveSession(sessionJson)) {
+                    Log.i(TAG, "ReceiveSession delivered")
+                    return@postDelayed
+                }
+                if (remaining > 0) {
+                    attempt(remaining - 1, (delayMs + 400).coerceAtMost(2500L))
+                } else {
+                    Log.w(TAG, "ReceiveSession not delivered; Unity must read file/intent")
+                }
+            }, delayMs)
+        }
+        attempt(10, 300)
+    }
+
+    @JvmStatic
+    fun peekPendingSession(): String? {
+        val memory = pendingSession
+        if (!memory.isNullOrBlank()) return memory
+        return readFile(SESSION_FILE)?.ifBlank { null }
     }
 
     @JvmStatic
     fun takePendingSession(): String? {
-        val json = pendingSession ?: readFile(SESSION_FILE)
+        val json = peekPendingSession()
+        return json?.ifBlank { null }
+    }
+
+    @JvmStatic
+    fun clearPendingSession() {
         pendingSession = null
         deleteFile(SESSION_FILE)
-        return json?.ifBlank { null }
     }
 
     @JvmStatic
@@ -113,6 +162,7 @@ object UnityBridge {
     fun onResult(json: String) {
         pendingResult = json
         writeFile(RESULT_FILE, json)
+        clearPendingSession()
         main.post {
             channel?.invokeMethod("onPracticalCompleted", json)
             returnToFlutter(json)
@@ -158,6 +208,23 @@ object UnityBridge {
         main.post {
             channel?.invokeMethod("onPracticalCancelled", null)
             returnToFlutter()
+        }
+    }
+
+    private fun trySendReceiveSession(sessionJson: String): Boolean {
+        return try {
+            val unityPlayer = Class.forName("com.unity3d.player.UnityPlayer")
+            val send = unityPlayer.getMethod(
+                "UnitySendMessage",
+                String::class.java,
+                String::class.java,
+                String::class.java,
+            )
+            send.invoke(null, "FlutterBridge", "ReceiveSession", sessionJson)
+            true
+        } catch (error: Exception) {
+            Log.w(TAG, "UnitySendMessage failed: ${error.message}")
+            false
         }
     }
 

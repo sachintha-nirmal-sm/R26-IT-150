@@ -6,10 +6,16 @@ import '../../data/practicals_repository.dart';
 import '../widgets/practical_hero.dart';
 
 class PracticalHomePage extends StatefulWidget {
-  const PracticalHomePage({super.key, this.lessonId, this.lessonTitle});
+  const PracticalHomePage({
+    super.key,
+    this.lessonId,
+    this.lessonTitle,
+    this.practicalId,
+  });
 
   final String? lessonId;
   final String? lessonTitle;
+  final String? practicalId;
 
   @override
   State<PracticalHomePage> createState() => _PracticalHomePageState();
@@ -20,6 +26,8 @@ class _PracticalHomePageState extends State<PracticalHomePage> {
   late Future<List<Practical>> _practicalsFuture;
   String? _lessonId;
   String? _lessonTitle;
+  String? _practicalId;
+  int? _grade;
   bool _readRouteArgs = false;
 
   static const Color _primaryBlue = Color(0xFF2196F3);
@@ -31,6 +39,7 @@ class _PracticalHomePageState extends State<PracticalHomePage> {
     super.initState();
     _lessonId = widget.lessonId;
     _lessonTitle = widget.lessonTitle;
+    _practicalId = widget.practicalId;
   }
 
   @override
@@ -42,73 +51,46 @@ class _PracticalHomePageState extends State<PracticalHomePage> {
     if (args is Map) {
       _lessonId = args['lessonId'] as String? ?? _lessonId;
       _lessonTitle = args['lessonTitle'] as String? ?? _lessonTitle;
+      _practicalId = args['practicalId'] as String? ?? _practicalId;
+      _grade = LocalPracticals.parseGrade(args['grade']) ?? _grade;
     }
     _practicalsFuture = _load();
   }
 
+  bool get _openedFromLesson =>
+      (_lessonId != null && _lessonId!.isNotEmpty) ||
+      (_lessonTitle != null && _lessonTitle!.isNotEmpty) ||
+      (_practicalId != null && _practicalId!.isNotEmpty);
+
   Future<List<Practical>> _load() async {
-    final items = await _repo.fetchActiveForCurrentStudent(lessonId: _lessonId);
-    if (items.isNotEmpty) return items;
-    final title = (_lessonTitle ?? '').toLowerCase();
-    if (title.contains('newton')) {
-      return const [LocalPracticals.newtonsLaws];
+    _grade ??= await _repo.currentStudentGrade();
+
+    // LessonsDashboard already resolves the correct id — never swap it.
+    final routed = LocalPracticals.byId(_practicalId ?? '');
+    if (routed != null) {
+      _grade ??= routed.grade;
+      return [routed];
     }
-    if (title.contains('friction')) {
-      return const [LocalPracticals.friction];
+
+    final wanted = LocalPracticals.forTopic(
+      practicalId: _practicalId,
+      lessonId: _lessonId,
+      title: _lessonTitle,
+      grade: _grade,
+    );
+    if (wanted != null) {
+      return [wanted];
     }
-    if (title.contains('resultant')) {
-      return const [LocalPracticals.resultantForce];
+    if (_openedFromLesson) {
+      return const [];
     }
-    if (title.contains('turning')) {
-      return const [LocalPracticals.turningEffect];
+    final items = await _repo.fetchActiveForCurrentStudent(grade: _grade);
+    if (items.isNotEmpty) {
+      _grade ??= items.first.grade;
+      return items;
     }
-    if (title.contains('equilibrium')) {
-      return const [LocalPracticals.equilibriumOfForces];
-    }
-    if (title.contains('wave') && title.contains('application')) {
-      return const [LocalPracticals.wavesApplications];
-    }
-    if (title.contains('geometrical') || title.contains('optic')) {
-      return const [LocalPracticals.geometricalOptics];
-    }
-    if (title.contains('heat')) {
-      return const [LocalPracticals.heatExpansion];
-    }
-    if (title.contains('appliance') ||
-        (title.contains('power') &&
-            title.contains('energy') &&
-            title.contains('electric'))) {
-      return const [LocalPracticals.powerEnergyAppliances];
-    }
-    if (title.contains('electronics') || title.contains('diode')) {
-      return const [LocalPracticals.electronicsDiode];
-    }
-    if (title.contains('straight') && title.contains('line')) {
-      return const [LocalPracticals.motionStraightLine];
-    }
-    if (title.contains('current') && title.contains('electricity')) {
-      return const [LocalPracticals.currentElectricity];
-    }
-    if (title.contains('density')) return const [LocalPracticals.densityWater];
-    if (title.contains('force')) return const [LocalPracticals.forceBasic];
-    if (title.contains('work') && title.contains('energy')) {
-      return const [LocalPracticals.workEnergyPower];
-    }
-    if (title.contains('hydrostatic') ||
-        title.contains('upthrust') ||
-        title.contains('archimedes')) {
-      return const [LocalPracticals.hydrostaticPressure];
-    }
-    if (title.contains('pressure')) return const [LocalPracticals.pressureSolid];
-    if (title.contains('reflection') ||
-        title.contains('refract') ||
-        title.contains('prism')) {
-      return const [LocalPracticals.reflectionPrism];
-    }
-    if (title.contains('lever') || title.contains('simple machine')) {
-      return const [LocalPracticals.leverActivity];
-    }
-    return LocalPracticals.forLesson(_lessonId);
+    if (_grade != null) return LocalPracticals.forGrade(_grade!);
+    return const [];
   }
 
   void _reload() {
@@ -170,8 +152,12 @@ class _PracticalHomePageState extends State<PracticalHomePage> {
           if (practicals.isEmpty) {
             return _MessageState(
               icon: Icons.science_outlined,
-              title: 'No practicals yet',
-              subtitle: 'No active practicals are published for your grade.',
+              title: _openedFromLesson
+                  ? 'No practical for this topic'
+                  : 'No practicals yet',
+              subtitle: _openedFromLesson
+                  ? 'This lesson does not have its own virtual lab.'
+                  : 'No active practicals are published for your grade.',
               actionLabel: 'Retry',
               onAction: _reload,
             );
@@ -190,7 +176,9 @@ class _PracticalHomePageState extends State<PracticalHomePage> {
               const SizedBox(height: 8),
               Text(
                 _lessonId == null
-                    ? 'Select an experiment to start your virtual lab'
+                    ? (_grade == null
+                        ? 'Select an experiment to start your virtual lab'
+                        : 'Grade $_grade experiments for your lessons')
                     : 'Related practicals for this lesson',
                 style: const TextStyle(fontSize: 14, color: Colors.grey),
               ),

@@ -57,11 +57,11 @@ class MainActivity : FlutterActivity() {
 
     private fun startUnity(sessionJson: String): Boolean {
         val activityClass = resolveUnityActivity() ?: return false
-        UnityBridge.stashSession(sessionJson)
         UnityBridge.pendingResult = null
+        UnityBridge.deliverSession(sessionJson)
         val intent = Intent(this, activityClass).apply {
             putExtra(UnityBridge.EXTRA_SESSION, sessionJson)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
         }
         startActivity(intent)
         return true

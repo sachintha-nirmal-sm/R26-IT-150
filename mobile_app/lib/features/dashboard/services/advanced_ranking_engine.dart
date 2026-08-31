@@ -1,80 +1,36 @@
 import '../models/search_models.dart';
 
-/// Pure, deterministic ranking utilities used by dashboard search.
-///
-/// Keeping this class independent from Firebase makes ranking fast and easy to
-/// test. Data retrieval and analytics persistence remain in [SearchService].
+/// Weighted ranking for dashboard search results.
 class AdvancedRankingEngine {
+  static const double _maxPopularityScore = 20;
+  static const double _maxRecencyScore = 15;
+  static const int _recencyWindowDays = 30;
+  static const int _fuzzyMaxDistance = 2;
+
   double calculateRelevanceScore({
     required String query,
     required SearchResult item,
     required int searchCount,
     required int totalSearches,
   }) {
-    final normalizedQuery = _normalize(query);
-    if (normalizedQuery.isEmpty) return 0;
+    final queryLower = query.toLowerCase().trim();
+    if (queryLower.isEmpty) return 0;
 
-    final title = _normalize(item.title);
-    final description = _normalize(item.description);
-    final category = _normalize(item.category);
-    final queryWords = normalizedQuery.split(' ');
-
-    double score = 0;
-
-    // Title relevance is intentionally the strongest signal.
-    if (title == normalizedQuery) {
-      score += 100;
-    } else if (title.startsWith(normalizedQuery)) {
-      score += 70;
-    } else if (_containsWholePhrase(title, normalizedQuery)) {
-      score += 55;
-    } else if (queryWords.every(title.contains)) {
-      score += 45;
-    } else if (title.contains(normalizedQuery)) {
-      score += 35;
-    }
-
-    var keywordMatches = 0;
-    for (final keyword in item.matchedKeywords) {
-      final normalizedKeyword = _normalize(keyword);
-      if (normalizedKeyword == normalizedQuery) {
-        score += 20;
-        keywordMatches++;
-      } else if (normalizedKeyword.contains(normalizedQuery) ||
-          normalizedQuery.contains(normalizedKeyword)) {
-        score += 8;
-        keywordMatches++;
-      }
-    }
-    if (keywordMatches > 1) score += (keywordMatches - 1) * 3;
-
-    if (description.contains(normalizedQuery)) score += 8;
-    if (category.contains(normalizedQuery)) score += 10;
-
-    if (totalSearches > 0 && searchCount > 0) {
-      score += (searchCount / totalSearches).clamp(0, 1) * 10;
-    }
-
-    final lastAccessed = item.lastAccessed;
-    if (lastAccessed != null) {
-      final age = DateTime.now().difference(lastAccessed).inDays.clamp(0, 30);
-      score += 5 * (1 - age / 30);
-    }
-
-    score += switch (item.type.toLowerCase()) {
-      'lesson' => 5,
-      'lab' || 'practical' => 4,
-      'game' => 3,
-      'quiz' => 2,
-      _ => 0,
-    };
-
-    return score;
+    return _titleScore(queryLower, item.title.toLowerCase()) +
+        _keywordScore(queryLower, item.matchedKeywords) +
+        _popularityScore(searchCount, totalSearches) +
+        _recencyScore(item.lastAccessed) +
+        _typePreference(item.type) +
+        _categoryScore(queryLower, item.category);
   }
 
   List<SearchResult> sortByRelevance(List<SearchResult> results) {
-    final sorted = List<SearchResult>.of(results);
-    sorted.sort((a, b) => b.relevanceScore.compareTo(a.relevanceScore));
+    final sorted = List<SearchResult>.from(results);
+
+    sorted.sort(
+      (a, b) => b.relevanceScore.compareTo(a.relevanceScore),
+    );
+
     return sorted;
   }
 
@@ -82,92 +38,240 @@ class AdvancedRankingEngine {
     List<SearchResult> results, {
     int maxPerType = 5,
   }) {
-    if (maxPerType < 1) return const [];
-
-    final counts = <String, int>{};
     final filtered = <SearchResult>[];
-    for (final result in results) {
-      final type = result.type.toLowerCase();
-      final count = counts[type] ?? 0;
-      if (count < maxPerType) {
-        filtered.add(result);
-        counts[type] = count + 1;
-      }
+    final counts = <String, int>{};
+
+    for (final result in sortByRelevance(results)) {
+      final count = counts[result.type] ?? 0;
+
+      if (count >= maxPerType) continue;
+
+      filtered.add(result);
+      counts[result.type] = count + 1;
     }
+
     return filtered;
   }
 
   Map<String, num> getResultStats(List<SearchResult> results) {
     if (results.isEmpty) {
-      return const {
+      return {
         'total': 0,
         'maxScore': 0,
         'minScore': 0,
-        'averageScore': 0
+        'averageScore': 0,
       };
     }
 
-    final scores = results.map((result) => result.relevanceScore);
-    final totalScore = scores.reduce((a, b) => a + b);
+    final scores = results.map((r) => r.relevanceScore);
+
+    final maxScore = scores.reduce(
+      (a, b) => a > b ? a : b,
+    );
+
+    final minScore = scores.reduce(
+      (a, b) => a < b ? a : b,
+    );
+
+    final averageScore = scores.reduce(
+          (a, b) => a + b,
+        ) /
+        results.length;
+
     return {
       'total': results.length,
-      'maxScore': scores.reduce((a, b) => a > b ? a : b),
-      'minScore': scores.reduce((a, b) => a < b ? a : b),
-      'averageScore': totalScore / results.length,
+      'maxScore': maxScore,
+      'minScore': minScore,
+      'averageScore': averageScore,
     };
   }
 
   List<String> getDidYouMeanSuggestions(
     String query,
-    List<String> availableOptions, {
-    int maxSuggestions = 3,
-  }) {
-    final normalizedQuery = _normalize(query);
-    if (normalizedQuery.isEmpty) return const [];
+    List<String> availableOptions,
+  ) {
+    final queryLower = query.toLowerCase().trim();
 
-    final candidates = availableOptions
-        .map((option) =>
-            MapEntry(option, _levenshtein(normalizedQuery, _normalize(option))))
-        .where(
-            (entry) => entry.value <= _allowedDistance(normalizedQuery.length))
-        .toList()
-      ..sort((a, b) {
-        final distance = a.value.compareTo(b.value);
-        return distance != 0 ? distance : a.key.compareTo(b.key);
-      });
+    if (queryLower.isEmpty) return [];
 
-    return candidates.take(maxSuggestions).map((entry) => entry.key).toList();
+    final suggestions = <String>[];
+
+    for (final option in availableOptions) {
+      final distance = _levenshteinDistance(
+        queryLower,
+        option.toLowerCase(),
+      );
+
+      if (distance > 0 && distance <= _fuzzyMaxDistance) {
+        suggestions.add(option);
+      }
+    }
+
+    suggestions.sort((a, b) {
+      final distA = _levenshteinDistance(
+        queryLower,
+        a.toLowerCase(),
+      );
+
+      final distB = _levenshteinDistance(
+        queryLower,
+        b.toLowerCase(),
+      );
+
+      return distA.compareTo(distB);
+    });
+
+    return suggestions.take(3).toList();
   }
 
-  static String _normalize(String value) => value
-      .toLowerCase()
-      .replaceAll(RegExp(r"[^a-z0-9\s]"), ' ')
-      .replaceAll(RegExp(r'\s+'), ' ')
-      .trim();
-
-  static bool _containsWholePhrase(String text, String phrase) =>
-      RegExp('(?:^|\\s)${RegExp.escape(phrase)}(?:\\s|\$)').hasMatch(text);
-
-  static int _allowedDistance(int length) =>
-      length <= 4 ? 1 : (length <= 9 ? 2 : 3);
-
-  static int _levenshtein(String left, String right) {
-    if (left.isEmpty) return right.length;
-    if (right.isEmpty) return left.length;
-
-    var previous = List<int>.generate(right.length + 1, (index) => index);
-    for (var i = 1; i <= left.length; i++) {
-      final current = List<int>.filled(right.length + 1, 0)..[0] = i;
-      for (var j = 1; j <= right.length; j++) {
-        final substitutionCost = left[i - 1] == right[j - 1] ? 0 : 1;
-        current[j] = [
-          current[j - 1] + 1,
-          previous[j] + 1,
-          previous[j - 1] + substitutionCost,
-        ].reduce((a, b) => a < b ? a : b);
-      }
-      previous = current;
+  double _titleScore(
+    String queryLower,
+    String titleLower,
+  ) {
+    if (titleLower == queryLower) {
+      return 100;
     }
-    return previous.last;
+
+    if (titleLower.startsWith(queryLower)) {
+      return 70;
+    }
+
+    if (RegExp(
+      '\\b${RegExp.escape(queryLower)}\\b',
+    ).hasMatch(titleLower)) {
+      return 50;
+    }
+
+    if (titleLower.contains(queryLower)) {
+      return 30;
+    }
+
+    return 0;
+  }
+
+  double _keywordScore(
+    String queryLower,
+    List<String> keywords,
+  ) {
+    double score = 0;
+
+    for (final keyword in keywords) {
+      final key = keyword.toLowerCase();
+
+      if (key == queryLower) {
+        score += 8;
+      } else if (key.contains(queryLower) ||
+          queryLower.contains(key)) {
+        score += 3;
+      }
+    }
+
+    return score;
+  }
+
+  double _popularityScore(
+    int searchCount,
+    int totalSearches,
+  ) {
+    if (totalSearches <= 0 || searchCount <= 0) {
+      return 0;
+    }
+
+    return (searchCount / totalSearches) *
+        _maxPopularityScore;
+  }
+
+  double _recencyScore(DateTime? lastAccessed) {
+    if (lastAccessed == null) {
+      return 0;
+    }
+
+    final days = DateTime.now()
+        .difference(lastAccessed)
+        .inDays;
+
+    if (days >= _recencyWindowDays) {
+      return 0;
+    }
+
+    if (days <= 0) {
+      return _maxRecencyScore;
+    }
+
+    return _maxRecencyScore *
+        (1 - days / _recencyWindowDays);
+  }
+
+  double _typePreference(String type) {
+    switch (type.toLowerCase()) {
+      case 'lesson':
+        return 12;
+      case 'lab':
+        return 10;
+      case 'game':
+        return 6;
+      case 'quiz':
+        return 4;
+      default:
+        return 5;
+    }
+  }
+
+  double _categoryScore(
+    String queryLower,
+    String category,
+  ) {
+    final categoryLower = category.toLowerCase();
+
+    if (categoryLower == queryLower ||
+        categoryLower.contains(queryLower)) {
+      return 10;
+    }
+
+    return 0;
+  }
+
+  int _levenshteinDistance(
+    String s1,
+    String s2,
+  ) {
+    final len1 = s1.length;
+    final len2 = s2.length;
+
+    if (len1 == 0) return len2;
+    if (len2 == 0) return len1;
+
+    final d = List.generate(
+      len1 + 1,
+      (_) => List<int>.filled(
+        len2 + 1,
+        0,
+      ),
+    );
+
+    for (var i = 0; i <= len1; i++) {
+      d[i][0] = i;
+    }
+
+    for (var j = 0; j <= len2; j++) {
+      d[0][j] = j;
+    }
+
+    for (var i = 1; i <= len1; i++) {
+      for (var j = 1; j <= len2; j++) {
+        final cost =
+            s1[i - 1] == s2[j - 1] ? 0 : 1;
+
+        d[i][j] = [
+          d[i - 1][j] + 1,
+          d[i][j - 1] + 1,
+          d[i - 1][j - 1] + cost,
+        ].reduce(
+          (a, b) => a < b ? a : b,
+        );
+      }
+    }
+
+    return d[len1][len2];
   }
 }

@@ -44,7 +44,7 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) return;
       final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-      final gradeRaw = doc.data()?['grade'];
+      final gradeRaw = doc.data()?['currentGrade'] ?? doc.data()?['grade'];
       final gradeInt = (gradeRaw is int) ? gradeRaw : int.tryParse(gradeRaw?.toString() ?? '');
       if (gradeInt != null && mounted) {
         setState(() => _grade = 'Grade $gradeInt');
@@ -63,7 +63,7 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
             .collection('users')
             .doc(user.uid)
             .get();
-        final gradeData = userDoc.data()?['grade'];
+        final gradeData = userDoc.data()?['currentGrade'] ?? userDoc.data()?['grade'];
 
         // Handle both integer (9, 10, 11) and string ('Grade 9', 'Grade 10') formats
         String grade = 'Grade 10'; // default
@@ -721,7 +721,13 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
             }
 
             if (i == 1) Navigator.pushNamed(context, '/lesson-list');
-            if (i == 2) Navigator.pushNamed(context, '/practical-home');
+            if (i == 2) {
+              Navigator.pushNamed(
+                context,
+                '/practical-home',
+                arguments: {'grade': _grade},
+              );
+            }
             if (i == 3) Navigator.pushNamed(context, '/profile');
           },
           selectedItemColor: _primaryBlue,

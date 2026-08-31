@@ -92,7 +92,9 @@ class _MyAppState extends State<MyApp> {
         appBarTheme: const AppBarTheme(
           backgroundColor: Colors.white,
           elevation: 0,
-          iconTheme: IconThemeData(color: Color(0xFF1A1A2E)),
+          iconTheme: IconThemeData(
+            color: Color(0xFF1A1A2E),
+          ),
         ),
         scrollbarTheme: ScrollbarThemeData(
           thickness: WidgetStateProperty.all(3),
@@ -103,7 +105,9 @@ class _MyAppState extends State<MyApp> {
           trackColor: WidgetStateProperty.all(
             const Color(0xFF2196F3).withOpacity(0.08),
           ),
-          trackBorderColor: WidgetStateProperty.all(Colors.transparent),
+          trackBorderColor: WidgetStateProperty.all(
+            Colors.transparent,
+          ),
           thumbVisibility: WidgetStateProperty.all(true),
           trackVisibility: WidgetStateProperty.all(true),
           crossAxisMargin: 2,
@@ -111,24 +115,33 @@ class _MyAppState extends State<MyApp> {
         ),
       ),
 
-      // Preserve the authenticated startup flow from develop_main.
+      // Preserve the authenticated startup flow.
       initialRoute: FirebaseAuth.instance.currentUser == null
           ? '/get-started'
           : '/home',
 
       routes: {
-        // Preserve the other branch's "/" navigation entry as an alias.
+        // Root route
         "/": (context) => const GetStartedPage(),
 
+        // Authentication routes
         "/get-started": (context) => const GetStartedPage(),
         "/login": (context) => const LoginPage(),
-        "/home": (context) => const PhysicsLabHomePage(),
         "/sign-up": (context) => const SignupScreen(),
+
+        // Home
+        "/home": (context) => const PhysicsLabHomePage(),
+
+        // Lessons
         "/lesson-list": (context) => const PhysicsLessonsScreen(),
         "/force-motion": (context) => const ForceLinearMotionPage(),
         "/lesson-quizzes": (context) => const LessonQuizzesPage(),
+
+        // Lesson Dashboard
         "/lessonDBoard": (context) {
-          final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+          final args = ModalRoute.of(context)?.settings.arguments
+              as Map<String, dynamic>?;
+
           return LessonsDashboard(
             lessonId: args?['lessonId'] ?? '',
             lessonTitle: args?['lessonTitle'] ?? 'Linear Motion',
@@ -137,16 +150,25 @@ class _MyAppState extends State<MyApp> {
             practicalId: args?['practicalId'],
           );
         },
+
+        // Search
         "/search": (context) {
-          final args =
-              ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+          final args = ModalRoute.of(context)?.settings.arguments
+              as Map<String, dynamic>?;
+
           final grade = args?['grade'] as String? ?? 'Grade 10';
-          return SimpleSearchPage(grade: grade);
+
+          return SimpleSearchPage(
+            grade: grade,
+          );
         },
 
+        // Other features
         "/deep-learn": (context) => const DeepLearningScreen(),
+
         "/profile": (context) => const ProfileScreen(),
 
+        // Practical / Experiment routes
         "/practical-home": (context) => const PracticalHomePage(),
 
         "/experiment-results": (context) =>
@@ -159,12 +181,16 @@ class _MyAppState extends State<MyApp> {
           final args = ModalRoute.of(context)?.settings.arguments;
 
           if (args is PracticalRunArgs) {
-            return ExperimentInProgressScreen(args: args);
+            return ExperimentInProgressScreen(
+              args: args,
+            );
           }
 
           return const Scaffold(
             body: Center(
-              child: Text('Start this practical from Practical Hub.'),
+              child: Text(
+                'Start this practical from Practical Hub.',
+              ),
             ),
           );
         },
@@ -173,47 +199,66 @@ class _MyAppState extends State<MyApp> {
           final args = ModalRoute.of(context)?.settings.arguments;
 
           if (args is PracticalRunArgs) {
-            return PracticeExperienceScreen(args: args);
+            return PracticeExperienceScreen(
+              args: args,
+            );
           }
 
           return const Scaffold(
             body: Center(
-              child: Text('Start the trial from Practical Hub.'),
+              child: Text(
+                'Start the trial from Practical Hub.',
+              ),
             ),
           );
         },
 
+        // Scenario-based question
         "/scenario-question": (context) =>
             const ScenarioQuestionScreen(),
 
-        "/quiz-complete": (context) => const QuizCompleteScreen(
+        // Quiz complete
+        "/quiz-complete": (context) =>
+            const QuizCompleteScreen(
               completionSeconds: 0,
               overtimeSeconds: 0,
             ),
 
+        // Step-by-step solution
         "/step-by-step": (context) =>
             const StepByStepSolutionScreen(),
 
-        "/upload-image": (context) => const UploadImageScreen(),
+        // Image upload / preview
+        "/upload-image": (context) =>
+            const UploadImageScreen(),
 
         "/image-preview": (context) =>
             const ImagePreviewConfirmationScreen(),
 
+        // Comparison answer
         "/comparison-answer": (context) =>
             const ComparisonFinalReturnScreen(),
 
-        "/chatbot": (context) => const ChatbotScreen(),
+        // Chatbot
+        "/chatbot": (context) =>
+            const ChatbotScreen(),
 
+        // Vector Quest
         "/game-intro": (context) =>
             const VectorQuestGameScreen(),
 
+        // Admin
         "/admin-dashboard": (context) =>
             const AdminDashboard(),
 
+        // Games list
         "/games": (context) =>
             const GamesListScreen(),
 
-        // Game routes
+        // ─────────────────────────────────────────────
+        // Game Routes
+        // ─────────────────────────────────────────────
+
         "/nano-shield": (context) =>
             const NanoShieldScreen(),
 

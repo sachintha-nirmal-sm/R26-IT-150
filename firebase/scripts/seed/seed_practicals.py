@@ -179,6 +179,25 @@ PRACTICALS = [
             "order": 1,
         },
     },
+    {
+        "id": "grade11_electronics",
+        "data": {
+            "title": "Electronics",
+            "grade": 11,
+            "lessonId": "phy-g11-electronics-doc",
+            "topicId": "topic-g11-electronics",
+            "description": "Study diode characteristics, forward and reverse bias, and circuit applications in a virtual electronics lab.",
+            "unitySceneId": "ElectronicsDiodeExperiment",
+            "unityBuildUrl": "",
+            "maxScore": 100,
+            "durationSeconds": 600,
+            "demoAllowed": True,
+            "demoMaxAttempts": 10,
+            "practicalMaxAttempts": 3,
+            "isActive": True,
+            "order": 19,
+        },
+    },
 ]
 
 

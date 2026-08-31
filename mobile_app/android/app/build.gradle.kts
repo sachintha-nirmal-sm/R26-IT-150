@@ -8,7 +8,8 @@ plugins {
 android {
     namespace = "com.example.mobile_app"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = "27.0.12077973"
+    // 27.0.12077973 on this machine was a broken download (no source.properties).
+    ndkVersion = "28.2.13676358"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

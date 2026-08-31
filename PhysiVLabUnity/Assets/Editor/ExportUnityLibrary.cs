@@ -175,6 +175,7 @@ public static class PhysiVLabExport
         }
 
         CopyDirectory(unityLibrary, dest);
+        PatchUnityLibraryGradle(dest);
         Debug.Log("PhysiVLab unityLibrary copied to " + dest);
         if (!exitWhenDone)
         {
@@ -211,6 +212,30 @@ public static class PhysiVLabExport
         }
 
         return scenes.ToArray();
+    }
+
+    private static void PatchUnityLibraryGradle(string dest)
+    {
+        string gradlePath = Path.Combine(dest, "build.gradle");
+        if (!File.Exists(gradlePath))
+        {
+            return;
+        }
+
+        string text = File.ReadAllText(gradlePath);
+        if (text.Contains("def unityStreamingAssets ="))
+        {
+            return;
+        }
+
+        const string applyCommon = "apply from: '../shared/common.gradle'";
+        const string binding = applyCommon + "\n\n"
+            + "def unityStreamingAssets = (findProperty('unityStreamingAssets') ?: '').toString()\n";
+        if (text.Contains(applyCommon))
+        {
+            text = text.Replace(applyCommon, binding);
+            File.WriteAllText(gradlePath, text);
+        }
     }
 
     private static void CopyDirectory(string source, string destination)
