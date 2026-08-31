@@ -842,63 +842,175 @@ class LocalPracticals {
     );
   }
 
+  static String _norm(String value) {
+    return value
+        .toLowerCase()
+        .replaceAll("'", '')
+        .replaceAll('&', ' ')
+        .replaceAll(RegExp(r'[^a-z0-9]+'), ' ')
+        .trim()
+        .replaceAll(RegExp(r'\s+'), ' ');
+  }
+
+  /// Extra titles used in Lessons / search that must not share another topic's lab.
+  static const _titleAliases = <String, String>{
+    'basic concepts associated with force': 'grade9_force_basic',
+    'force basic concepts': 'grade9_force_basic',
+    'pressure exerted by solid': 'grade9_pressure_solid',
+    'pressure exerted by solids': 'grade9_pressure_solid',
+    'density of water': 'grade9_density_water',
+    'density of water 1': 'grade9_density_water',
+    'reflection and refraction of waves': 'grade9_reflection_prism',
+    'dispersion of white light through a glass prism': 'grade9_reflection_prism',
+    'lever activity 15 1': 'grade9_lever_15_1',
+    'simple machines': 'grade9_lever_15_1',
+    'motion in a straight line': 'grade10_motion_straight_line',
+    'linear motion': 'grade10_motion_straight_line',
+    'newtons laws of motion': 'grade10_newtons_laws',
+    'forces and newtons laws': 'grade10_newtons_laws',
+    'friction': 'grade10_friction',
+    'resultant force': 'grade10_resultant_force',
+    'turning effect of a force': 'grade10_turning_effect',
+    'equilibrium of forces': 'grade10_equilibrium',
+    'hydrostatic pressure and its applications': 'grade10_hydrostatic_pressure',
+    'hydrostatic pressure': 'grade10_hydrostatic_pressure',
+    'work energy and power': 'grade10_work_energy_power',
+    'current electricity': 'grade10_current_electricity',
+    'waves and their applications': 'grade11_waves',
+    'waves': 'grade11_waves',
+    'geometrical optics': 'grade11_geometrical_optics',
+    'light and optics': 'grade11_geometrical_optics',
+    'heat': 'grade11_heat',
+    'heat temperature changes': 'grade11_heat',
+    'heat temperature': 'grade11_heat',
+    'power and energy of electric appliances': 'grade11_power_appliances',
+    'electronics': 'grade11_electronics',
+    'electronics logic gates': 'grade11_electronics',
+  };
+
+  static const _lessonIdAliases = <String, String>{
+    'phy-g10-motion-doc': 'grade10_motion_straight_line',
+  };
+
+  static Practical? _fromLessonId(String? lessonId) {
+    if (lessonId == null || lessonId.isEmpty) return null;
+    final exact = forLesson(lessonId);
+    if (exact.length == 1) return exact.first;
+    return byId(_lessonIdAliases[lessonId] ?? '');
+  }
+
+  static Practical? _fromTitle(String? title, {String extra = '', int? grade}) {
+    if (title == null || title.trim().isEmpty) {
+      final id = _keywordMatch(_norm(extra), grade);
+      return id == null ? null : byId(id);
+    }
+    final key = _norm(title);
+    final combined = _norm('$title $extra');
+    var id = _titleAliases[key];
+    if (id == null) {
+      for (final item in all) {
+        if (_norm(item.title) == key) {
+          id = item.id;
+          break;
+        }
+      }
+    }
+    if (id != null) {
+      final matched = byId(id);
+      if (matched == null) return null;
+      if (grade != null && matched.grade != grade) return null;
+      return matched;
+    }
+    final keywordId = _keywordMatch(combined, grade);
+    return keywordId == null ? null : byId(keywordId);
+  }
+
+  /// Resolve exactly one practical for a lesson/topic. Returns null when the
+  /// topic has no lab of its own — never reuses another topic's practical.
   static Practical? forTopic({
     String? practicalId,
     String? lessonId,
     String? title,
+    int? grade,
   }) {
-    final byPractical = byId(practicalId ?? '');
-    if (byPractical != null) return byPractical;
-
-    final byLesson = forLesson(lessonId);
-    if (lessonId != null && lessonId.isNotEmpty && byLesson.length == 1) {
-      return byLesson.first;
+    final fromLesson = _fromLessonId(lessonId);
+    final fromTitle = _fromTitle(title, extra: lessonId ?? '', grade: grade);
+    if (fromLesson != null && fromTitle != null && fromLesson.id != fromTitle.id) {
+      return fromLesson;
     }
-    if (byLesson.length == 1) return byLesson.first;
+    if (fromLesson != null) return fromLesson;
+    if (fromTitle != null) return fromTitle;
 
-    final matchedId = matchTopicId(title ?? '', lessonId ?? '');
-    return matchedId == null ? null : byId(matchedId);
+    final fromId = byId(practicalId ?? '');
+    if (fromId == null) return null;
+    if (grade != null && fromId.grade != grade) return null;
+    if (title == null || title.trim().isEmpty) return fromId;
+    return null;
   }
 
-  static String? matchTopicId(String title, [String extra = '']) {
-    final t = '$title $extra'.toLowerCase();
-    if (t.contains('newton')) return 'grade10_newtons_laws';
-    if (t.contains('friction')) return 'grade10_friction';
-    if (t.contains('resultant')) return 'grade10_resultant_force';
-    if (t.contains('turning') || t.contains('moment')) {
+  static String? matchTopicId(String title, [String extra = '', int? grade]) {
+    return _fromTitle(title, extra: extra, grade: grade)?.id;
+  }
+
+  /// Exclusive keyword rules. Broad words such as force / pressure / wave
+  /// must not steal another topic's lab.
+  static String? _keywordMatch(String t, int? grade) {
+    if (t.isEmpty) return null;
+    bool has(String s) => t.contains(s);
+
+    if (has('newton')) return 'grade10_newtons_laws';
+    if (has('friction')) return 'grade10_friction';
+    if (has('resultant')) return 'grade10_resultant_force';
+    if (has('turning') || (has('moment') && has('force'))) {
       return 'grade10_turning_effect';
     }
-    if (t.contains('equilibrium')) return 'grade10_equilibrium';
-    if (t.contains('wave') && t.contains('application')) return 'grade11_waves';
-    if (t.contains('geometrical') || t.contains('optic')) {
-      return 'grade11_geometrical_optics';
-    }
-    if (t.contains('heat') || t.contains('expansion')) return 'grade11_heat';
-    if (t.contains('appliance')) return 'grade11_power_appliances';
-    if (t.contains('electronics') || t.contains('diode')) {
-      return 'grade11_electronics';
-    }
-    if (t.contains('straight') && t.contains('line')) {
-      return 'grade10_motion_straight_line';
-    }
-    if (t.contains('current') && t.contains('electric')) {
-      return 'grade10_current_electricity';
-    }
-    if (t.contains('density')) return 'grade9_density_water';
-    if (t.contains('work') && t.contains('energy')) {
-      return 'grade10_work_energy_power';
-    }
-    if (t.contains('hydrostatic') || t.contains('upthrust') || t.contains('archimedes')) {
+    if (has('equilibrium')) return 'grade10_equilibrium';
+    if (has('hydrostatic') || has('upthrust') || has('archimedes')) {
       return 'grade10_hydrostatic_pressure';
     }
-    if (t.contains('lever') || t.contains('simple machine')) {
-      return 'grade9_lever_15_1';
+    if (has('appliance')) return 'grade11_power_appliances';
+    if (has('electronics') || has('diode') || has('logic gate')) {
+      return 'grade11_electronics';
     }
-    if (t.contains('prism') || t.contains('reflect') || t.contains('refract')) {
+    if (has('current') && has('electric') && !has('electronics')) {
+      return 'grade10_current_electricity';
+    }
+    if ((has('geometrical') ||
+            (has('optic') && !has('prism')) ||
+            has('concave mirror') ||
+            has('focal length')) &&
+        !has('prism')) {
+      return 'grade11_geometrical_optics';
+    }
+    if (has('heat') && !has('work')) return 'grade11_heat';
+    if (has('wave') && (has('application') || has('slinky') || has('transverse'))) {
+      return 'grade11_waves';
+    }
+    if (has('prism') || has('dispersion') || has('roygbiv')) {
       return 'grade9_reflection_prism';
     }
-    if (t.contains('pressure')) return 'grade9_pressure_solid';
-    if (t.contains('force')) return 'grade9_force_basic';
+    if ((has('reflect') || has('refract')) && has('wave') && !has('application')) {
+      return 'grade9_reflection_prism';
+    }
+    if (has('lever') || has('simple machine')) return 'grade9_lever_15_1';
+    if (has('density') && !has('hydrostatic')) {
+      if (grade == 10) return null;
+      if (grade == 9 || grade == null) return 'grade9_density_water';
+      return null;
+    }
+    if (has('work') && has('energy') && !has('appliance')) {
+      return 'grade10_work_energy_power';
+    }
+    if ((has('straight') && has('line')) || has('linear motion')) {
+      return 'grade10_motion_straight_line';
+    }
+    if (has('pressure') && (has('solid') || has('soap') || has('wire'))) {
+      return 'grade9_pressure_solid';
+    }
+    if (has('force') &&
+        (has('basic') || has('weight') || has('mass') || has('spring'))) {
+      return 'grade9_force_basic';
+    }
     return null;
   }
 }

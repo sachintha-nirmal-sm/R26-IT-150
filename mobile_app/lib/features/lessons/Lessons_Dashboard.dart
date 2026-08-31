@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../LessonList/lesson_list_page.dart';
 import '../quizzes/student_quiz_screen.dart';
+import '../experiments/data/practical.dart';
 import '../experiments/presentation/screens/experiment_execution_screen.dart';
 import '../games/vector_quest/presentation/pages/vector_quest_game_screen.dart';
 import '../games/lesson_games_screen.dart';
@@ -98,13 +99,20 @@ class _LessonsDashboardState extends State<LessonsDashboard> {
   }
 
   void _openLinkedPractical() {
+    final mapped = LocalPracticals.forTopic(
+      practicalId: widget.practicalId,
+      lessonId: widget.lessonId,
+      title: widget.lessonTitle,
+      grade: LocalPracticals.parseGrade(widget.grade),
+    );
     Navigator.pushNamed(
       context,
       '/practical-home',
       arguments: {
-        if (widget.lessonId.isNotEmpty) 'lessonId': widget.lessonId,
-        if (widget.practicalId != null) 'practicalId': widget.practicalId,
+        if (mapped != null) 'practicalId': mapped.id,
+        if (mapped != null) 'lessonId': mapped.lessonId,
         'lessonTitle': widget.lessonTitle,
+        'grade': widget.grade,
       },
     );
   }

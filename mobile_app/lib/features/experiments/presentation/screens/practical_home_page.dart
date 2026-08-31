@@ -57,23 +57,33 @@ class _PracticalHomePageState extends State<PracticalHomePage> {
     _practicalsFuture = _load();
   }
 
+  bool get _openedFromLesson =>
+      (_lessonId != null && _lessonId!.isNotEmpty) ||
+      (_lessonTitle != null && _lessonTitle!.isNotEmpty) ||
+      (_practicalId != null && _practicalId!.isNotEmpty);
+
   Future<List<Practical>> _load() async {
     _grade ??= await _repo.currentStudentGrade();
     final wanted = LocalPracticals.forTopic(
       practicalId: _practicalId,
       lessonId: _lessonId,
       title: _lessonTitle,
-    );
-    final items = await _repo.fetchActiveForCurrentStudent(
-      lessonId: _lessonId,
       grade: _grade,
     );
     if (wanted != null) {
+      final items = await _repo.fetchActiveForCurrentStudent(
+        lessonId: wanted.lessonId,
+        grade: _grade,
+      );
       for (final item in items) {
         if (item.id == wanted.id) return [LocalPracticals.align(item)];
       }
       return [wanted];
     }
+    if (_openedFromLesson) {
+      return const [];
+    }
+    final items = await _repo.fetchActiveForCurrentStudent(grade: _grade);
     if (items.isNotEmpty) {
       _grade ??= items.first.grade;
       return items;
@@ -141,8 +151,12 @@ class _PracticalHomePageState extends State<PracticalHomePage> {
           if (practicals.isEmpty) {
             return _MessageState(
               icon: Icons.science_outlined,
-              title: 'No practicals yet',
-              subtitle: 'No active practicals are published for your grade.',
+              title: _openedFromLesson
+                  ? 'No practical for this topic'
+                  : 'No practicals yet',
+              subtitle: _openedFromLesson
+                  ? 'This lesson does not have its own virtual lab.'
+                  : 'No active practicals are published for your grade.',
               actionLabel: 'Retry',
               onAction: _reload,
             );

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'practical.dart';
+
 class PracticalGuide {
   const PracticalGuide({
     required this.headline,
@@ -24,8 +26,8 @@ class PracticalGuide {
   static PracticalGuide forPractical(String id, {String title = ''}) {
     final byId = _guides[id];
     if (byId != null) return byId;
-    final key = _matchKey('$id $title');
-    if (key != null) return _guides[key]!;
+    final key = LocalPracticals.matchTopicId(title, id);
+    if (key != null && _guides.containsKey(key)) return _guides[key]!;
     return PracticalGuide(
       headline: title.isEmpty ? 'Virtual physics lab' : title,
       goal: 'Follow the on-screen lab and record your observations.',
@@ -40,48 +42,6 @@ class PracticalGuide {
       ],
       tip: 'Trial is for practice. Start is timed and saves to your profile.',
     );
-  }
-
-  static String? _matchKey(String haystack) {
-    final t = haystack.toLowerCase();
-    if (t.contains('newton')) return 'grade10_newtons_laws';
-    if (t.contains('friction')) return 'grade10_friction';
-    if (t.contains('resultant')) return 'grade10_resultant_force';
-    if (t.contains('turning') || t.contains('moment')) {
-      return 'grade10_turning_effect';
-    }
-    if (t.contains('equilibrium')) return 'grade10_equilibrium';
-    if (t.contains('wave')) return 'grade11_waves';
-    if (t.contains('optic') || t.contains('mirror') || t.contains('lens')) {
-      return 'grade11_geometrical_optics';
-    }
-    if (t.contains('heat') || t.contains('expansion')) return 'grade11_heat';
-    if (t.contains('appliance')) return 'grade11_power_appliances';
-    if (t.contains('diode') || t.contains('electronics')) {
-      return 'grade11_electronics';
-    }
-    if (t.contains('straight') && t.contains('line')) {
-      return 'grade10_motion_straight_line';
-    }
-    if (t.contains('current') && t.contains('electric')) {
-      return 'grade10_current_electricity';
-    }
-    if (t.contains('density')) return 'grade9_density_water';
-    if (t.contains('work') && t.contains('energy')) {
-      return 'grade10_work_energy_power';
-    }
-    if (t.contains('hydrostatic') || t.contains('upthrust')) {
-      return 'grade10_hydrostatic_pressure';
-    }
-    if (t.contains('prism') || t.contains('reflect')) {
-      return 'grade9_reflection_prism';
-    }
-    if (t.contains('lever')) return 'grade9_lever_15_1';
-    if (t.contains('pressure') && t.contains('solid')) {
-      return 'grade9_pressure_solid';
-    }
-    if (t.contains('force')) return 'grade9_force_basic';
-    return null;
   }
 }
 
