@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "336276756841",
-    "project_id": "physicslab-eaa8a",
-    "storage_bucket": "physicslab-eaa8a.firebasestorage.app"
+    "project_number": "855512404287",
+    "project_id": "physics-learning-platform",
+    "storage_bucket": "physics-learning-platform.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:336276756841:android:30080c842776806c2d85f8",
+        "mobilesdk_app_id": "1:855512404287:android:15ce8f7e0e4c6a0aa1038a",
         "android_client_info": {
           "package_name": "com.example.mobile_app"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyBXGMZOCCdAL3WVEnBg_mCS-dbo0kfd1sY"
+          "current_key": "AIzaSyC4FbGuVggiEsn-UAl5TTTvaUr-g2toKHc"
         }
       ],
       "services": {

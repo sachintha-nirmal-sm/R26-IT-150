@@ -8,6 +8,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:http/http.dart' as http;
 
+import '../admin_backend_url.dart';
 import '../models/lesson_material.dart';
 import '../services/materials_service.dart';
 import '../services/cloudinary_service.dart';
@@ -77,7 +78,7 @@ class _AdminMaterialsScreenState extends State<AdminMaterialsScreen>
   }
 
   // ─── Load lessons (Backend API with Firestore fallback) ─────────────────────
-  static const _backendUrl = 'http://localhost:9000';
+  static final _backendUrl = adminBackendUrl;
 
   Future<bool> _indexPdfForSearch({
     required String lessonId,

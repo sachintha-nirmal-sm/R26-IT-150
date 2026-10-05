@@ -378,6 +378,15 @@ service cloud.firestore {
       }
     }
 
+    // notifications — written only by FastAPI (Admin SDK). Students may
+    // read their own (to play a video notification they tapped); admin
+    // reads all (dashboard history).
+    match /notifications/{id} {
+      allow read: if isAdmin()
+        || (isAuthenticated() && resource.data.uid == request.auth.uid);
+      allow write: if false;
+    }
+
     // --------------------------------------------------------
     // Catch-all: deny everything not explicitly permitted above.
     // This is the security baseline — do not remove.

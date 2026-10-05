@@ -5,6 +5,8 @@ import 'package:http/http.dart' as http;
 import 'package:file_picker/file_picker.dart';
 import 'dart:convert';
 
+import 'admin_backend_url.dart';
+
 class AdminLessonDetailScreen extends StatefulWidget {
   final String lessonId;
   final String lessonTitle;
@@ -25,7 +27,7 @@ class _AdminLessonDetailScreenState extends State<AdminLessonDetailScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
-  static const String _backendUrl = 'http://localhost:9000';
+  static final String _backendUrl = adminBackendUrl;
 
   // Settings state
   String _quizMode = 'random';

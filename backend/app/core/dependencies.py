@@ -21,7 +21,10 @@ import os
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import Literal
+
+from google.cloud import firestore
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -167,7 +170,23 @@ async def require_auth(
                 merge=True,
             )
 
+    _track_activity_hour(uid)
+
     return VerifiedUser(uid=uid, role=role, email=email)
+
+
+def _track_activity_hour(uid: str) -> None:
+    """Increments users/{uid}.activityHourCounts[currentHour] on every
+    authenticated request, so a per-student 'most active hour' can be
+    derived (argmax) for notification send timing. Best-effort — never
+    blocks or fails the request."""
+    try:
+        hour = str(datetime.now(timezone.utc).hour)
+        firestore_db.collection("users").document(uid).set(
+            {"activityHourCounts": {hour: firestore.Increment(1)}}, merge=True
+        )
+    except Exception:
+        pass
 
 
 def _lookup_token_with_client_api(id_token: str) -> dict | None:

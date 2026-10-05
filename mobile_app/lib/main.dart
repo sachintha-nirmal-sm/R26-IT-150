@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 
 import 'core/app_navigator.dart';
 import 'firebase_options.dart';
+import 'features/notifications/notification_handlers.dart';
+import 'features/notifications/data/fcm_token_sync.dart';
+import 'features/notifications/presentation/video_notification_player_screen.dart';
 import 'features/experiments/experiments.dart';
 import 'features/experiments/data/lab_result_sync.dart';
 import 'features/experiments/data/practical.dart';
@@ -59,6 +62,8 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
+  await initNotificationHandlers();
+
   runApp(const MyApp());
 }
 
@@ -74,6 +79,9 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
     LabResultSync.start();
+    FirebaseAuth.instance.authStateChanges().listen((user) {
+      if (user != null) FcmTokenSync.syncToken();
+    });
   }
 
   @override
@@ -115,10 +123,12 @@ class _MyAppState extends State<MyApp> {
         ),
       ),
 
-      // Preserve the authenticated startup flow.
-      initialRoute: FirebaseAuth.instance.currentUser == null
-          ? '/get-started'
-          : '/home',
+      // Always start at /get-started — GetStartedPage's initState handles
+      // the already-logged-in case itself (role-checked redirect to
+      // /admin-dashboard or /home). This used to shortcut straight to
+      // '/home' here for ANY cached session, which sent admins to the
+      // student home screen instead of the admin dashboard.
+      initialRoute: '/get-started',
 
       routes: {
         // Root route
@@ -167,6 +177,14 @@ class _MyAppState extends State<MyApp> {
         "/deep-learn": (context) => const DeepLearningScreen(),
 
         "/profile": (context) => const ProfileScreen(),
+
+        "/video-notification": (context) {
+          final args = ModalRoute.of(context)?.settings.arguments
+              as Map<String, dynamic>?;
+          return VideoNotificationPlayerScreen(
+            notificationId: args?['notificationId'] ?? '',
+          );
+        },
 
         // Practical / Experiment routes
         "/practical-home": (context) => const PracticalHomePage(),

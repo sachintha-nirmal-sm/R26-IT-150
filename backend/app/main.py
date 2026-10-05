@@ -2,10 +2,12 @@ import io
 import sys
 import traceback
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.core import db
 
@@ -16,6 +18,7 @@ from app.api.generate_questions import router as generate_router
 from app.api.ml_analytics import router as ml_analytics_router
 from app.api.recommendations import router as recommendations_router
 from app.api.practicals import router as practicals_router
+from app.api.notifications import router as notifications_router
 
 from app.api.admin_quizzes import router as admin_quizzes_router
 from app.api.admin_final_quiz import router as admin_final_quiz_router
@@ -76,8 +79,23 @@ async def lifespan(app: FastAPI):
             f"check failed: {exc}"
         )
 
+    # Hourly sweep: auto-sends personalized notifications to students whose
+    # computed most-active-hour matches the current hour. In-process scheduler
+    # is the simplest fit given this backend runs as a single persistent
+    # uvicorn process — if it later moves to serverless/multi-instance, this
+    # same run_auto_sweep() can be re-triggered by an external cron instead.
+    from apscheduler.schedulers.asyncio import AsyncIOScheduler
+
+    from app.services.notification_service import run_auto_sweep
+
+    scheduler = AsyncIOScheduler()
+    scheduler.add_job(run_auto_sweep, "interval", hours=1, id="notification_sweep")
+    scheduler.start()
+    print("[FastAPI] Notification auto-sweep scheduler started (hourly).")
+
     yield
 
+    scheduler.shutdown(wait=False)
     print("[FastAPI] App shutting down...")
 
 
@@ -109,6 +127,16 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# ---------------------------------------------------------------------------
+# Notification video media (served locally instead of Firebase Storage,
+# which requires the paid Blaze plan even within free-tier usage)
+# ---------------------------------------------------------------------------
+
+_media_dir = Path(__file__).resolve().parent / "media"
+_media_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/media", StaticFiles(directory=str(_media_dir)), name="media")
 
 
 # ---------------------------------------------------------------------------
@@ -151,6 +179,7 @@ async def error_handling_middleware(
 # Game-Based-Measurement-and-Calculation
 app.include_router(auth_router)
 app.include_router(practicals_router)
+app.include_router(notifications_router)
 
 
 # ---------------------------------------------------------------------------

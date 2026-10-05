@@ -80,6 +80,9 @@ ui-debug.log
 # Local uploads (PDF files saved on disk)
 backend/uploads/
 
+# Generated notification videos/thumbnails (runtime output, not source)
+backend/app/media/
+
 # Local runtime data (lesson material metadata with local paths — not for repo)
 backend/data/
 

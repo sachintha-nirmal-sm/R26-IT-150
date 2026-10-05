@@ -1,5 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:http/http.dart' as http;
+
+import 'admin_backend_url.dart';
 
 class AdminStudentsScreen extends StatefulWidget {
   const AdminStudentsScreen({super.key});
@@ -9,8 +15,52 @@ class AdminStudentsScreen extends StatefulWidget {
 }
 
 class _AdminStudentsScreenState extends State<AdminStudentsScreen> {
+  static final String _backendUrl = adminBackendUrl;
+
   String _searchQuery = '';
   String _selectedGrade = 'All';
+
+  Future<String?> _getToken() async =>
+      await FirebaseAuth.instance.currentUser?.getIdToken();
+
+  Future<void> _sendTestNotification(String uid, String name) async {
+    try {
+      final token = await _getToken();
+      final response = await http.post(
+        Uri.parse('$_backendUrl/admin/notifications/test'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'uid': uid,
+          'title': 'Hey $name!',
+          'body': 'This is a test notification from your admin.',
+        }),
+      ).timeout(const Duration(seconds: 15));
+
+      if (!mounted) return;
+      if (response.statusCode == 200) {
+        final result = jsonDecode(response.body) as Map<String, dynamic>;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('Sent to ${result['sent']} device(s) for $name')),
+        );
+      } else if (response.statusCode == 404) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$name has no registered device.')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to send (${response.statusCode}).')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Error: $e')));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -79,7 +129,9 @@ class _AdminStudentsScreenState extends State<AdminStudentsScreen> {
                 itemBuilder: (ctx, i) {
                   final d = docs[i].data() as Map<String, dynamic>;
                   final uid = docs[i].id;
-                  final initials = (d['fullName'] ?? 'S').toString().substring(0, 1).toUpperCase();
+                  final nameStr = (d['fullName'] ?? '').toString();
+                  final initials =
+                      (nameStr.isNotEmpty ? nameStr[0] : 'S').toUpperCase();
                   return Card(
                     margin: const EdgeInsets.only(bottom: 10),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -97,16 +149,27 @@ class _AdminStudentsScreenState extends State<AdminStudentsScreen> {
                       trailing: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: Colors.green.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(d['status'] ?? 'active',
-                                style: const TextStyle(color: Colors.green, fontSize: 11)),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: Colors.green.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(d['status'] ?? 'active',
+                                    style: const TextStyle(color: Colors.green, fontSize: 11)),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.notifications_outlined,
+                                    size: 18, color: Color(0xFF1A3CBA)),
+                                tooltip: 'Send test notification',
+                                onPressed: () => _sendTestNotification(
+                                    uid, d['fullName'] ?? 'this student'),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 4),
                           GestureDetector(
                             onTap: () => _showStudentDetail(uid, d),
                             child: const Text('View',
@@ -152,7 +215,10 @@ class _AdminStudentsScreenState extends State<AdminStudentsScreen> {
                   radius: 24,
                   backgroundColor: const Color(0xFF1A3CBA).withOpacity(0.1),
                   child: Text(
-                    (data['fullName'] ?? 'S').toString().substring(0, 1).toUpperCase(),
+                    ((data['fullName'] ?? '').toString().isNotEmpty
+                            ? (data['fullName'] as String).substring(0, 1)
+                            : 'S')
+                        .toUpperCase(),
                     style: const TextStyle(fontSize: 20, color: Color(0xFF1A3CBA), fontWeight: FontWeight.bold),
                   ),
                 ),

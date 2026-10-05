@@ -45,7 +45,10 @@ class _LoginPageState extends State<LoginPage> {
       }
 
       final uid = credential.user!.uid;
-      final userDoc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .get(const GetOptions(source: Source.server));
       final data = userDoc.data() ?? {};
       final role = data['role'] ?? 'student';
       final gradeRaw = data['grade'];

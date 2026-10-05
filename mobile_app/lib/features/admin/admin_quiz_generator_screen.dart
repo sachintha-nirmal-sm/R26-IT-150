@@ -4,6 +4,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+import 'admin_backend_url.dart';
+
 class AdminQuizGeneratorScreen extends StatefulWidget {
   const AdminQuizGeneratorScreen({super.key});
 
@@ -13,8 +15,7 @@ class AdminQuizGeneratorScreen extends StatefulWidget {
 
 class _AdminQuizGeneratorScreenState extends State<AdminQuizGeneratorScreen>
     with SingleTickerProviderStateMixin {
-  static final String _backendUrl =
-      'http://localhost:9000';
+  static final String _backendUrl = adminBackendUrl;
   late TabController _tabController;
 
   List<Map<String, dynamic>> _lessons = [];
