@@ -8,6 +8,7 @@ import '../games/vector_quest/presentation/pages/vector_quest_game_screen.dart';
 import '../games/lesson_games_screen.dart';
 import 'sub_lessons_screen.dart';
 import 'learning_materials_page.dart';
+import 'data/lesson_engagement_repository.dart';
 
 class LessonsDashboard extends StatefulWidget {
   final String lessonId;
@@ -32,7 +33,7 @@ class LessonsDashboard extends StatefulWidget {
 class _LessonsDashboardState extends State<LessonsDashboard> {
   static const Color _primaryBlue = Color(0xFF2196F3);
   static const Color _navInactive = Color(0xFFB0BEC5);
-  
+
   int _selectedIndex = 1; // Lessons tab selected by default
 
   late String _currentLessonDescription;
@@ -44,6 +45,12 @@ class _LessonsDashboardState extends State<LessonsDashboard> {
     _currentLessonDescription = widget.lessonDescription ??
         _getDescriptionForLesson(widget.lessonTitle);
     _checkSubLessons();
+    // Fire-and-forget: this screen opening is the one reliable signal that
+    // the student actually viewed this lesson. Swallow errors so a flaky
+    // network never blocks the lesson content from showing.
+    LessonEngagementRepository()
+        .recordOpened(widget.lessonId)
+        .catchError((_) {});
   }
 
   Future<void> _checkSubLessons() async {
@@ -87,15 +94,22 @@ class _LessonsDashboardState extends State<LessonsDashboard> {
 
   String _getDescriptionForLesson(String title) {
     final descriptions = {
-      'Introduction to Physics': 'Learn the basics of physics and explore fundamental principles that govern the universe.',
-      'Linear Motion': 'Master the fundamental concepts of push, pull, and the laws governing motion.',
-      "Forces and Newton's Laws": 'Understand the three laws of motion and how forces affect objects.',
-      'Work, Energy, and Power': 'Discover the concepts of work, energy transformation, and power in physical systems.',
+      'Introduction to Physics':
+          'Learn the basics of physics and explore fundamental principles that govern the universe.',
+      'Linear Motion':
+          'Master the fundamental concepts of push, pull, and the laws governing motion.',
+      "Forces and Newton's Laws":
+          'Understand the three laws of motion and how forces affect objects.',
+      'Work, Energy, and Power':
+          'Discover the concepts of work, energy transformation, and power in physical systems.',
       'Density': 'Measure mass and volume to calculate the density of water.',
-      'Basic Concepts Associated with Force': 'See how a push changes the motion of an object and check a = F / m.',
-      'Pressure Exerted by Solid': 'Hang sandbags on a thin wire and time how fast it cuts through soap.',
+      'Basic Concepts Associated with Force':
+          'See how a push changes the motion of an object and check a = F / m.',
+      'Pressure Exerted by Solid':
+          'Hang sandbags on a thin wire and time how fast it cuts through soap.',
     };
-    return descriptions[title] ?? 'Master the fundamental concepts of this lesson.';
+    return descriptions[title] ??
+        'Master the fundamental concepts of this lesson.';
   }
 
   void _openLinkedPractical() {
@@ -142,7 +156,7 @@ class _LessonsDashboardState extends State<LessonsDashboard> {
       backgroundColor: const Color(0xFFF5F6FA),
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color:  const Color(0xFF2196F3)),
+          icon: const Icon(Icons.arrow_back, color: const Color(0xFF2196F3)),
           onPressed: () => Navigator.pushReplacement(
             context,
             MaterialPageRoute(
@@ -193,7 +207,6 @@ class _LessonsDashboardState extends State<LessonsDashboard> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                
                     const SizedBox(height: 8),
                     Text(
                       widget.lessonTitle,

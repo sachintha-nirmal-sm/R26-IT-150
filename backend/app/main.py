@@ -19,6 +19,7 @@ from app.api.ml_analytics import router as ml_analytics_router
 from app.api.recommendations import router as recommendations_router
 from app.api.practicals import router as practicals_router
 from app.api.notifications import router as notifications_router
+from app.api.study_plans import router as study_plans_router
 
 from app.api.admin_quizzes import router as admin_quizzes_router
 from app.api.admin_final_quiz import router as admin_final_quiz_router
@@ -87,11 +88,19 @@ async def lifespan(app: FastAPI):
     from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
     from app.services.notification_service import run_auto_sweep
+    from app.services.study_plan_service import run_weekly_sweep
 
     scheduler = AsyncIOScheduler()
     scheduler.add_job(run_auto_sweep, "interval", hours=1, id="notification_sweep")
+    # Monday 00:05 UTC, 5 minutes past the ISO week boundary so iso_week_id()
+    # inside each generate_weekly_plan() call is unambiguously the new week.
+    scheduler.add_job(
+        run_weekly_sweep, "cron", day_of_week="mon", hour=0, minute=5,
+        id="weekly_study_plan_sweep",
+    )
     scheduler.start()
     print("[FastAPI] Notification auto-sweep scheduler started (hourly).")
+    print("[FastAPI] Weekly study plan sweep scheduler started (Mondays 00:05 UTC).")
 
     yield
 
@@ -180,6 +189,7 @@ async def error_handling_middleware(
 app.include_router(auth_router)
 app.include_router(practicals_router)
 app.include_router(notifications_router)
+app.include_router(study_plans_router)
 
 
 # ---------------------------------------------------------------------------

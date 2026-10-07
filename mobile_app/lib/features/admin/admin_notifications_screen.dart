@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 
 import 'admin_backend_url.dart';
@@ -65,16 +64,14 @@ class _AdminNotificationsScreenState extends State<AdminNotificationsScreen>
     setState(() => _sendingUids.add(uid));
     try {
       final token = await _getToken();
-      final response = await http
-          .post(
-            Uri.parse('$_backendUrl/admin/notifications/send'),
-            headers: {
-              'Authorization': 'Bearer $token',
-              'Content-Type': 'application/json',
-            },
-            body: jsonEncode({'uid': uid}),
-          )
-          .timeout(const Duration(seconds: 15));
+      final response = await adminHttpPost(
+        Uri.parse('$_backendUrl/admin/notifications/send'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({'uid': uid}),
+      );
 
       if (!mounted) return;
       if (response.statusCode == 202) {
@@ -153,8 +150,7 @@ class _AdminNotificationsScreenState extends State<AdminNotificationsScreen>
                   DropdownButton<String>(
                     value: _selectedGrade,
                     items: ['All', 'Grade 9', 'Grade 10', 'Grade 11']
-                        .map((g) =>
-                            DropdownMenuItem(value: g, child: Text(g)))
+                        .map((g) => DropdownMenuItem(value: g, child: Text(g)))
                         .toList(),
                     onChanged: (v) => setState(() => _selectedGrade = v!),
                   ),
@@ -211,8 +207,8 @@ class _AdminNotificationsScreenState extends State<AdminNotificationsScreen>
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12)),
                     child: Padding(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 10),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
@@ -259,8 +255,7 @@ class _AdminNotificationsScreenState extends State<AdminNotificationsScreen>
                                       CircularProgressIndicator(strokeWidth: 2),
                                 )
                               : IconButton(
-                                  onPressed: () =>
-                                      _sendPersonalized(uid, name),
+                                  onPressed: () => _sendPersonalized(uid, name),
                                   icon: const Icon(Icons.send,
                                       color: Color(0xFF1A3CBA)),
                                   tooltip: 'Send personalized notification',
@@ -326,8 +321,8 @@ class _NotificationHistoryTab extends StatelessWidget {
             // a wrapped AI-generated body plus the meta line underneath.
             return Card(
               margin: const EdgeInsets.only(bottom: 10),
-              shape:
-                  RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
               child: Padding(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -360,8 +355,8 @@ class _NotificationHistoryTab extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Container(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
                         color: _statusColor(status).withOpacity(0.1),
                         borderRadius: BorderRadius.circular(20),

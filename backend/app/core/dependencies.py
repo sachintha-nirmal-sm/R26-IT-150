@@ -101,9 +101,18 @@ async def require_auth(
     
     id_token = credentials.credentials.strip()
 
-    # 2. Verify token via Firebase Admin SDK
+    # 2. Verify token via Firebase Admin SDK.
+    # check_revoked=False (the default): revocation checking makes an extra
+    # live network call to Google on every single request, on top of the
+    # signature/expiry check. On this machine's flaky network that extra
+    # round-trip has repeatedly caused slow/hanging/503 auth failures across
+    # unrelated features (notifications, study plan, FCM registration) —
+    # removing it leaves verification purely local/cryptographic after the
+    # public keys are cached. Trade-off: an explicitly revoked token stays
+    # valid until its own ~1hr expiry instead of being rejected immediately,
+    # which is the standard, widely-accepted default for this reason.
     try:
-        decoded_token = verify_id_token(id_token, check_revoked=True)
+        decoded_token = verify_id_token(id_token, check_revoked=False)
     except ExpiredIdTokenError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

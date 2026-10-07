@@ -5,18 +5,20 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
+import '../lessons/data/lesson_engagement_repository.dart';
 
 class QuizResultScreen extends StatefulWidget {
   final String lessonId;
   final String lessonTitle;
-  final int    correct;
-  final int    total;
+  final int correct;
+  final int total;
   final VoidCallback onRetry;
 
   // Optional sub-lesson context
   final String? subLessonId;
   final String? subLessonNumber;
-  final String? subLessonTitle; // used as YouTube search topic when in sub-lesson mode
+  final String?
+      subLessonTitle; // used as YouTube search topic when in sub-lesson mode
 
   const QuizResultScreen({
     super.key,
@@ -40,7 +42,7 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
   List<Map<String, dynamic>> _recommendations = [];
   bool _loadingRec = false;
 
-  late final int  _score;
+  late final int _score;
   late final bool _passed; // 70% threshold
 
   bool get _isSubLesson => widget.subLessonId != null;
@@ -48,13 +50,20 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
   @override
   void initState() {
     super.initState();
-    _score  = widget.total > 0
-        ? ((widget.correct / widget.total) * 100).round()
-        : 0;
+    _score =
+        widget.total > 0 ? ((widget.correct / widget.total) * 100).round() : 0;
     _passed = _score >= 70; // sub-lessons require 70%
 
     // Save sub-lesson progress whenever a sub-lesson quiz is submitted
     if (_isSubLesson) _saveSubLessonProgress();
+
+    // Passing this lesson's quiz is the clearest "this lesson is done"
+    // signal available — reuse it instead of a separate completion hook.
+    if (_passed) {
+      LessonEngagementRepository()
+          .recordCompleted(widget.lessonId)
+          .catchError((_) {});
+    }
 
     // Show YouTube recommendations whenever the student got any question wrong
     if (widget.correct < widget.total) {
@@ -77,26 +86,24 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
 
     try {
       final existing = await ref.get();
-      final prevBest      = existing.exists
-          ? (existing.data()!['bestScore']   as int?  ?? 0)
-          : 0;
-      final prevAttempts  = existing.exists
-          ? (existing.data()!['attempts']    as int?  ?? 0)
-          : 0;
-      final wasCompleted  = existing.exists
+      final prevBest =
+          existing.exists ? (existing.data()!['bestScore'] as int? ?? 0) : 0;
+      final prevAttempts =
+          existing.exists ? (existing.data()!['attempts'] as int? ?? 0) : 0;
+      final wasCompleted = existing.exists
           ? (existing.data()!['isCompleted'] as bool? ?? false)
           : false;
 
       await ref.set({
-        'lessonId':       widget.lessonId,
-        'subLessonId':    widget.subLessonId,
+        'lessonId': widget.lessonId,
+        'subLessonId': widget.subLessonId,
         'subLessonNumber': widget.subLessonNumber ?? '',
-        'subLessonTitle': widget.subLessonTitle   ?? '',
+        'subLessonTitle': widget.subLessonTitle ?? '',
         // Once completed, it stays completed even on retry failure
-        'isCompleted':    wasCompleted || _passed,
-        'bestScore':      _score > prevBest ? _score : prevBest,
-        'attempts':       prevAttempts + 1,
-        'lastAttemptAt':  FieldValue.serverTimestamp(),
+        'isCompleted': wasCompleted || _passed,
+        'bestScore': _score > prevBest ? _score : prevBest,
+        'attempts': prevAttempts + 1,
+        'lastAttemptAt': FieldValue.serverTimestamp(),
       });
     } catch (_) {}
   }
@@ -114,10 +121,10 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
           'Content-Type': 'application/json',
         },
         body: jsonEncode({
-          'lesson_id':    widget.lessonId,
+          'lesson_id': widget.lessonId,
           'lesson_title': widget.lessonTitle,
-          'score':        _score,
-          'topic_title':  searchTopic,
+          'score': _score,
+          'topic_title': searchTopic,
         }),
       );
       if (res.statusCode == 200) {
@@ -144,8 +151,10 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
         elevation: 0,
         automaticallyImplyLeading: false,
         title: const Text('Quiz Results',
-            style: TextStyle(fontWeight: FontWeight.bold,
-                fontSize: 16, color: Color(0xFF1A1C1E))),
+            style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: Color(0xFF1A1C1E))),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
@@ -186,18 +195,22 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.06),
-              blurRadius: 14, offset: const Offset(0, 3))
+          BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 14,
+              offset: const Offset(0, 3))
         ],
       ),
       child: Column(children: [
         Container(
-          width: 68, height: 68,
+          width: 68,
+          height: 68,
           decoration: BoxDecoration(
               color: color.withOpacity(0.12), shape: BoxShape.circle),
           child: Icon(
             _passed ? Icons.emoji_events_rounded : Icons.refresh_rounded,
-            color: color, size: 34,
+            color: color,
+            size: 34,
           ),
         ),
         const SizedBox(height: 12),
@@ -213,15 +226,16 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
 
         // Score circle
         Container(
-          width: 110, height: 110,
+          width: 110,
+          height: 110,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             border: Border.all(color: color, width: 6),
           ),
           child: Center(
             child: Text('$_score%',
-                style: TextStyle(fontSize: 28,
-                    fontWeight: FontWeight.bold, color: color)),
+                style: TextStyle(
+                    fontSize: 28, fontWeight: FontWeight.bold, color: color)),
           ),
         ),
         const SizedBox(height: 14),
@@ -237,8 +251,8 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
                 ? 'Passed ✓  ${_isSubLesson ? "Next sub-lesson unlocked!" : ""}'
                     .trim()
                 : 'Not Passed · Score 70% or more to unlock the next sub-lesson',
-            style: TextStyle(color: color,
-                fontWeight: FontWeight.bold, fontSize: 12),
+            style: TextStyle(
+                color: color, fontWeight: FontWeight.bold, fontSize: 12),
             textAlign: TextAlign.center,
           ),
         ),
@@ -249,14 +263,13 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
   // ── Stats row ───────────────────────────────────────────────────────────────
   Widget _buildStatsRow() {
     return Row(children: [
-      _statCard('Correct', '${widget.correct}',
-          Colors.green, Icons.check_circle_outline),
+      _statCard('Correct', '${widget.correct}', Colors.green,
+          Icons.check_circle_outline),
       const SizedBox(width: 12),
-      _statCard('Wrong', '${widget.total - widget.correct}',
-          Colors.red, Icons.cancel_outlined),
+      _statCard('Wrong', '${widget.total - widget.correct}', Colors.red,
+          Icons.cancel_outlined),
       const SizedBox(width: 12),
-      _statCard('Total', '${widget.total}',
-          Colors.blue, Icons.quiz_outlined),
+      _statCard('Total', '${widget.total}', Colors.blue, Icons.quiz_outlined),
     ]);
   }
 
@@ -275,10 +288,9 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
           Icon(icon, color: color, size: 22),
           const SizedBox(height: 6),
           Text(value,
-              style: TextStyle(fontSize: 20,
-                  fontWeight: FontWeight.bold, color: color)),
-          Text(label,
-              style: const TextStyle(fontSize: 11, color: Colors.grey)),
+              style: TextStyle(
+                  fontSize: 20, fontWeight: FontWeight.bold, color: color)),
+          Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey)),
         ]),
       ),
     );
@@ -302,22 +314,20 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
           style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
         ),
         const SizedBox(height: 14),
-
         if (_loadingRec)
           Container(
             height: 120,
             decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(14)),
-            child: const Center(
-                child: CircularProgressIndicator(strokeWidth: 2)),
+                color: Colors.white, borderRadius: BorderRadius.circular(14)),
+            child:
+                const Center(child: CircularProgressIndicator(strokeWidth: 2)),
           )
         else if (_recommendations.isEmpty)
           _noVideosBox(topicName)
         else
           ..._recommendations.expand((rec) {
-            final videos = (rec['videos'] as List? ?? [])
-                .cast<Map<String, dynamic>>();
+            final videos =
+                (rec['videos'] as List? ?? []).cast<Map<String, dynamic>>();
             return videos.map(_videoCard);
           }),
       ],
@@ -364,14 +374,16 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
         ),
         child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           ClipRRect(
-            borderRadius: const BorderRadius.horizontal(
-                left: Radius.circular(14)),
+            borderRadius:
+                const BorderRadius.horizontal(left: Radius.circular(14)),
             child: Image.network(
               video['thumbnail'] ?? '',
-              width: 120, height: 82,
+              width: 120,
+              height: 82,
               fit: BoxFit.cover,
               errorBuilder: (_, __, ___) => Container(
-                width: 120, height: 82,
+                width: 120,
+                height: 82,
                 color: Colors.grey.shade100,
                 child: const Icon(Icons.play_circle_outline,
                     color: Colors.grey, size: 34),
@@ -405,8 +417,8 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
                   ]),
                   const SizedBox(height: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 3),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
                       color: Colors.red.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(6),
@@ -440,11 +452,12 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
         child: ElevatedButton.icon(
           icon: const Icon(Icons.check, color: Colors.white),
           label: const Text('Done',
-              style: TextStyle(
-                  color: Colors.white, fontWeight: FontWeight.bold)),
+              style:
+                  TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           onPressed: () {
             Navigator.pop(context); // close result screen
-            Navigator.pop(context); // close quiz screen → back to SubLessonsScreen
+            Navigator.pop(
+                context); // close quiz screen → back to SubLessonsScreen
           },
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.green,
@@ -462,7 +475,7 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
           label: const Text('Retry Quiz'),
           onPressed: () {
             Navigator.pop(context); // close result screen
-            widget.onRetry();       // reload questions in quiz screen
+            widget.onRetry(); // reload questions in quiz screen
           },
           style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 14)),
@@ -473,8 +486,8 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
         child: ElevatedButton.icon(
           icon: const Icon(Icons.close, color: Colors.white),
           label: const Text('Done',
-              style: TextStyle(
-                  color: Colors.white, fontWeight: FontWeight.bold)),
+              style:
+                  TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           onPressed: () {
             Navigator.pop(context); // close result screen
             Navigator.pop(context); // close quiz screen

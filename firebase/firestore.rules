@@ -137,6 +137,16 @@ service cloud.firestore {
         allow write: if isAdmin();
       }
 
+      match /lessonEngagement/{lessonId} {
+        allow read: if isOwner(uid) || isAdmin();
+        allow write: if isAdmin();
+      }
+
+      match /studyPlans/{weekId} {
+        allow read: if isOwner(uid) || isAdmin();
+        allow write: if isAdmin();
+      }
+
       match /youtubeRecommendations/{id} {
         allow read: if isOwner(uid) || isAdmin();
         allow write: if isAdmin();
