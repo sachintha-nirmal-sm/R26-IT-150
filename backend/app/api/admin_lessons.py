@@ -31,6 +31,8 @@ from app.core.config import LOCAL_UPLOAD_DIR
 from app.core.dependencies import VerifiedUser, require_admin
 from app.core.firebase import db
 from app.rag.ingest import ingest_material
+from app.rag.keyword_aggregate import apply_material_keywords
+from app.rag.keyword_ai_select import select_best_keywords
 from app.rag.keyword_extract import extract_keywords
 from app.rag.text_extract import extract_text
 from app.rag.chunking import chunk_text
@@ -451,8 +453,18 @@ async def index_lesson_material_for_search(
         ]
         replace_material(lesson_id, material_id, chunks, vectors)
 
+        # Groq's pick of the most search-worthy keywords out of the raw,
+        # frequency-ranked candidates above — a judgment call word-counting
+        # alone can't make (e.g. "reaction" matters for a Newton's Laws
+        # material even if it isn't the most frequent word). Never fails
+        # the upload: falls back to the raw candidates on any error.
+        ai_selected_keywords = await select_best_keywords(
+            keywords, lesson.get("title")
+        )
+
         material_ref.update({
             "keywords": keywords,
+            "aiSelectedKeywords": ai_selected_keywords,
             "keywordCount": len(keywords),
             "keywordIndexStatus": "indexed",
             "keywordIndexedAt": firestore.SERVER_TIMESTAMP,
@@ -460,6 +472,16 @@ async def index_lesson_material_for_search(
             "semanticIndexStatus": "indexed",
             "semanticChunkCount": len(chunks),
         })
+        # Folds this material's keywords into the master search index
+        # immediately — no separate admin sweep needed for a new PDF to
+        # become recommendable. material["grade"] (e.g. "Grade 10") is the
+        # format lesson_materials/simple_search_service.dart already use,
+        # unlike lessons.grade which is stored as an int.
+        apply_material_keywords(
+            material_id, lesson_id, material.get("lessonTitle"),
+            material.get("grade"), keywords,
+            ai_selected_keywords=ai_selected_keywords,
+        )
         return SearchIndexResponse(
             materialId=material_id,
             keywordCount=len(keywords),

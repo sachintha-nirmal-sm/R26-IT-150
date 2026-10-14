@@ -79,12 +79,16 @@ class _AdminStudentsScreenState extends State<AdminStudentsScreen> {
                 itemBuilder: (ctx, i) {
                   final d = docs[i].data() as Map<String, dynamic>;
                   final uid = docs[i].id;
-                  final initials = (d['fullName'] ?? 'S').toString().substring(0, 1).toUpperCase();
+                  final fullName = (d['fullName'] as String?)?.trim();
+                  final initials = (fullName?.isNotEmpty == true ? fullName! : 'S')
+                      .substring(0, 1)
+                      .toUpperCase();
                   return Card(
                     margin: const EdgeInsets.only(bottom: 10),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     child: ListTile(
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      minVerticalPadding: 14,
                       leading: CircleAvatar(
                         backgroundColor: const Color(0xFF1A3CBA).withOpacity(0.1),
                         child: Text(initials,
@@ -152,7 +156,11 @@ class _AdminStudentsScreenState extends State<AdminStudentsScreen> {
                   radius: 24,
                   backgroundColor: const Color(0xFF1A3CBA).withOpacity(0.1),
                   child: Text(
-                    (data['fullName'] ?? 'S').toString().substring(0, 1).toUpperCase(),
+                    ((data['fullName'] as String?)?.trim().isNotEmpty == true
+                            ? (data['fullName'] as String).trim()
+                            : 'S')
+                        .substring(0, 1)
+                        .toUpperCase(),
                     style: const TextStyle(fontSize: 20, color: Color(0xFF1A3CBA), fontWeight: FontWeight.bold),
                   ),
                 ),

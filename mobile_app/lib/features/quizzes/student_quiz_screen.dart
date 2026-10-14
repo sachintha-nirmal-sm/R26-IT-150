@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'quiz_result_screen.dart';
+import '../dashboard/services/quiz_feedback_service.dart';
 
 class StudentQuizScreen extends StatefulWidget {
   final String lessonId;
@@ -32,6 +35,7 @@ class StudentQuizScreen extends StatefulWidget {
 }
 
 class _StudentQuizScreenState extends State<StudentQuizScreen> {
+  final QuizFeedbackService _quizFeedbackService = QuizFeedbackService();
   List<Map<String, dynamic>> _questions = [];
   Map<int, String> _selectedAnswers = {};
   bool _isLoading    = true;
@@ -264,6 +268,15 @@ class _StudentQuizScreenState extends State<StudentQuizScreen> {
         'grade':            userData['grade']?.toString() ?? '',
         'submittedAt':      FieldValue.serverTimestamp(),
       });
+
+      unawaited(_quizFeedbackService.logQuizPerformance(
+        lessonId: widget.lessonId,
+        lessonTitle: widget.lessonTitle,
+        grade: userData['grade']?.toString(),
+        score: _questions.isEmpty ? 0 : (correct / _questions.length * 100).round(),
+        correct: correct,
+        total: _questions.length,
+      ));
     }
 
     _recordAttempts();

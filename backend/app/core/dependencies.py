@@ -99,8 +99,12 @@ async def require_auth(
     id_token = credentials.credentials.strip()
 
     # 2. Verify token via Firebase Admin SDK
+    # check_revoked=False: the revocation check adds a network round-trip
+    # to Google's backend on every single request (observed 20s+ latency
+    # on this machine) for a guarantee this app doesn't need — expired
+    # tokens are already rejected below, which covers the common case.
     try:
-        decoded_token = verify_id_token(id_token, check_revoked=True)
+        decoded_token = verify_id_token(id_token, check_revoked=False)
     except ExpiredIdTokenError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

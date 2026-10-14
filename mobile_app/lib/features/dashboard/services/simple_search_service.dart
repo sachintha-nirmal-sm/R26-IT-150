@@ -5,6 +5,7 @@ import '../../../core/api/api_client.dart';
 import '../../games/games_list/game_list_data.dart';
 import '../models/search_models.dart';
 import 'advanced_ranking_engine.dart';
+import 'search_text_utils.dart' as text_utils;
 
 class SimpleSearchService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -18,6 +19,12 @@ class SimpleSearchService {
       {}; // key: lessonId
   static DateTime? _lastCacheTime;
   static const Duration _cacheDuration = Duration(hours: 1);
+
+  // Master search-keyword index (approved/auto_approved docs only) — small,
+  // curated, read far less often than it's matched against, so one cache
+  // for the whole collection instead of per-grade like _lessonsCache.
+  static List<Map<String, dynamic>>? _masterKeywordCache;
+  static DateTime? _masterKeywordCacheTime;
 
   /// Get user-specific search history key
   /// Format: search_history_[userId] for logged-in users
@@ -66,6 +73,9 @@ class SimpleSearchService {
       if (category == 'All' || category == 'Learning Materials') {
         results.addAll(await _searchLearningMaterials(lowerQuery, gradeNum));
         results.addAll(await _searchSemanticPdfContent(query, gradeNum));
+        results.addAll(
+          await _searchMasterKeywordIndex(lowerQuery, gradeNum),
+        );
       }
 
       // Rank all result types consistently while retaining every existing
@@ -401,6 +411,118 @@ class SimpleSearchService {
     }
   }
 
+  /// Loads the live, moderated master keyword set (search_keyword_index) —
+  /// see backend/app/rag/keyword_aggregate.py. Approved/auto_approved docs
+  /// only; a rejected keyword must never recommend anything.
+  Future<List<Map<String, dynamic>>> _getCachedMasterKeywords() async {
+    if (_masterKeywordCache != null && _masterKeywordCacheTime != null) {
+      if (DateTime.now().difference(_masterKeywordCacheTime!) <
+          _cacheDuration) {
+        return _masterKeywordCache!;
+      }
+    }
+
+    try {
+      final snap = await _firestore
+          .collection('search_keyword_index')
+          .where('status', whereIn: ['approved', 'auto_approved']).get();
+
+      final keywords = snap.docs.map((doc) {
+        final data = doc.data();
+        return {
+          'keyword': data['keyword'] ?? doc.id,
+          'materialRefs':
+              List<Map<String, dynamic>>.from(data['materialRefs'] ?? []),
+        };
+      }).toList();
+
+      _masterKeywordCache = keywords;
+      _masterKeywordCacheTime = DateTime.now();
+      return keywords;
+    } catch (e) {
+      print('⚠️ Error loading master keyword index: $e');
+      return _masterKeywordCache ?? [];
+    }
+  }
+
+  /// Smart recommendation lookup: if the query (or a word within it) exactly
+  /// matches an approved keyword, or is a 1-2 character typo away from one,
+  /// surface everything that keyword is linked to — filtered to the
+  /// student's own grade, so a Grade 10 student never sees a Grade 9 PDF
+  /// recommended just because the keyword happens to be shared.
+  Future<List<Map<String, dynamic>>> _searchMasterKeywordIndex(
+    String lowerQuery,
+    int gradeNum,
+  ) async {
+    final trimmed = lowerQuery.trim();
+    if (trimmed.isEmpty) return [];
+
+    final masterKeywords = await _getCachedMasterKeywords();
+    if (masterKeywords.isEmpty) return [];
+
+    final queryWords = [
+      trimmed,
+      ...trimmed.split(RegExp(r'\s+')).where((w) => w.length >= 3),
+    ].toSet();
+
+    Map<String, dynamic>? matched;
+    var isFuzzyMatch = false;
+
+    // Exact match first — cheap, and always preferred over a fuzzy guess.
+    for (final entry in masterKeywords) {
+      final keyword = (entry['keyword'] as String).toLowerCase();
+      if (queryWords.contains(keyword)) {
+        matched = entry;
+        break;
+      }
+    }
+
+    // Typo-tolerant fallback, only if nothing matched exactly. Skipped for
+    // long queries — a short curated keyword is never a near-miss of a long
+    // free-text search, so it would just waste cycles.
+    if (matched == null && trimmed.length <= 20) {
+      var bestDistance = text_utils.fuzzyMaxDistance + 1;
+      for (final entry in masterKeywords) {
+        final keyword = (entry['keyword'] as String).toLowerCase();
+        for (final word in queryWords) {
+          final distance = text_utils.levenshteinDistance(word, keyword);
+          if (distance > 0 &&
+              distance <= text_utils.fuzzyMaxDistance &&
+              distance < bestDistance) {
+            bestDistance = distance;
+            matched = entry;
+            isFuzzyMatch = true;
+          }
+        }
+      }
+    }
+
+    if (matched == null) return [];
+
+    final gradeStr = 'Grade $gradeNum';
+    final matchedKeyword = matched['keyword'] as String;
+    final refs = List<Map<String, dynamic>>.from(matched['materialRefs']);
+
+    return refs
+        .where((ref) => ref['grade'] == gradeStr)
+        .map((ref) => {
+              'id': ref['materialId'],
+              'title': ref['lessonTitle'] ?? matchedKeyword,
+              'description': isFuzzyMatch
+                  ? 'Matched "$trimmed" to "$matchedKeyword"'
+                  : 'Recommended based on "$matchedKeyword"',
+              'type': 'Learning Materials',
+              'lessonId': ref['lessonId'] ?? '',
+              'lessonTitle': ref['lessonTitle'] ?? '',
+              'grade': gradeStr,
+              'source': 'Smart recommendation',
+              'isMasterKeywordMatch': true,
+              'matchedMasterKeyword': matchedKeyword,
+              'isFuzzyMatch': isFuzzyMatch,
+            })
+        .toList();
+  }
+
   List<Map<String, dynamic>> _mergeDuplicateResults(
     List<Map<String, dynamic>> results,
   ) {
@@ -431,6 +553,12 @@ class SimpleSearchService {
       };
       existing['keywords'] = keywords.toList();
       if (newSemantic > 0) existing['source'] = 'Hybrid PDF search';
+
+      if (result['isMasterKeywordMatch'] == true) {
+        existing['isMasterKeywordMatch'] = true;
+        existing['matchedMasterKeyword'] = result['matchedMasterKeyword'];
+        existing['isFuzzyMatch'] = result['isFuzzyMatch'] ?? false;
+      }
     }
     return merged.values.toList();
   }
@@ -453,13 +581,21 @@ class SimpleSearchService {
         ),
         source: result['source']?.toString() ?? 'Search',
       );
+      // Exact keyword-index match is a stronger signal than a corrected
+      // (fuzzy) one, so it scores slightly higher — both still rank well
+      // above a plain single-keyword overlap (+3 in AdvancedRankingEngine)
+      // but below an exact title match (+100).
+      final masterKeywordBonus = result['isMasterKeywordMatch'] == true
+          ? (result['isFuzzyMatch'] == true ? 8.0 : 12.0)
+          : 0.0;
       final score = _rankingEngine.calculateRelevanceScore(
             query: query,
             item: searchResult,
             searchCount: 0,
             totalSearches: 0,
           ) +
-          ((result['semanticScore'] as num?)?.toDouble() ?? 0) * 25;
+          ((result['semanticScore'] as num?)?.toDouble() ?? 0) * 25 +
+          masterKeywordBonus;
       return MapEntry({...result, 'relevanceScore': score}, score);
     }).toList()
       ..sort((a, b) => b.value.compareTo(a.value));

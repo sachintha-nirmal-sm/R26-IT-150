@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/simple_search_service.dart';
+import '../services/search_feedback_service.dart';
 import '../../lessons/Lessons_Dashboard.dart';
 import '../../lessons/learning_materials_page.dart';
 
@@ -20,8 +21,10 @@ class SimpleSearchPage extends StatefulWidget {
 
 class _SimpleSearchPageState extends State<SimpleSearchPage> {
   final SimpleSearchService _searchService = SimpleSearchService();
+  final SearchFeedbackService _feedbackService = SearchFeedbackService();
   final TextEditingController _controller = TextEditingController();
 
+  String? _lastSearchedQuery;
   List<Map<String, dynamic>> _allResults = []; // All unfiltered results
   List<Map<String, dynamic>> _results = []; // Filtered results
   List<String> _suggestions = [];
@@ -48,8 +51,8 @@ class _SimpleSearchPageState extends State<SimpleSearchPage> {
 
     // Check if a search query was passed (from keyword chips)
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final args = ModalRoute.of(context)?.settings.arguments
-          as Map<String, dynamic>?;
+      final args =
+          ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
       if (args != null && args['searchQuery'] != null) {
         _controller.text = args['searchQuery'];
         Future.delayed(const Duration(milliseconds: 100), () {
@@ -120,6 +123,10 @@ class _SimpleSearchPageState extends State<SimpleSearchPage> {
           _controller.text.trim() != query) {
         return;
       }
+      _lastSearchedQuery = query;
+      unawaited(
+        _feedbackService.logSearchEvent(query, widget.grade, results.length),
+      );
       setState(() {
         _correctedSpelling = suggestion;
         _allResults = results;
@@ -197,13 +204,11 @@ class _SimpleSearchPageState extends State<SimpleSearchPage> {
     print('📊 All results: ${_allResults.length}');
 
     if (_selectedCategory != 'All') {
-      filtered = _allResults
-          .where((r) {
-            final type = r['type'] as String?;
-            print('  - Checking: ${r['title']} (type: $type)');
-            return type == _selectedCategory;
-          })
-          .toList();
+      filtered = _allResults.where((r) {
+        final type = r['type'] as String?;
+        print('  - Checking: ${r['title']} (type: $type)');
+        return type == _selectedCategory;
+      }).toList();
     }
 
     print('✅ Filtered results: ${filtered.length}');
@@ -212,6 +217,11 @@ class _SimpleSearchPageState extends State<SimpleSearchPage> {
 
   void _handleResultTap(Map<String, dynamic> result) {
     final type = result['type'] as String?;
+
+    final query = _lastSearchedQuery;
+    if (query != null && query.isNotEmpty) {
+      unawaited(_feedbackService.logSearchClick(query, widget.grade));
+    }
 
     // Handle Games
     if (type == 'Games') {
@@ -226,8 +236,9 @@ class _SimpleSearchPageState extends State<SimpleSearchPage> {
     // Handle Learning Materials
     if (type == 'Learning Materials') {
       final subtype = result['subtype'] as String?;
-      print('📚 Navigating to learning material: ${result['title']} ($subtype)');
-      
+      print(
+          '📚 Navigating to learning material: ${result['title']} ($subtype)');
+
       final String lessonId = result['lessonId'] ?? '';
       final String lessonTitle = result['lessonTitle'] ?? 'Materials';
       final String grade = result['grade'] ?? widget.grade;
@@ -303,7 +314,8 @@ class _SimpleSearchPageState extends State<SimpleSearchPage> {
                                 Icons.search,
                                 color: Color(0xFF2196F3),
                               ),
-                              contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                              contentPadding:
+                                  const EdgeInsets.symmetric(vertical: 12),
                             ),
                             onSubmitted: (_) => _performSearch(),
                           ),
@@ -384,7 +396,8 @@ class _SimpleSearchPageState extends State<SimpleSearchPage> {
                       title: Text(_suggestions[index]),
                       trailing: IconButton(
                         icon: const Icon(Icons.close, size: 18),
-                        onPressed: () => _deleteRecentSearch(_suggestions[index]),
+                        onPressed: () =>
+                            _deleteRecentSearch(_suggestions[index]),
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
                       ),
@@ -403,7 +416,8 @@ class _SimpleSearchPageState extends State<SimpleSearchPage> {
                   if (recentSearches.isEmpty) return const SizedBox.shrink();
 
                   return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -449,15 +463,18 @@ class _SimpleSearchPageState extends State<SimpleSearchPage> {
                             itemCount: recentSearches.length,
                             itemBuilder: (context, index) {
                               return ListTile(
-                                leading: const Icon(Icons.history, size: 18, color: Colors.orange),
+                                leading: const Icon(Icons.history,
+                                    size: 18, color: Colors.orange),
                                 title: Text(recentSearches[index]),
                                 trailing: IconButton(
                                   icon: const Icon(Icons.close, size: 18),
-                                  onPressed: () => _deleteRecentSearch(recentSearches[index]),
+                                  onPressed: () => _deleteRecentSearch(
+                                      recentSearches[index]),
                                   padding: EdgeInsets.zero,
                                   constraints: const BoxConstraints(),
                                 ),
-                                onTap: () => _onSuggestionTap(recentSearches[index]),
+                                onTap: () =>
+                                    _onSuggestionTap(recentSearches[index]),
                               );
                             },
                           ),
@@ -479,83 +496,82 @@ class _SimpleSearchPageState extends State<SimpleSearchPage> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                              Icon(
-                                Icons.search_off,
-                                size: 48,
-                                color: Colors.grey[300],
+                      Icon(
+                        Icons.search_off,
+                        size: 48,
+                        color: Colors.grey[300],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No results found',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      // "Did you mean?" suggestion
+                      if (_correctedSpelling != null)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 16,
+                          ),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFF3E0),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: const Color(0xFFFFB74D),
+                                width: 1.5,
                               ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'No results found',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              // "Did you mean?" suggestion
-                              if (_correctedSpelling != null)
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 24,
-                                    vertical: 16,
+                            ),
+                            padding: const EdgeInsets.all(12),
+                            child: Column(
+                              children: [
+                                Text(
+                                  'Did you mean?',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.orange[700],
+                                    fontWeight: FontWeight.w500,
                                   ),
+                                ),
+                                const SizedBox(height: 8),
+                                GestureDetector(
+                                  onTap: () => _applyCorrectedSpelling(
+                                      _correctedSpelling!),
                                   child: Container(
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFFFFF3E0),
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                        color: const Color(0xFFFFB74D),
-                                        width: 1.5,
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 8,
+                                    ),
+                                    child: Text(
+                                      _correctedSpelling!,
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xFF2196F3),
                                       ),
                                     ),
-                                    padding: const EdgeInsets.all(12),
-                                    child: Column(
-                                      children: [
-                                        Text(
-                                          'Did you mean?',
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            color: Colors.orange[700],
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 8),
-                                        GestureDetector(
-                                          onTap: () => _applyCorrectedSpelling(
-                                              _correctedSpelling!),
-                                          child: Container(
-                                            decoration: BoxDecoration(
-                                              color: Colors.white,
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 12,
-                                              vertical: 8,
-                                            ),
-                                            child: Text(
-                                              _correctedSpelling!,
-                                              style: const TextStyle(
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.w600,
-                                                color: Color(0xFF2196F3),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                )
-                              else
-                                Text(
-                                  'Try a different search term',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey[400],
                                   ),
                                 ),
+                              ],
+                            ),
+                          ),
+                        )
+                      else
+                        Text(
+                          'Try a different search term',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[400],
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -612,20 +628,27 @@ class _SimpleSearchPageState extends State<SimpleSearchPage> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                // Type badge and title
-                                Row(
+                                // Badges on their own row — with two badges
+                                // (type + Recommended) plus a long title all
+                                // competing for one Row's width, the title
+                                // was being squeezed down to a single
+                                // character before it ever reached its own
+                                // ellipsis. Giving the title its own full-
+                                // width line below fixes that regardless of
+                                // how many badges are shown.
+                                Wrap(
+                                  spacing: 6,
+                                  runSpacing: 6,
                                   children: [
                                     Container(
-                                      padding:
-                                          const EdgeInsets.symmetric(
+                                      padding: const EdgeInsets.symmetric(
                                         horizontal: 8,
                                         vertical: 4,
                                       ),
                                       decoration: BoxDecoration(
                                         color: const Color(0xFF2196F3)
                                             .withOpacity(0.2),
-                                        borderRadius:
-                                            BorderRadius.circular(6),
+                                        borderRadius: BorderRadius.circular(6),
                                       ),
                                       child: Text(
                                         result['type'],
@@ -636,23 +659,57 @@ class _SimpleSearchPageState extends State<SimpleSearchPage> {
                                         ),
                                       ),
                                     ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        result['title'],
-                                        style: const TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w600,
-                                          color: Color(0xFF1A1A2E),
+                                    if (result['isMasterKeywordMatch'] == true)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 4,
                                         ),
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
+                                        decoration: BoxDecoration(
+                                          color: Colors.amber.withOpacity(
+                                            0.25,
+                                          ),
+                                          borderRadius:
+                                              BorderRadius.circular(6),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.auto_awesome,
+                                              size: 12,
+                                              color: Colors.amber[800],
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              'Recommended',
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w600,
+                                                color: Colors.amber[800],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ),
-                                    ),
                                   ],
                                 ),
                                 const SizedBox(height: 8),
-                                // Description
+                                Text(
+                                  result['title'],
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF1A1A2E),
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 8),
+                                // Description — for a typo-corrected match,
+                                // simple_search_service.dart already builds
+                                // a message naming both the original search
+                                // and the corrected keyword.
                                 Text(
                                   result['description'],
                                   style: TextStyle(

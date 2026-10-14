@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'dart:async';
 import 'dart:convert';
 import 'admin_lesson_detail_screen.dart';
+import 'admin_backend_url.dart';
 
 class AdminLessonsScreen extends StatefulWidget {
   const AdminLessonsScreen({super.key});
@@ -14,8 +15,7 @@ class AdminLessonsScreen extends StatefulWidget {
 }
 
 class _AdminLessonsScreenState extends State<AdminLessonsScreen> {
-  static final String _backendUrl =
-      'http://localhost:9000';
+  static final String _backendUrl = adminBackendUrl;
 
   String? _selectedGrade;
 

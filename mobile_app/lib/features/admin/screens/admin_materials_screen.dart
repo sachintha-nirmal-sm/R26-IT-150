@@ -11,6 +11,7 @@ import 'package:http/http.dart' as http;
 import '../models/lesson_material.dart';
 import '../services/materials_service.dart';
 import '../services/cloudinary_service.dart';
+import '../admin_backend_url.dart';
 
 class AdminMaterialsScreen extends StatefulWidget {
   const AdminMaterialsScreen({super.key});
@@ -77,7 +78,7 @@ class _AdminMaterialsScreenState extends State<AdminMaterialsScreen>
   }
 
   // ─── Load lessons (Backend API with Firestore fallback) ─────────────────────
-  static const _backendUrl = 'http://localhost:9000';
+  static final _backendUrl = adminBackendUrl;
 
   Future<bool> _indexPdfForSearch({
     required String lessonId,

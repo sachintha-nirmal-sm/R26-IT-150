@@ -274,6 +274,31 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Master search-keyword index (aggregated from every lesson material's
+    // extracted keywords) — public reference data, no answer keys or
+    // private student data, same shape as experiments/learning_paths above.
+    match /search_keyword_index/{keywordId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Online "struggling search terms" content-gap detector — per-term
+    // search/click counters (app/rag/search_quality.py). Admin-only on both
+    // sides: real writes only ever come from the backend's Admin SDK, and
+    // the admin screen reads through the backend endpoint, not directly.
+    match /search_quality_index/{term} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+
+    // Online "weak topics by quiz performance" detector — per-lesson quiz
+    // score counters (app/rag/topic_performance.py). Admin-only on both
+    // sides: real writes only ever come from the backend's Admin SDK.
+    match /topic_performance_index/{lessonId} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+
     // --------------------------------------------------------
     // analytics/**
     // --------------------------------------------------------

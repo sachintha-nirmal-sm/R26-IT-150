@@ -94,3 +94,9 @@ research/
 
 # ML large synthetic data files (regenerate with ml/run_simulation.py)
 ml/data/*.csv
+
+# Search-keyword CSV export — a point-in-time snapshot of the live
+# search_keyword_index collection, not source data. Regenerate with
+# firebase/scripts/export_search_keywords.py whenever a current copy is
+# needed; committing a stale snapshot would be actively misleading.
+firebase/scripts/search_keywords_export.csv

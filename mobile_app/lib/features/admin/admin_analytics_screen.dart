@@ -7,6 +7,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+import 'admin_backend_url.dart';
+
 String _clean(String? s) {
   if (s == null) return '';
   return s
@@ -24,8 +26,7 @@ class AdminAnalyticsScreen extends StatefulWidget {
 }
 
 class _AdminAnalyticsScreenState extends State<AdminAnalyticsScreen> {
-  static final String _base =
-      'http://localhost:9000';
+  static final String _base = adminBackendUrl;
 
   // Static cache "” survives tab switches, cleared on pull-to-refresh only
   static Map<String, dynamic>? _cachedMlReport;

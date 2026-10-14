@@ -23,6 +23,11 @@ from app.api.student import router as student_router
 from app.api.analytics import router as analytics_router
 from app.api.learning_path import router as learning_path_router
 from app.api.admin_rag import router as admin_rag_router
+from app.api.admin_search_keywords import router as admin_search_keywords_router
+from app.api.search_feedback import router as search_feedback_router
+from app.api.admin_search_insights import router as admin_search_insights_router
+from app.api.quiz_feedback import router as quiz_feedback_router
+from app.api.admin_topic_insights import router as admin_topic_insights_router
 from app.api.chatbot import router as chatbot_router
 from app.api.search import router as search_router
 
@@ -174,6 +179,11 @@ app.include_router(student_router)
 app.include_router(analytics_router)
 app.include_router(learning_path_router)
 app.include_router(admin_rag_router)
+app.include_router(admin_search_keywords_router)
+app.include_router(search_feedback_router)
+app.include_router(admin_search_insights_router)
+app.include_router(quiz_feedback_router)
+app.include_router(admin_topic_insights_router)
 app.include_router(chatbot_router)
 app.include_router(search_router)
 
