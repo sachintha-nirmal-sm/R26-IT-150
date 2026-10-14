@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 class GetStartedPage extends StatefulWidget {
@@ -12,10 +13,26 @@ class _GetStartedPageState extends State<GetStartedPage> {
   @override
   void initState() {
     super.initState();
-    if (FirebaseAuth.instance.currentUser != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (!mounted) return;
-        Navigator.of(context).pushReplacementNamed('/home');
+        // Bug fix: this used to redirect straight to '/home' for ANY cached
+        // session, including an admin's — sending admins to the student
+        // home screen instead of the admin dashboard. Check role first,
+        // same lookup login_page.dart's _login() already does.
+        String role = 'student';
+        try {
+          final doc = await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .get();
+          role = doc.data()?['role'] ?? 'student';
+        } catch (_) {}
+        if (!mounted) return;
+        Navigator.of(context).pushReplacementNamed(
+          role == 'admin' ? '/admin-dashboard' : '/home',
+        );
       });
     }
   }

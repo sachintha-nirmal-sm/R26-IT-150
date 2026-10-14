@@ -43,15 +43,19 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) return;
-      final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
       final gradeRaw = doc.data()?['currentGrade'] ?? doc.data()?['grade'];
-      final gradeInt = (gradeRaw is int) ? gradeRaw : int.tryParse(gradeRaw?.toString() ?? '');
+      final gradeInt = (gradeRaw is int)
+          ? gradeRaw
+          : int.tryParse(gradeRaw?.toString() ?? '');
       if (gradeInt != null && mounted) {
         setState(() => _grade = 'Grade $gradeInt');
       }
     } catch (_) {}
 
-  
     _loadStudentGrade();
   }
 
@@ -63,14 +67,16 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
             .collection('users')
             .doc(user.uid)
             .get();
-        final gradeData = userDoc.data()?['currentGrade'] ?? userDoc.data()?['grade'];
+        final gradeData =
+            userDoc.data()?['currentGrade'] ?? userDoc.data()?['grade'];
 
         // Handle both integer (9, 10, 11) and string ('Grade 9', 'Grade 10') formats
         String grade = 'Grade 10'; // default
         if (gradeData is int) {
           grade = 'Grade $gradeData';
         } else if (gradeData is String) {
-          grade = gradeData.startsWith('Grade ') ? gradeData : 'Grade $gradeData';
+          grade =
+              gradeData.startsWith('Grade ') ? gradeData : 'Grade $gradeData';
         }
 
         if (mounted) {
@@ -100,7 +106,10 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
   void _closeSearch() {
     _searchCtrl.clear();
     _searchFocus.unfocus();
-    setState(() { _isSearching = false; _results = []; });
+    setState(() {
+      _isSearching = false;
+      _results = [];
+    });
   }
 
   List<String> get _keywords => gradeKeywords[_grade] ?? [];
@@ -191,14 +200,19 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
               end: Alignment.bottomLeft,
               colors: [Color(0xFF9F67FA), Color(0xFF7C3AED), Color(0xFF5B21B6)],
             ),
-            boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 2))],
+            boxShadow: const [
+              BoxShadow(
+                  color: Colors.black12, blurRadius: 8, offset: Offset(0, 2))
+            ],
           ),
           child: Stack(
             children: [
               Positioned(
-                top: -20, right: -20,
+                top: -20,
+                right: -20,
                 child: Container(
-                  width: 100, height: 100,
+                  width: 100,
+                  height: 100,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: Colors.white.withValues(alpha: 0.07),
@@ -215,7 +229,8 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
                         color: Colors.white.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Icon(Icons.history_edu, color: Colors.white, size: 28),
+                      child: const Icon(Icons.history_edu,
+                          color: Colors.white, size: 28),
                     ),
                     const SizedBox(width: 16),
                     const Expanded(
@@ -224,14 +239,20 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text('Revise Grade 10',
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white)),
+                              style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.white)),
                           SizedBox(height: 4),
-                          Text('Practice last year\'s lessons, materials & quizzes',
-                              style: TextStyle(fontSize: 12, color: Colors.white70)),
+                          Text(
+                              'Practice last year\'s lessons, materials & quizzes',
+                              style: TextStyle(
+                                  fontSize: 12, color: Colors.white70)),
                         ],
                       ),
                     ),
-                    const Icon(Icons.arrow_forward_ios, color: Colors.white70, size: 16),
+                    const Icon(Icons.arrow_forward_ios,
+                        color: Colors.white70, size: 16),
                   ],
                 ),
               ),
@@ -248,8 +269,20 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
         title: Row(children: [
           const Icon(Icons.science, color: _primaryBlue, size: 26),
           const SizedBox(width: 8),
-          const Text('Physics Lab',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: _bodyText)),
+          // Flexible + ellipsis instead of a bare Text: the title row's
+          // available width shrinks on narrower screens/app bars (leading
+          // icon + trailing profile avatar both eat into it), and a fixed-
+          // size "Physics Lab" + grade badge together don't always fit,
+          // causing a hard RenderFlex overflow. This lets the title shrink
+          // first instead.
+          Flexible(
+            child: Text('Physics Lab',
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: _bodyText)),
+          ),
           const SizedBox(width: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -258,7 +291,10 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(_grade,
-                style: const TextStyle(fontSize: 11, color: _primaryBlue, fontWeight: FontWeight.w700)),
+                style: const TextStyle(
+                    fontSize: 11,
+                    color: _primaryBlue,
+                    fontWeight: FontWeight.w700)),
           ),
         ]),
         actions: [
@@ -277,11 +313,13 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
       );
 
   // ── Greeting ──────────────────────────────────────────────────────────────
-  Widget _greetingCard() => _card(child: Column(
+  Widget _greetingCard() => _card(
+          child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text('Hello, Alex',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: _bodyText)),
+              style: TextStyle(
+                  fontSize: 18, fontWeight: FontWeight.w800, color: _bodyText)),
           const SizedBox(height: 4),
           Text('You are on $_grade · Let\'s keep learning!',
               style: const TextStyle(fontSize: 13, color: _subtitleText)),
@@ -342,15 +380,24 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
               },
               child: Container(
                 margin: const EdgeInsets.only(right: 8),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: const Color(0xFFDDE0EA)),
-                  boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 1))],
+                  boxShadow: const [
+                    BoxShadow(
+                        color: Colors.black12,
+                        blurRadius: 4,
+                        offset: Offset(0, 1))
+                  ],
                 ),
                 child: Text(kw,
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: _bodyText)),
+                    style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: _bodyText)),
               ),
             );
           }).toList(),
@@ -358,30 +405,39 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
       );
 
   // ── Progress card ─────────────────────────────────────────────────────────
-  Widget _progressCard() => _card(child: Column(
+  Widget _progressCard() => _card(
+          child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
             const Text('YOUR PROGRESS',
-                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800,
-                    color: _primaryBlue, letterSpacing: 1.2)),
+                style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    color: _primaryBlue,
+                    letterSpacing: 1.2)),
             const Icon(Icons.bar_chart, color: _subtitleText, size: 20),
           ]),
           const SizedBox(height: 10),
           const Text('12 Completed Lessons',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: _bodyText)),
+              style: TextStyle(
+                  fontSize: 16, fontWeight: FontWeight.w700, color: _bodyText)),
           const SizedBox(height: 10),
           Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
             const Text('Current: Linear Motion',
                 style: TextStyle(fontSize: 13, color: _subtitleText)),
             const Text('60%',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: _primaryBlue)),
+                style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: _primaryBlue)),
           ]),
           const SizedBox(height: 8),
           ClipRRect(
             borderRadius: BorderRadius.circular(6),
             child: const LinearProgressIndicator(
-              value: 0.60, minHeight: 6,
+              value: 0.60,
+              minHeight: 6,
               backgroundColor: Color(0xFFDDE3F8),
               valueColor: AlwaysStoppedAnimation<Color>(_primaryBlue),
             ),
@@ -391,7 +447,8 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
 
   // ── Continue button ───────────────────────────────────────────────────────
   Widget _continueButton() => SizedBox(
-        width: double.infinity, height: 52,
+        width: double.infinity,
+        height: 52,
         child: ElevatedButton.icon(
           onPressed: () => Navigator.of(context).pushNamed(
             '/lesson-list',
@@ -399,43 +456,69 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
           ),
           icon: const Icon(Icons.play_arrow, size: 20, color: Colors.white),
           label: const Text('Continue Learning',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white)),
+              style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white)),
           style: ElevatedButton.styleFrom(
-            backgroundColor: _primaryBlue, elevation: 0,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            backgroundColor: _primaryBlue,
+            elevation: 0,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
         ),
       );
 
   // ── Recommended ───────────────────────────────────────────────────────────
   Widget _sectionTitle(String t) => Text(t,
-      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: _bodyText));
+      style: const TextStyle(
+          fontSize: 16, fontWeight: FontWeight.w800, color: _bodyText));
 
   Widget _recommendedRow() => Row(children: [
-        Expanded(child: _recCard(const Color(0xFFFDE8D8), Icons.local_fire_department,
-            const Color(0xFFEA580C), 'Thermodynamics Basics', '15 mins • Quiz')),
+        Expanded(
+            child: _recCard(
+                const Color(0xFFFDE8D8),
+                Icons.local_fire_department,
+                const Color(0xFFEA580C),
+                'Thermodynamics Basics',
+                '15 mins • Quiz')),
         const SizedBox(width: 12),
-        Expanded(child: _recCard(const Color(0xFFEDE9FE), Icons.bolt,
-            const Color(0xFF7C3AED), 'Circuit Fundamentals', '22 mins • Lab')),
+        Expanded(
+            child: _recCard(
+                const Color(0xFFEDE9FE),
+                Icons.bolt,
+                const Color(0xFF7C3AED),
+                'Circuit Fundamentals',
+                '22 mins • Lab')),
       ]);
 
-  Widget _recCard(Color bg, IconData icon, Color iconColor, String title, String sub) =>
+  Widget _recCard(
+          Color bg, IconData icon, Color iconColor, String title, String sub) =>
       Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: Colors.white, borderRadius: BorderRadius.circular(12),
-          boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 2))],
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: const [
+            BoxShadow(
+                color: Colors.black12, blurRadius: 8, offset: Offset(0, 2))
+          ],
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Container(
-            width: 44, height: 44,
-            decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(10)),
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+                color: bg, borderRadius: BorderRadius.circular(10)),
             child: Icon(icon, color: iconColor, size: 26),
           ),
           const SizedBox(height: 12),
           Text(title,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700,
-                  color: _bodyText, height: 1.3)),
+              style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: _bodyText,
+                  height: 1.3)),
           const SizedBox(height: 6),
           Text(sub, style: const TextStyle(fontSize: 12, color: _subtitleText)),
         ]),
@@ -443,31 +526,50 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
 
   // ── Virtual labs banner ───────────────────────────────────────────────────
   Widget _virtualLabsBanner() => Container(
-        height: 160, width: double.infinity,
+        height: 160,
+        width: double.infinity,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           gradient: const LinearGradient(
-            begin: Alignment.topRight, end: Alignment.bottomLeft,
+            begin: Alignment.topRight,
+            end: Alignment.bottomLeft,
             colors: [Color(0xFF64B5F6), Color(0xFF2196F3), Color(0xFF1976D2)],
           ),
-          boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 2))],
+          boxShadow: const [
+            BoxShadow(
+                color: Colors.black12, blurRadius: 8, offset: Offset(0, 2))
+          ],
         ),
         child: Stack(children: [
-          Positioned(top: -20, right: -20,
-              child: Container(width: 120, height: 120,
-                  decoration: BoxDecoration(shape: BoxShape.circle,
+          Positioned(
+              top: -20,
+              right: -20,
+              child: Container(
+                  width: 120,
+                  height: 120,
+                  decoration: BoxDecoration(
+                      shape: BoxShape.circle,
                       color: Colors.white.withValues(alpha: 0.07)))),
-          Positioned(top: 20, right: 50,
-              child: Container(width: 70, height: 70,
-                  decoration: BoxDecoration(shape: BoxShape.circle,
+          Positioned(
+              top: 20,
+              right: 50,
+              child: Container(
+                  width: 70,
+                  height: 70,
+                  decoration: BoxDecoration(
+                      shape: BoxShape.circle,
                       color: Colors.white.withValues(alpha: 0.07)))),
           Padding(
             padding: const EdgeInsets.all(20),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start,
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: const [
                   Text('Explore Virtual Labs',
-                      style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: Colors.white)),
+                      style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white)),
                   SizedBox(height: 4),
                   Text('Interactive simulations for your grade',
                       style: TextStyle(fontSize: 13, color: Colors.white70)),
@@ -478,7 +580,8 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
 
   // ── Games Banner ──────────────────────────────────────────────────────────
   Widget _gamesBanner() => GestureDetector(
-        onTap: () => Navigator.pushNamed(context, '/games', arguments: {'grade': _grade}),
+        onTap: () => Navigator.pushNamed(context, '/games',
+            arguments: {'grade': _grade}),
         child: Container(
           height: 160,
           width: double.infinity,
@@ -489,7 +592,10 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
               end: Alignment.bottomRight,
               colors: [Color(0xFFFF6B6B), Color(0xFFEE5A6F), Color(0xFFC44569)],
             ),
-            boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 2))],
+            boxShadow: const [
+              BoxShadow(
+                  color: Colors.black12, blurRadius: 8, offset: Offset(0, 2))
+            ],
           ),
           child: Stack(children: [
             Positioned(
@@ -570,7 +676,8 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
   Widget _searchBarActive() => Container(
         height: 52,
         decoration: BoxDecoration(
-          color: const Color(0xFF2C2C2C), borderRadius: BorderRadius.circular(30),
+          color: const Color(0xFF2C2C2C),
+          borderRadius: BorderRadius.circular(30),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Row(children: [
@@ -642,55 +749,95 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
 
   String _groupKey(String type) {
     switch (type) {
-      case 'Lesson': return 'LESSONS';
-      case 'Lab':    return 'LABS';
-      case 'Quiz':   return 'QUIZZES';
-      case 'Game':   return 'GAMES';
-      default:       return 'OTHERS';
+      case 'Lesson':
+        return 'LESSONS';
+      case 'Lab':
+        return 'LABS';
+      case 'Quiz':
+        return 'QUIZZES';
+      case 'Game':
+        return 'GAMES';
+      default:
+        return 'OTHERS';
     }
   }
 
   Widget _sectionHeader(String label) => Padding(
         padding: const EdgeInsets.only(top: 16, bottom: 6),
         child: Text(label,
-            style: const TextStyle(color: Colors.white54, fontSize: 11,
-                fontWeight: FontWeight.w700, letterSpacing: 1.4)),
+            style: const TextStyle(
+                color: Colors.white54,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.4)),
       );
 
   Widget _resultTile(SearchItem item) {
     // badge colours
-    Color bg; Color fg;
+    Color bg;
+    Color fg;
     switch (item.type) {
-      case 'Lesson': bg = const Color(0xFF1E3A5F); fg = const Color(0xFF64B5F6); break;
-      case 'Lab':    bg = const Color(0xFF2E1A4A); fg = const Color(0xFFCE93D8); break;
-      case 'Quiz':   bg = const Color(0xFF3B2A1A); fg = const Color(0xFFFFB74D); break;
-      case 'Game':   bg = const Color(0xFF1A3B1A); fg = const Color(0xFF81C784); break;
-      default:       bg = const Color(0xFF2A2A3A); fg = const Color(0xFF90CAF9); break;
+      case 'Lesson':
+        bg = const Color(0xFF1E3A5F);
+        fg = const Color(0xFF64B5F6);
+        break;
+      case 'Lab':
+        bg = const Color(0xFF2E1A4A);
+        fg = const Color(0xFFCE93D8);
+        break;
+      case 'Quiz':
+        bg = const Color(0xFF3B2A1A);
+        fg = const Color(0xFFFFB74D);
+        break;
+      case 'Game':
+        bg = const Color(0xFF1A3B1A);
+        fg = const Color(0xFF81C784);
+        break;
+      default:
+        bg = const Color(0xFF2A2A3A);
+        fg = const Color(0xFF90CAF9);
+        break;
     }
     // icon per type
     IconData icon;
     switch (item.type) {
-      case 'Lesson': icon = Icons.menu_book; break;
-      case 'Lab':    icon = Icons.science; break;
-      case 'Quiz':   icon = Icons.quiz; break;
-      case 'Game':   icon = Icons.sports_esports; break;
-      default:       icon = Icons.folder_open; break;
+      case 'Lesson':
+        icon = Icons.menu_book;
+        break;
+      case 'Lab':
+        icon = Icons.science;
+        break;
+      case 'Quiz':
+        icon = Icons.quiz;
+        break;
+      case 'Game':
+        icon = Icons.sports_esports;
+        break;
+      default:
+        icon = Icons.folder_open;
+        break;
     }
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFF2A2A2A), borderRadius: BorderRadius.circular(12),
+        color: const Color(0xFF2A2A2A),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         leading: Container(
-          width: 44, height: 44,
-          decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(10)),
+          width: 44,
+          height: 44,
+          decoration:
+              BoxDecoration(color: bg, borderRadius: BorderRadius.circular(10)),
           child: Icon(icon, color: fg, size: 22),
         ),
         title: Text(item.title,
-            style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+            style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w600)),
         subtitle: Padding(
           padding: const EdgeInsets.only(top: 2),
           child: Text('${item.path} · ${item.duration}',
@@ -698,8 +845,11 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
         ),
         trailing: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(20)),
-          child: Text(item.type, style: TextStyle(color: fg, fontSize: 11, fontWeight: FontWeight.w600)),
+          decoration:
+              BoxDecoration(color: bg, borderRadius: BorderRadius.circular(20)),
+          child: Text(item.type,
+              style: TextStyle(
+                  color: fg, fontSize: 11, fontWeight: FontWeight.w600)),
         ),
       ),
     );
@@ -709,7 +859,10 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
   Widget _bottomNav() => Container(
         decoration: const BoxDecoration(
           color: Colors.white,
-          boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, -2))],
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black12, blurRadius: 8, offset: Offset(0, -2))
+          ],
         ),
         child: BottomNavigationBar(
           type: BottomNavigationBarType.fixed,
@@ -734,13 +887,27 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
           unselectedItemColor: _navInactive,
           backgroundColor: Colors.transparent,
           elevation: 0,
-          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
-          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
+          selectedLabelStyle:
+              const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+          unselectedLabelStyle:
+              const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
           items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home), label: 'Home'),
-            BottomNavigationBarItem(icon: Icon(Icons.menu_book_outlined), activeIcon: Icon(Icons.menu_book), label: 'Lessons'),
-            BottomNavigationBarItem(icon: Icon(Icons.science_outlined), activeIcon: Icon(Icons.science), label: 'Labs'),
-            BottomNavigationBarItem(icon: Icon(Icons.person_outline), activeIcon: Icon(Icons.person), label: 'Profile'),
+            BottomNavigationBarItem(
+                icon: Icon(Icons.home_outlined),
+                activeIcon: Icon(Icons.home),
+                label: 'Home'),
+            BottomNavigationBarItem(
+                icon: Icon(Icons.menu_book_outlined),
+                activeIcon: Icon(Icons.menu_book),
+                label: 'Lessons'),
+            BottomNavigationBarItem(
+                icon: Icon(Icons.science_outlined),
+                activeIcon: Icon(Icons.science),
+                label: 'Labs'),
+            BottomNavigationBarItem(
+                icon: Icon(Icons.person_outline),
+                activeIcon: Icon(Icons.person),
+                label: 'Profile'),
           ],
         ),
       );
@@ -750,8 +917,12 @@ class _PhysicsLabHomePageState extends State<PhysicsLabHomePage> {
         width: double.infinity,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white, borderRadius: BorderRadius.circular(12),
-          boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 2))],
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: const [
+            BoxShadow(
+                color: Colors.black12, blurRadius: 8, offset: Offset(0, 2))
+          ],
         ),
         child: child,
       );

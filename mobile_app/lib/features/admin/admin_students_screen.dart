@@ -1,5 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
+import 'admin_backend_url.dart';
 
 class AdminStudentsScreen extends StatefulWidget {
   const AdminStudentsScreen({super.key});
@@ -9,8 +14,81 @@ class AdminStudentsScreen extends StatefulWidget {
 }
 
 class _AdminStudentsScreenState extends State<AdminStudentsScreen> {
+  static final String _backendUrl = adminBackendUrl;
+
   String _searchQuery = '';
   String _selectedGrade = 'All';
+
+  Future<String?> _getToken() async =>
+      await FirebaseAuth.instance.currentUser?.getIdToken();
+
+  Future<void> _sendTestNotification(String uid, String name) async {
+    try {
+      final token = await _getToken();
+      final response = await adminHttpPost(
+        Uri.parse('$_backendUrl/admin/notifications/test'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'uid': uid,
+          'title': 'Hey $name!',
+          'body': 'This is a test notification from your admin.',
+        }),
+      );
+
+      if (!mounted) return;
+      if (response.statusCode == 200) {
+        final result = jsonDecode(response.body) as Map<String, dynamic>;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('Sent to ${result['sent']} device(s) for $name')),
+        );
+      } else if (response.statusCode == 404) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$name has no registered device.')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to send (${response.statusCode}).')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Error: $e')));
+    }
+  }
+
+  Future<void> _regeneratePlan(String uid, String name) async {
+    try {
+      final token = await _getToken();
+      final response = await adminHttpPost(
+        Uri.parse('$_backendUrl/admin/study-plans/$uid/generate'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (!mounted) return;
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Regenerated this week's plan for $name")),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('Failed to regenerate (${response.statusCode}).')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Error: $e')));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,17 +102,20 @@ class _AdminStudentsScreenState extends State<AdminStudentsScreen> {
                 decoration: InputDecoration(
                   hintText: 'Search by name or email...',
                   prefixIcon: const Icon(Icons.search),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10)),
                   filled: true,
                   fillColor: Colors.white,
                   contentPadding: const EdgeInsets.symmetric(vertical: 10),
                 ),
-                onChanged: (v) => setState(() => _searchQuery = v.toLowerCase()),
+                onChanged: (v) =>
+                    setState(() => _searchQuery = v.toLowerCase()),
               ),
               const SizedBox(height: 10),
               Row(
                 children: [
-                  const Text('Grade: ', style: TextStyle(fontWeight: FontWeight.w600)),
+                  const Text('Grade: ',
+                      style: TextStyle(fontWeight: FontWeight.w600)),
                   const SizedBox(width: 8),
                   DropdownButton<String>(
                     value: _selectedGrade,
@@ -60,12 +141,14 @@ class _AdminStudentsScreenState extends State<AdminStudentsScreen> {
               }
               final docs = snapshot.data!.docs.where((doc) {
                 final d = doc.data() as Map<String, dynamic>;
-                final name  = (d['fullName'] ?? '').toString().toLowerCase();
+                final name = (d['fullName'] ?? '').toString().toLowerCase();
                 final email = (d['email'] ?? '').toString().toLowerCase();
                 final grade = (d['grade'] ?? '').toString();
                 final matchSearch = _searchQuery.isEmpty ||
-                    name.contains(_searchQuery) || email.contains(_searchQuery);
-                final matchGrade  = _selectedGrade == 'All' || grade == _selectedGrade;
+                    name.contains(_searchQuery) ||
+                    email.contains(_searchQuery);
+                final matchGrade =
+                    _selectedGrade == 'All' || grade == _selectedGrade;
                 return matchSearch && matchGrade;
               }).toList();
 
@@ -85,36 +168,55 @@ class _AdminStudentsScreenState extends State<AdminStudentsScreen> {
                       .toUpperCase();
                   return Card(
                     margin: const EdgeInsets.only(bottom: 10),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
                     child: ListTile(
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       minVerticalPadding: 14,
                       leading: CircleAvatar(
-                        backgroundColor: const Color(0xFF1A3CBA).withOpacity(0.1),
+                        backgroundColor:
+                            const Color(0xFF1A3CBA).withOpacity(0.1),
                         child: Text(initials,
-                            style: const TextStyle(color: Color(0xFF1A3CBA), fontWeight: FontWeight.bold)),
+                            style: const TextStyle(
+                                color: Color(0xFF1A3CBA),
+                                fontWeight: FontWeight.bold)),
                       ),
                       title: Text(d['fullName'] ?? '-',
                           style: const TextStyle(fontWeight: FontWeight.bold)),
-                      subtitle: Text('${d['email'] ?? '-'}\n${d['grade'] ?? '-'}'),
+                      subtitle:
+                          Text('${d['email'] ?? '-'}\n${d['grade'] ?? '-'}'),
                       isThreeLine: true,
                       trailing: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: Colors.green.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(d['status'] ?? 'active',
-                                style: const TextStyle(color: Colors.green, fontSize: 11)),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: Colors.green.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(d['status'] ?? 'active',
+                                    style: const TextStyle(
+                                        color: Colors.green, fontSize: 11)),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.notifications_outlined,
+                                    size: 18, color: Color(0xFF1A3CBA)),
+                                tooltip: 'Send test notification',
+                                onPressed: () => _sendTestNotification(
+                                    uid, d['fullName'] ?? 'this student'),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 4),
                           GestureDetector(
                             onTap: () => _showStudentDetail(uid, d),
                             child: const Text('View',
-                                style: TextStyle(color: Color(0xFF1A3CBA), fontSize: 12)),
+                                style: TextStyle(
+                                    color: Color(0xFF1A3CBA), fontSize: 12)),
                           ),
                         ],
                       ),
@@ -146,9 +248,12 @@ class _AdminStudentsScreenState extends State<AdminStudentsScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Center(
-                child: Container(width: 40, height: 4,
+                child: Container(
+                    width: 40,
+                    height: 4,
                     margin: const EdgeInsets.only(bottom: 16),
-                    decoration: BoxDecoration(color: Colors.grey.shade300,
+                    decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
                         borderRadius: BorderRadius.circular(2))),
               ),
               Row(children: [
@@ -166,28 +271,37 @@ class _AdminStudentsScreenState extends State<AdminStudentsScreen> {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(data['fullName'] ?? '-',
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                    Text(data['email'] ?? '-',
-                        style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
-                    Text('${data['grade'] ?? '-'}  ·  ${data['status'] ?? 'active'}',
-                        style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
-                  ]),
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(data['fullName'] ?? '-',
+                            style: const TextStyle(
+                                fontSize: 16, fontWeight: FontWeight.bold)),
+                        Text(data['email'] ?? '-',
+                            style: TextStyle(
+                                color: Colors.grey.shade600, fontSize: 13)),
+                        Text(
+                            '${data['grade'] ?? '-'}  ·  ${data['status'] ?? 'active'}',
+                            style: TextStyle(
+                                color: Colors.grey.shade500, fontSize: 12)),
+                      ]),
                 ),
               ]),
               const Divider(height: 28),
-
-              const Text('Quiz Attempts', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              const Text('Quiz Attempts',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               const SizedBox(height: 8),
               StreamBuilder<QuerySnapshot>(
                 stream: FirebaseFirestore.instance
-                    .collection('users').doc(uid)
+                    .collection('users')
+                    .doc(uid)
                     .collection('quizAttempts')
-                    .limit(5).snapshots(),
+                    .limit(5)
+                    .snapshots(),
                 builder: (_, snap) {
                   if (!snap.hasData) return const CircularProgressIndicator();
-                  if (snap.data!.docs.isEmpty) return const Text('No quiz attempts yet.');
+                  if (snap.data!.docs.isEmpty)
+                    return const Text('No quiz attempts yet.');
                   return Column(
                     children: snap.data!.docs.map((d) {
                       final a = d.data() as Map<String, dynamic>;
@@ -196,9 +310,14 @@ class _AdminStudentsScreenState extends State<AdminStudentsScreen> {
                         margin: const EdgeInsets.only(bottom: 6),
                         child: ListTile(
                           leading: CircleAvatar(
-                            backgroundColor: score >= 70 ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+                            backgroundColor: score >= 70
+                                ? Colors.green.withOpacity(0.1)
+                                : Colors.red.withOpacity(0.1),
                             child: Text('$score%',
-                                style: TextStyle(color: score >= 70 ? Colors.green : Colors.red, fontSize: 12)),
+                                style: TextStyle(
+                                    color:
+                                        score >= 70 ? Colors.green : Colors.red,
+                                    fontSize: 12)),
                           ),
                           title: Text('Quiz: ${a['quizId'] ?? '-'}'),
                           subtitle: Text(score >= 70 ? 'Pass' : 'Fail'),
@@ -208,28 +327,107 @@ class _AdminStudentsScreenState extends State<AdminStudentsScreen> {
                   );
                 },
               ),
-
               const SizedBox(height: 16),
-              const Text('Weak Topics', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              const Text('Weak Topics',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               const SizedBox(height: 8),
               StreamBuilder<QuerySnapshot>(
                 stream: FirebaseFirestore.instance
-                    .collection('users').doc(uid)
+                    .collection('users')
+                    .doc(uid)
                     .collection('weakTopics')
-                    .limit(10).snapshots(),
+                    .limit(10)
+                    .snapshots(),
                 builder: (_, snap) {
                   if (!snap.hasData) return const CircularProgressIndicator();
-                  if (snap.data!.docs.isEmpty) return const Text('No weak topics identified yet.');
+                  if (snap.data!.docs.isEmpty)
+                    return const Text('No weak topics identified yet.');
                   return Wrap(
-                    spacing: 8, runSpacing: 8,
+                    spacing: 8,
+                    runSpacing: 8,
                     children: snap.data!.docs.map((d) {
                       final t = d.data() as Map<String, dynamic>;
                       return Chip(
                         label: Text(t['lessonTag'] ?? '-'),
                         backgroundColor: Colors.red.withOpacity(0.1),
-                        labelStyle: const TextStyle(color: Colors.red, fontSize: 12),
+                        labelStyle:
+                            const TextStyle(color: Colors.red, fontSize: 12),
                       );
                     }).toList(),
+                  );
+                },
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  const Expanded(
+                    child: Text("This Week's Study Plan",
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 16)),
+                  ),
+                  TextButton.icon(
+                    onPressed: () => _regeneratePlan(
+                        uid, data['fullName'] ?? 'this student'),
+                    icon: const Icon(Icons.refresh, size: 16),
+                    label: const Text('Regenerate'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(uid)
+                    .collection('studyPlans')
+                    .orderBy('weekId', descending: true)
+                    .limit(1)
+                    .snapshots(),
+                builder: (_, snap) {
+                  if (!snap.hasData) return const CircularProgressIndicator();
+                  if (snap.data!.docs.isEmpty) {
+                    return const Text('No plan generated yet.');
+                  }
+                  final plan =
+                      snap.data!.docs.first.data() as Map<String, dynamic>;
+                  final status = (plan['status'] ?? 'queued').toString();
+                  final focusAreas = (plan['focusAreas'] as List? ?? [])
+                      .map((e) => Map<String, dynamic>.from(e as Map))
+                      .toList();
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${plan['weekId'] ?? '-'} · $status'
+                        '${plan['fallbackMode'] == true ? ' · fallback' : ''}',
+                        style: TextStyle(
+                            color: Colors.grey.shade600, fontSize: 12),
+                      ),
+                      const SizedBox(height: 8),
+                      if (focusAreas.isEmpty) const Text('No focus areas.'),
+                      ...focusAreas.map((fa) => Card(
+                            margin: const EdgeInsets.only(bottom: 6),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 8),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                      (fa['topicName'] ?? fa['lessonTag'])
+                                              ?.toString() ??
+                                          '-',
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13)),
+                                  Text(fa['reason']?.toString() ?? '',
+                                      style: TextStyle(
+                                          color: Colors.grey.shade600,
+                                          fontSize: 12)),
+                                ],
+                              ),
+                            ),
+                          )),
+                    ],
                   );
                 },
               ),

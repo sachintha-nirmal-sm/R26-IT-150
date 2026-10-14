@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'admin_lessons_screen.dart';
 import 'admin_students_screen.dart';
 import 'admin_analytics_screen.dart';
+import 'admin_notifications_screen.dart';
 import 'screens/admin_materials_screen.dart';
 import 'screens/admin_weak_topics_screen.dart';
 
@@ -58,6 +59,24 @@ class _AdminDashboardState extends State<AdminDashboard> {
           ],
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.notifications_outlined),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => Scaffold(
+                    appBar: AppBar(
+                      title: const Text('Notifications'),
+                      backgroundColor: Colors.white,
+                      foregroundColor: Colors.black,
+                    ),
+                    body: const AdminNotificationsScreen(),
+                  ),
+                ),
+              );
+            },
+            tooltip: 'Notifications',
+          ),
           IconButton(
             icon: const Icon(Icons.insights),
             tooltip: 'Weak Topics',

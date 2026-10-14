@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../experiments/data/practical.dart';
 import '../experiments/data/practicals_repository.dart';
-import 'lesson_progress.dart';
+import '../learning_path/weekly_plan_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -13,31 +13,32 @@ class ProfileScreen extends StatefulWidget {
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserver {
+class _ProfileScreenState extends State<ProfileScreen>
+    with WidgetsBindingObserver {
   int _selectedIndex = 3;
-  
+
   // Lab / Practical Stats
   StudentPracticalProgress? _progress;
 
   // User profile
-  String _name  = '';
+  String _name = '';
   String _email = '';
   String _grade = '';
 
   // Quiz Stats
-  int _completedCount  = 0;
+  int _completedCount = 0;
   int _inProgressCount = 0;
-  int _totalAttempts   = 0;
+  int _totalAttempts = 0;
 
   // Sections
   List<Map<String, dynamic>> _recentAttempts = [];
-  List<Map<String, dynamic>> _weakAreas      = [];
+  List<Map<String, dynamic>> _weakAreas = [];
 
   bool _loading = true;
 
   final ScrollController _recentScrollCtrl = ScrollController();
-  final ScrollController _weakScrollCtrl   = ScrollController();
-  final ScrollController _labScrollCtrl    = ScrollController();
+  final ScrollController _weakScrollCtrl = ScrollController();
+  final ScrollController _labScrollCtrl = ScrollController();
 
   @override
   void initState() {
@@ -88,9 +89,8 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
       final u = userDoc.data() ?? {};
 
       final gradeRaw = u['currentGrade'] ?? u['grade'];
-      final gradeStr = gradeRaw is int
-          ? 'Grade $gradeRaw'
-          : (gradeRaw?.toString() ?? '');
+      final gradeStr =
+          gradeRaw is int ? 'Grade $gradeRaw' : (gradeRaw?.toString() ?? '');
 
       QuerySnapshot<Map<String, dynamic>> snap;
       try {
@@ -115,12 +115,12 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
       final attempts =
           snap.docs.map((d) => Map<String, dynamic>.from(d.data())).toList();
 
-      final Map<String, int>    bestScores = {};
+      final Map<String, int> bestScores = {};
       final Map<String, String> quizTitles = {};
 
       for (final a in attempts) {
-        final qid   = a['quizId']      as String? ?? '';
-        final score = a['score']       as int?    ?? 0;
+        final qid = a['quizId'] as String? ?? '';
+        final score = a['score'] as int? ?? 0;
         final title = (a['subLessonTitle'] as String?)?.isNotEmpty == true
             ? a['subLessonTitle'] as String
             : (a['lessonTitle'] as String? ?? qid);
@@ -131,10 +131,10 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
         }
       }
 
-      final completed  = bestScores.values.where((s) => s >= 70).length;
+      final completed = bestScores.values.where((s) => s >= 70).length;
       final inProgress = bestScores.values.where((s) => s < 70).length;
 
-      final seen  = <String>{};
+      final seen = <String>{};
       final recent = <Map<String, dynamic>>[];
       for (final a in attempts) {
         final qid = a['quizId'] as String? ?? '';
@@ -154,21 +154,24 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
 
       final weak = bestScores.entries
           .where((e) => e.value < 70)
-          .map((e) => {'title': quizTitles[e.key] ?? e.key, 'bestScore': e.value})
+          .map((e) =>
+              {'title': quizTitles[e.key] ?? e.key, 'bestScore': e.value})
           .toList()
-        ..sort((a, b) => (a['bestScore'] as int).compareTo(b['bestScore'] as int));
+        ..sort(
+            (a, b) => (a['bestScore'] as int).compareTo(b['bestScore'] as int));
 
       if (mounted) {
         setState(() {
-          _name            = u['fullName'] as String? ??
-                             u['displayName'] as String? ?? 'Student';
-          _email           = u['email'] as String? ?? '';
-          _grade           = gradeStr;
-          _completedCount  = completed;
+          _name = u['fullName'] as String? ??
+              u['displayName'] as String? ??
+              'Student';
+          _email = u['email'] as String? ?? '';
+          _grade = gradeStr;
+          _completedCount = completed;
           _inProgressCount = inProgress;
-          _totalAttempts   = attempts.length;
-          _recentAttempts  = recent;
-          _weakAreas       = weak.take(5).toList();
+          _totalAttempts = attempts.length;
+          _recentAttempts = recent;
+          _weakAreas = weak.take(5).toList();
         });
       }
     } catch (_) {
@@ -207,7 +210,8 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
             onPressed: () async {
               await FirebaseAuth.instance.signOut();
               if (mounted) {
-                Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+                Navigator.pushNamedAndRemoveUntil(
+                    context, '/login', (route) => false);
               }
             },
           ),
@@ -227,28 +231,54 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildUserCard(),
+                    const SizedBox(height: 16),
+                    _buildWeeklyPlanCta(),
                     const SizedBox(height: 20),
-                    
+
                     // Quiz Progress
-                    _buildSectionTitle('Quiz Performance', icon: Icons.quiz_outlined, iconColor: const Color(0xFF2196F3)),
+                    _buildSectionTitle('Quiz Performance',
+                        icon: Icons.quiz_outlined,
+                        iconColor: const Color(0xFF2196F3)),
                     const SizedBox(height: 12),
                     _buildStatsRow(
-                      label1: 'Completed', val1: '$_completedCount', icon1: Icons.check_circle, color1: Colors.green,
-                      label2: 'Needs Retry', val2: '$_inProgressCount', icon2: Icons.refresh_rounded, color2: Colors.orange,
-                      label3: 'Total Quizzes', val3: '$_totalAttempts', icon3: Icons.quiz_outlined, color3: Colors.blue,
+                      label1: 'Completed',
+                      val1: '$_completedCount',
+                      icon1: Icons.check_circle,
+                      color1: Colors.green,
+                      label2: 'Needs Retry',
+                      val2: '$_inProgressCount',
+                      icon2: Icons.refresh_rounded,
+                      color2: Colors.orange,
+                      label3: 'Total Quizzes',
+                      val3: '$_totalAttempts',
+                      icon3: Icons.quiz_outlined,
+                      color3: Colors.blue,
                     ),
                     const SizedBox(height: 30),
 
                     // Practical / Lab Progress
-                    _buildSectionTitle('Lab Performance', icon: Icons.science_outlined, iconColor: const Color(0xFF2196F3)),
+                    _buildSectionTitle('Lab Performance',
+                        icon: Icons.science_outlined,
+                        iconColor: const Color(0xFF2196F3)),
                     const SizedBox(height: 12),
                     _buildStatsRow(
-                      label1: 'Completed', val1: '${_progress?.completedPracticals ?? 0}', icon1: Icons.check_circle, color1: Colors.blue,
-                      label2: 'Total Labs', val2: '${_progress?.totalPracticals ?? 0}', icon2: Icons.science, color2: Colors.blue,
-                      label3: 'Average', val3: _progress == null ? '-' : '${_progress!.averagePercentage.round()}%', icon3: Icons.insights, color3: Colors.blue,
+                      label1: 'Completed',
+                      val1: '${_progress?.completedPracticals ?? 0}',
+                      icon1: Icons.check_circle,
+                      color1: Colors.blue,
+                      label2: 'Total Labs',
+                      val2: '${_progress?.totalPracticals ?? 0}',
+                      icon2: Icons.science,
+                      color2: Colors.blue,
+                      label3: 'Average',
+                      val3: _progress == null
+                          ? '-'
+                          : '${_progress!.averagePercentage.round()}%',
+                      icon3: Icons.insights,
+                      color3: Colors.blue,
                     ),
                     const SizedBox(height: 30),
-                    
+
                     // Recent Quiz Progress
                     _buildSectionTitle('Recent Quizzes'),
                     const SizedBox(height: 12),
@@ -273,6 +303,54 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
               ),
             ),
       bottomNavigationBar: _buildBottomNav(),
+    );
+  }
+
+  // ── Weekly study plan CTA ───────────────────────────────────────────────────
+
+  Widget _buildWeeklyPlanCta() {
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const WeeklyPlanScreen()),
+      ),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF2196F3),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.map_outlined, color: Colors.white),
+            ),
+            const SizedBox(width: 14),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text("This Week's Study Plan",
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15)),
+                  Text('Personalized picks based on your weak areas',
+                      style: TextStyle(color: Colors.white70, fontSize: 12)),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: Colors.white),
+          ],
+        ),
+      ),
     );
   }
 
@@ -317,21 +395,20 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
                       fontSize: 20, fontWeight: FontWeight.bold)),
               if (_email.isNotEmpty)
                 Text(_email,
-                    style:
-                        const TextStyle(color: Colors.grey, fontSize: 13)),
+                    style: const TextStyle(color: Colors.grey, fontSize: 13)),
               const SizedBox(height: 8),
               if (_grade.isNotEmpty || _progress != null)
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: const Color(0xFFE8F1FF),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                      _grade.isNotEmpty 
-                        ? _grade 
-                        : 'Grade ${_progress?.grade ?? ""}',
+                      _grade.isNotEmpty
+                          ? _grade
+                          : 'Grade ${_progress?.grade ?? ""}',
                       style: const TextStyle(
                           color: Color(0xFF2196F3),
                           fontSize: 12,
@@ -347,24 +424,29 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
   // ── Stats row ───────────────────────────────────────────────────────────────
 
   Widget _buildStatsRow({
-    required String label1, required String val1, required IconData icon1, required Color color1,
-    required String label2, required String val2, required IconData icon2, required Color color2,
-    required String label3, required String val3, required IconData icon3, required Color color3,
+    required String label1,
+    required String val1,
+    required IconData icon1,
+    required Color color1,
+    required String label2,
+    required String val2,
+    required IconData icon2,
+    required Color color2,
+    required String label3,
+    required String val3,
+    required IconData icon3,
+    required Color color3,
   }) {
     return Row(children: [
-      Expanded(
-          child: _statCard(label1, val1, icon1, color1)),
+      Expanded(child: _statCard(label1, val1, icon1, color1)),
       const SizedBox(width: 12),
-      Expanded(
-          child: _statCard(label2, val2, icon2, color2)),
+      Expanded(child: _statCard(label2, val2, icon2, color2)),
       const SizedBox(width: 12),
-      Expanded(
-          child: _statCard(label3, val3, icon3, color3)),
+      Expanded(child: _statCard(label3, val3, icon3, color3)),
     ]);
   }
 
-  Widget _statCard(
-      String label, String value, IconData icon, Color color) {
+  Widget _statCard(String label, String value, IconData icon, Color color) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -382,8 +464,7 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
         Icon(icon, color: color, size: 24),
         const SizedBox(height: 8),
         Text(value,
-            style: const TextStyle(
-                fontSize: 20, fontWeight: FontWeight.bold)),
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
         const SizedBox(height: 4),
         Text(label,
             textAlign: TextAlign.center,
@@ -405,8 +486,7 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
         const SizedBox(width: 8),
       ],
       Text(title,
-          style: const TextStyle(
-              fontSize: 18, fontWeight: FontWeight.bold)),
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
     ]);
   }
 
@@ -419,14 +499,14 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
     }
 
     final items = _recentAttempts.map((a) {
-      final score  = a['score'] as int;
-      final title  = a['title'] as String;
+      final score = a['score'] as int;
+      final title = a['title'] as String;
       final passed = score >= 70;
       return _listItem(
-        icon:     passed ? Icons.check_circle : Icons.refresh_rounded,
-        title:    title,
+        icon: passed ? Icons.check_circle : Icons.refresh_rounded,
+        title: title,
         subtitle: passed ? 'Passed · $score%' : 'Score: $score% · Needs retry',
-        color:    passed ? Colors.green : Colors.orange,
+        color: passed ? Colors.green : Colors.orange,
       );
     }).toList();
 
@@ -437,7 +517,8 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
 
   Widget _buildRecentLabs() {
     if (_progress == null) {
-      return _emptyCard("Connect to the backend to load saved practical scores.");
+      return _emptyCard(
+          "Connect to the backend to load saved practical scores.");
     }
     if (_progress!.recentResults.isEmpty) {
       return _emptyCard("Complete a practical with Start to see it here.");
@@ -459,18 +540,19 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
 
   Widget _buildWeakAreas() {
     if (_weakAreas.isEmpty) {
-      return _emptyCard("Nothing here — you're passing everything! Keep it up!");
+      return _emptyCard(
+          "Nothing here — you're passing everything! Keep it up!");
     }
 
     final items = _weakAreas.map((a) {
       final score = a['bestScore'] as int;
       final title = a['title'] as String;
-      final gap   = 70 - score;
+      final gap = 70 - score;
       return _listItem(
-        icon:     Icons.priority_high,
-        title:    title,
+        icon: Icons.priority_high,
+        title: title,
         subtitle: 'Best score: $score% · Need $gap% more to pass',
-        color:    Colors.red,
+        color: Colors.red,
       );
     }).toList();
 
@@ -485,7 +567,8 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
         controller: ctrl,
         child: ListView(
           controller: ctrl,
-          padding: const EdgeInsets.only(right: 8), // breathing room for scrollbar
+          padding:
+              const EdgeInsets.only(right: 8), // breathing room for scrollbar
           children: items,
         ),
       ),
@@ -496,9 +579,9 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
 
   Widget _listItem({
     required IconData icon,
-    required String   title,
-    required String   subtitle,
-    required Color    color,
+    required String title,
+    required String subtitle,
+    required Color color,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -515,8 +598,7 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
           child: Icon(icon, color: color, size: 20),
         ),
         title: Text(title,
-            style: const TextStyle(
-                fontWeight: FontWeight.bold, fontSize: 15)),
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
         subtitle: Text(subtitle,
             style: const TextStyle(color: Colors.grey, fontSize: 12)),
       ),
@@ -567,14 +649,11 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
         }
       },
       items: const [
-        BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined), label: 'Home'),
-        BottomNavigationBarItem(
-            icon: Icon(Icons.menu_book), label: 'Lessons'),
+        BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Home'),
+        BottomNavigationBarItem(icon: Icon(Icons.menu_book), label: 'Lessons'),
         BottomNavigationBarItem(
             icon: Icon(Icons.biotech_outlined), label: 'Labs'),
-        BottomNavigationBarItem(
-            icon: Icon(Icons.person), label: 'Profile'),
+        BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
       ],
     );
   }

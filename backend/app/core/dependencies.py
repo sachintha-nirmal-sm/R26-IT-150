@@ -21,7 +21,10 @@ import os
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import Literal
+
+from google.cloud import firestore
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -98,11 +101,16 @@ async def require_auth(
     
     id_token = credentials.credentials.strip()
 
-    # 2. Verify token via Firebase Admin SDK
-    # check_revoked=False: the revocation check adds a network round-trip
-    # to Google's backend on every single request (observed 20s+ latency
-    # on this machine) for a guarantee this app doesn't need — expired
-    # tokens are already rejected below, which covers the common case.
+    # 2. Verify token via Firebase Admin SDK.
+    # check_revoked=False (the default): revocation checking makes an extra
+    # live network call to Google on every single request, on top of the
+    # signature/expiry check. On this machine's flaky network that extra
+    # round-trip has repeatedly caused slow/hanging/503 auth failures across
+    # unrelated features (notifications, study plan, FCM registration) —
+    # removing it leaves verification purely local/cryptographic after the
+    # public keys are cached. Trade-off: an explicitly revoked token stays
+    # valid until its own ~1hr expiry instead of being rejected immediately,
+    # which is the standard, widely-accepted default for this reason.
     try:
         decoded_token = verify_id_token(id_token, check_revoked=False)
     except ExpiredIdTokenError:
@@ -171,7 +179,23 @@ async def require_auth(
                 merge=True,
             )
 
+    _track_activity_hour(uid)
+
     return VerifiedUser(uid=uid, role=role, email=email)
+
+
+def _track_activity_hour(uid: str) -> None:
+    """Increments users/{uid}.activityHourCounts[currentHour] on every
+    authenticated request, so a per-student 'most active hour' can be
+    derived (argmax) for notification send timing. Best-effort — never
+    blocks or fails the request."""
+    try:
+        hour = str(datetime.now(timezone.utc).hour)
+        firestore_db.collection("users").document(uid).set(
+            {"activityHourCounts": {hour: firestore.Increment(1)}}, merge=True
+        )
+    except Exception:
+        pass
 
 
 def _lookup_token_with_client_api(id_token: str) -> dict | None:

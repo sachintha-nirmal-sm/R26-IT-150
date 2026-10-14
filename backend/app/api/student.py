@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 from app.core.dependencies import VerifiedUser, require_student
 from app.core.firebase import db
 from app.core.utils import iso
-from app.services import analytics_service, quiz_service
+from app.services import analytics_service, lesson_engagement_service, quiz_service, study_plan_service
 from app.services.learning_path_service import generate_learning_path
 
 router = APIRouter(prefix="/student", tags=["Student"])
@@ -22,6 +22,10 @@ class SubmitRequest(BaseModel):
     attemptId: str
     answers: list[AnswerItem]
     timeTakenSeconds: int = Field(0, ge=0)
+
+
+class LessonEngagementRequest(BaseModel):
+    event: str = Field(..., pattern="^(opened|completed)$")
 
 
 def _run_post_submit(uid: str, result: dict) -> dict:
@@ -193,3 +197,17 @@ async def list_feedback(user: VerifiedUser = Depends(require_student)) -> list[d
 @router.get("/learning-path")
 async def learning_path(user: VerifiedUser = Depends(require_student)) -> dict:
     return generate_learning_path(user.uid)
+
+
+@router.post("/lessons/{lesson_id}/engagement", summary="Record a lesson opened/completed event")
+async def record_lesson_engagement(
+    lesson_id: str,
+    body: LessonEngagementRequest,
+    user: VerifiedUser = Depends(require_student),
+) -> dict:
+    return lesson_engagement_service.record_event(user.uid, lesson_id, body.event)
+
+
+@router.get("/study-plan/current", summary="This week's personalized study plan (generated on first request)")
+async def current_study_plan(user: VerifiedUser = Depends(require_student)) -> dict:
+    return study_plan_service.get_current_plan(user.uid)
