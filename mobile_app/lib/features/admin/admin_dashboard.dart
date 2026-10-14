@@ -6,6 +6,7 @@ import 'admin_students_screen.dart';
 import 'admin_analytics_screen.dart';
 import 'admin_notifications_screen.dart';
 import 'screens/admin_materials_screen.dart';
+import 'screens/admin_weak_topics_screen.dart';
 
 class AdminDashboard extends StatefulWidget {
   final int initialIndex;
@@ -48,10 +49,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
           children: [
             Icon(Icons.admin_panel_settings, color: Color(0xFF1A3CBA)),
             SizedBox(width: 8),
-            Flexible(
-              child: Text('PhysicsLab Admin',
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontWeight: FontWeight.bold)),
+            Expanded(
+              child: Text(
+                'PhysicsLab Admin',
+                style: TextStyle(fontWeight: FontWeight.bold),
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ],
         ),
@@ -73,6 +76,17 @@ class _AdminDashboardState extends State<AdminDashboard> {
               );
             },
             tooltip: 'Notifications',
+          ),
+          IconButton(
+            icon: const Icon(Icons.insights),
+            tooltip: 'Weak Topics',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const AdminWeakTopicsScreen(),
+                ),
+              );
+            },
           ),
           IconButton(
             icon: const Icon(Icons.logout),
@@ -183,9 +197,10 @@ class _AdminHomeOverviewState extends State<_AdminHomeOverview> {
                             leading: CircleAvatar(
                               backgroundColor: const Color(0xFF1A3CBA).withOpacity(0.1),
                               child: Text(
-                                ((d['fullName'] ?? '').toString().isNotEmpty
-                                        ? (d['fullName'] as String).substring(0, 1)
+                                ((d['fullName'] as String?)?.trim().isNotEmpty == true
+                                        ? (d['fullName'] as String).trim()
                                         : 'S')
+                                    .substring(0, 1)
                                     .toUpperCase(),
                                 style: const TextStyle(color: Color(0xFF1A3CBA), fontWeight: FontWeight.bold),
                               ),

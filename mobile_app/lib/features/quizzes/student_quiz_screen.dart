@@ -1,8 +1,13 @@
+import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
 import 'package:flutter/material.dart';
 
 import '../../core/api/api_client.dart';
 import 'data/quiz_repository.dart';
 import 'quiz_result_screen.dart';
+import '../dashboard/services/quiz_feedback_service.dart';
 
 /// Takes a lesson-level quiz through the real backend API — questions are
 /// fetched sanitized (no answer keys) via /student/quizzes/{id}/start, and
@@ -53,6 +58,7 @@ class _StudentQuizScreenState extends State<StudentQuizScreen> {
   bool _isLoading = true;
   String? _errorMessage;
 
+  final QuizFeedbackService _quizFeedbackService = QuizFeedbackService();
   List<Map<String, dynamic>> _questions = [];
   String? _quizId;
   String? _attemptId;
@@ -184,6 +190,24 @@ class _StudentQuizScreenState extends State<StudentQuizScreen> {
         final isCorrect = g['isCorrect'] == true;
         if (qId != null) _gradedCorrect[qId] = isCorrect;
         if (isCorrect) correct++;
+      }
+
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid != null) {
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(uid)
+            .get();
+        unawaited(_quizFeedbackService.logQuizPerformance(
+          lessonId: widget.lessonId,
+          lessonTitle: widget.lessonTitle,
+          grade: userDoc.data()?['grade']?.toString(),
+          score: _questions.isEmpty
+              ? 0
+              : (correct / _questions.length * 100).round(),
+          correct: correct,
+          total: _questions.length,
+        ));
       }
 
       if (!mounted) return;

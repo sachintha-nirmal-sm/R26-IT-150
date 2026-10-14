@@ -1,11 +1,11 @@
 import '../models/search_models.dart';
+import 'search_text_utils.dart' as text_utils;
 
 /// Weighted ranking for dashboard search results.
 class AdvancedRankingEngine {
   static const double _maxPopularityScore = 20;
   static const double _maxRecencyScore = 15;
   static const int _recencyWindowDays = 30;
-  static const int _fuzzyMaxDistance = 2;
 
   double calculateRelevanceScore({
     required String query,
@@ -97,23 +97,23 @@ class AdvancedRankingEngine {
     final suggestions = <String>[];
 
     for (final option in availableOptions) {
-      final distance = _levenshteinDistance(
+      final distance = text_utils.levenshteinDistance(
         queryLower,
         option.toLowerCase(),
       );
 
-      if (distance > 0 && distance <= _fuzzyMaxDistance) {
+      if (distance > 0 && distance <= text_utils.fuzzyMaxDistance) {
         suggestions.add(option);
       }
     }
 
     suggestions.sort((a, b) {
-      final distA = _levenshteinDistance(
+      final distA = text_utils.levenshteinDistance(
         queryLower,
         a.toLowerCase(),
       );
 
-      final distB = _levenshteinDistance(
+      final distB = text_utils.levenshteinDistance(
         queryLower,
         b.toLowerCase(),
       );
@@ -160,8 +160,7 @@ class AdvancedRankingEngine {
 
       if (key == queryLower) {
         score += 8;
-      } else if (key.contains(queryLower) ||
-          queryLower.contains(key)) {
+      } else if (key.contains(queryLower) || queryLower.contains(key)) {
         score += 3;
       }
     }
@@ -177,8 +176,7 @@ class AdvancedRankingEngine {
       return 0;
     }
 
-    return (searchCount / totalSearches) *
-        _maxPopularityScore;
+    return (searchCount / totalSearches) * _maxPopularityScore;
   }
 
   double _recencyScore(DateTime? lastAccessed) {
@@ -186,9 +184,7 @@ class AdvancedRankingEngine {
       return 0;
     }
 
-    final days = DateTime.now()
-        .difference(lastAccessed)
-        .inDays;
+    final days = DateTime.now().difference(lastAccessed).inDays;
 
     if (days >= _recencyWindowDays) {
       return 0;
@@ -198,8 +194,7 @@ class AdvancedRankingEngine {
       return _maxRecencyScore;
     }
 
-    return _maxRecencyScore *
-        (1 - days / _recencyWindowDays);
+    return _maxRecencyScore * (1 - days / _recencyWindowDays);
   }
 
   double _typePreference(String type) {
@@ -223,55 +218,10 @@ class AdvancedRankingEngine {
   ) {
     final categoryLower = category.toLowerCase();
 
-    if (categoryLower == queryLower ||
-        categoryLower.contains(queryLower)) {
+    if (categoryLower == queryLower || categoryLower.contains(queryLower)) {
       return 10;
     }
 
     return 0;
-  }
-
-  int _levenshteinDistance(
-    String s1,
-    String s2,
-  ) {
-    final len1 = s1.length;
-    final len2 = s2.length;
-
-    if (len1 == 0) return len2;
-    if (len2 == 0) return len1;
-
-    final d = List.generate(
-      len1 + 1,
-      (_) => List<int>.filled(
-        len2 + 1,
-        0,
-      ),
-    );
-
-    for (var i = 0; i <= len1; i++) {
-      d[i][0] = i;
-    }
-
-    for (var j = 0; j <= len2; j++) {
-      d[0][j] = j;
-    }
-
-    for (var i = 1; i <= len1; i++) {
-      for (var j = 1; j <= len2; j++) {
-        final cost =
-            s1[i - 1] == s2[j - 1] ? 0 : 1;
-
-        d[i][j] = [
-          d[i - 1][j] + 1,
-          d[i][j - 1] + 1,
-          d[i - 1][j - 1] + cost,
-        ].reduce(
-          (a, b) => a < b ? a : b,
-        );
-      }
-    }
-
-    return d[len1][len2];
   }
 }
