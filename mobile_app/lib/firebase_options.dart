@@ -41,23 +41,21 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyDWNM34B3pyUJgV57B5_FJJnM0LPmxuIME',
-    appId: '1:336276756841:web:a8cba21f09b1ae3d2d85f8',
-    messagingSenderId: '336276756841',
-    projectId: 'physicslab-eaa8a',
-    authDomain: 'physicslab-eaa8a.firebaseapp.com',
-    storageBucket: 'physicslab-eaa8a.firebasestorage.app',
-    measurementId: 'G-ZW6C7CQQPY',
+    apiKey: 'AIzaSyB9PuIPzqUAFxa0N3OQ6te5p33RkL2aaY0',
+    appId: '1:855512404287:web:c6bec4384f307154a1038a',
+    messagingSenderId: '855512404287',
+    projectId: 'physics-learning-platform',
+    authDomain: 'physics-learning-platform.firebaseapp.com',
+    storageBucket: 'physics-learning-platform.firebasestorage.app',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyBXGMZOCCdAL3WVEnBg_mCS-dbo0kfd1sY',
-    appId: '1:336276756841:android:30080c842776806c2d85f8',
-    messagingSenderId: '336276756841',
-    projectId: 'physicslab-eaa8a',
-    storageBucket: 'physicslab-eaa8a.firebasestorage.app',
+    apiKey: 'AIzaSyC4FbGuVggiEsn-UAl5TTTvaUr-g2toKHc',
+    appId: '1:855512404287:android:15ce8f7e0e4c6a0aa1038a',
+    messagingSenderId: '855512404287',
+    projectId: 'physics-learning-platform',
+    storageBucket: 'physics-learning-platform.firebasestorage.app',
   );
-
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyBVuOiQOgMA_kAzCdyzlOMlZURkuJqBG5s',
     appId: '1:336276756841:ios:faa7c3dbdfa729d82d85f8',
