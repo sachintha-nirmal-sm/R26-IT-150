@@ -1,0 +1,24 @@
+public enum WorkEnergyExperimentStep
+{
+    Introduction,
+    SelectEquipment,
+    PrepareClay,
+    PlaceStand,
+    PlaceWeight,
+    MeasureMass,
+    SetHeight,
+    MeasureHeight,
+    ReleaseWeight,
+    ObserveImpact,
+    MeasureDepression,
+    RecordResult,
+    CompareResults,
+    ViewGraph,
+    WorkEnergy,
+    PowerChallenge,
+    ConclusionQ1,
+    ConclusionQ2,
+    ConclusionQ3,
+    Conclusion,
+    Complete
+}

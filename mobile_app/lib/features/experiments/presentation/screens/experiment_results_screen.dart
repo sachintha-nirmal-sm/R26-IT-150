@@ -48,7 +48,7 @@ class _ExperimentResultsScreenState extends State<ExperimentResultsScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Experiment Results'),
+        title: Text('$displayTopic Results'),
         centerTitle: true,
         backgroundColor: Colors.white,
         foregroundColor: const Color(0xFF2F80ED),
@@ -118,35 +118,8 @@ class _ExperimentResultsScreenState extends State<ExperimentResultsScreen> {
 
             const Spacer(),
 
-            // Save Result Button
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.pushNamed(
-                    context, 
-                    '/profile', 
-                    arguments: {
-                      'view': 'recent_progress',
-                      'topic': displayTopic,
-                      'status': 'Completed',
-                      'score': displayScore,
-                    },
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2F80ED),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 18),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  elevation: 5,
-                ),
-                child: const Text(
-                  "Save Result", 
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)
-                ),
-              ),
-            ),
+            // Action Buttons
+            _buildActionButtons(),
             const SizedBox(height: 40),
           ],
         ),
@@ -219,7 +192,7 @@ class _ExperimentResultsScreenState extends State<ExperimentResultsScreen> {
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: () {},
+            onPressed: () => Navigator.pop(context),
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 14),
               backgroundColor: const Color(0xFF2F80ED),
@@ -229,7 +202,7 @@ class _ExperimentResultsScreenState extends State<ExperimentResultsScreen> {
               ),
             ),
             child: const Text(
-              'Retry Experiment',
+              'Done',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
@@ -244,7 +217,7 @@ class _ExperimentResultsScreenState extends State<ExperimentResultsScreen> {
           children: [
             Expanded(
               child: OutlinedButton(
-                onPressed: () => Navigator.pop(context),
+                onPressed: () => Navigator.of(context).pushReplacementNamed('/home'),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   side: const BorderSide(
@@ -311,7 +284,9 @@ class _ExperimentResultsScreenState extends State<ExperimentResultsScreen> {
         setState(() {
           _selectedBottomNavIndex = index;
         });
-        if (index == 3) {
+        if (index == 0) {
+          Navigator.pushNamed(context, '/home');
+        } else if (index == 3) {
           Navigator.pushNamed(context, '/profile');
         }
       },
@@ -341,4 +316,3 @@ class _ExperimentResultsScreenState extends State<ExperimentResultsScreen> {
     );
   }
 }
-

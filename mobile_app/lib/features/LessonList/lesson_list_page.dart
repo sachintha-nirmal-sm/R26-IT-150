@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import '../experiments/data/practical.dart';
 import '../lessons/Lessons_Dashboard.dart';
 
 class PhysicsLessonsScreen extends StatefulWidget {
@@ -19,6 +20,7 @@ class _PhysicsLessonsScreenState extends State<PhysicsLessonsScreen> {
   int _currentIndex = 1;
   int? _studentGrade; // loaded from Firestore users/{uid}.grade
   bool _loadingGrade = true;
+  String _selectedLessonTitle = '';
 
   @override
   void initState() {
@@ -33,7 +35,7 @@ class _PhysicsLessonsScreenState extends State<PhysicsLessonsScreen> {
       return;
     }
     final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-    final grade = doc.data()?['grade'];
+    final grade = doc.data()?['currentGrade'] ?? doc.data()?['grade'];
     final parsed = (grade is int) ? grade : int.tryParse(grade?.toString() ?? '');
 
     if (parsed == null) {
@@ -114,7 +116,12 @@ class _PhysicsLessonsScreenState extends State<PhysicsLessonsScreen> {
       ),
       body: gradeInt == null
           ? const Center(child: CircularProgressIndicator())
-          : _LessonListBody(grade: gradeInt, gradeLabel: gradeLabel),
+          : _LessonListBody(
+              grade: gradeInt, 
+              gradeLabel: gradeLabel, 
+              selectedLessonTitle: _selectedLessonTitle,
+              onLessonSelected: (title) => setState(() => _selectedLessonTitle = title),
+            ),
       bottomNavigationBar: _buildBottomNav(),
     );
   }
@@ -151,8 +158,15 @@ class _PhysicsLessonsScreenState extends State<PhysicsLessonsScreen> {
 class _LessonListBody extends StatelessWidget {
   final int grade;
   final String gradeLabel;
+  final String selectedLessonTitle;
+  final Function(String) onLessonSelected;
 
-  const _LessonListBody({required this.grade, required this.gradeLabel});
+  const _LessonListBody({
+    required this.grade, 
+    required this.gradeLabel,
+    required this.selectedLessonTitle,
+    required this.onLessonSelected,
+  });
 
   static const Color _primaryBlue = Color(0xFF2196F3);
 
@@ -209,11 +223,20 @@ class _LessonListBody extends StatelessWidget {
                           final doc = docs[index];
                           final data = doc.data() as Map<String, dynamic>;
                           final title = data['title'] as String? ?? 'Lesson ${index + 1}';
+                          final mapped = LocalPracticals.forTopic(
+                            practicalId: data['practicalId'] as String?,
+                            lessonId: doc.id,
+                            title: title,
+                            grade: grade,
+                          );
                           return _LessonCard(
                             index: index,
                             lessonId: doc.id,
                             title: title,
                             gradeLabel: gradeLabel,
+                            practicalId: mapped?.id,
+                            isSelected: title == selectedLessonTitle,
+                            onTap: () => onLessonSelected(title),
                           );
                         },
                       ),
@@ -231,12 +254,18 @@ class _LessonCard extends StatelessWidget {
   final String lessonId;
   final String title;
   final String gradeLabel;
+  final String? practicalId;
+  final bool isSelected;
+  final VoidCallback onTap;
 
   const _LessonCard({
     required this.index,
     required this.lessonId,
     required this.title,
     required this.gradeLabel,
+    this.practicalId,
+    required this.isSelected,
+    required this.onTap,
   });
 
   static const _icons = [
@@ -249,22 +278,26 @@ class _LessonCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final icon = _icons[index % _icons.length];
     return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => LessonsDashboard(
-            lessonId: lessonId,
-            lessonTitle: title,
-            grade: '$gradeLabel Physics',
+      onTap: () {
+        onTap();
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => LessonsDashboard(
+              lessonId: lessonId,
+              lessonTitle: title,
+              grade: '$gradeLabel Physics',
+              practicalId: practicalId,
+            ),
           ),
-        ),
-      ),
+        );
+      },
       child: Container(
         margin: const EdgeInsets.only(bottom: 15),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isSelected ? const Color(0xFFE8F1FF) : Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade200),
+          border: Border.all(color: isSelected ? const Color(0xFF2196F3) : Colors.grey.shade200),
           boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6, offset: const Offset(0, 2))],
         ),
         child: ListTile(

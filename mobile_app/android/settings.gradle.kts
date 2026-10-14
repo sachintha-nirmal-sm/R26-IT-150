@@ -24,3 +24,9 @@ plugins {
 }
 
 include(":app")
+
+val unityLibraryDir = file("unityLibrary")
+if (unityLibraryDir.exists()) {
+    include(":unityLibrary")
+    project(":unityLibrary").projectDir = unityLibraryDir
+}

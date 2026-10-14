@@ -1,18 +1,30 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:string_similarity/string_similarity.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../../core/api/api_client.dart';
 import '../../games/games_list/game_list_data.dart';
+import '../models/search_models.dart';
+import 'advanced_ranking_engine.dart';
+import 'search_text_utils.dart' as text_utils;
 
 class SimpleSearchService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final AdvancedRankingEngine _rankingEngine = AdvancedRankingEngine();
+  final ApiClient _apiClient = ApiClient();
 
   // Cache lessons and sub-lessons in memory
   static Map<int, List<Map<String, dynamic>>> _lessonsCache = {};
-  static Map<String, List<Map<String, dynamic>>> _subLessonsCache = {}; // key: lessonId
+  static Map<String, List<Map<String, dynamic>>> _subLessonsCache =
+      {}; // key: lessonId
   static DateTime? _lastCacheTime;
   static const Duration _cacheDuration = Duration(hours: 1);
+
+  // Master search-keyword index (approved/auto_approved docs only) — small,
+  // curated, read far less often than it's matched against, so one cache
+  // for the whole collection instead of per-grade like _lessonsCache.
+  static List<Map<String, dynamic>>? _masterKeywordCache;
+  static DateTime? _masterKeywordCacheTime;
 
   /// Get user-specific search history key
   /// Format: search_history_[userId] for logged-in users
@@ -42,7 +54,9 @@ class SimpleSearchService {
       List<Map<String, dynamic>> results = [];
 
       // Search Lessons & Sub-Lessons
-      if (category == 'All' || category == 'Lesson' || category == 'Sub-Lesson') {
+      if (category == 'All' ||
+          category == 'Lesson' ||
+          category == 'Sub-Lesson') {
         results.addAll(await _searchLessonsAndSubLessons(
           lowerQuery,
           gradeNum,
@@ -58,7 +72,15 @@ class SimpleSearchService {
       // Search Learning Materials
       if (category == 'All' || category == 'Learning Materials') {
         results.addAll(await _searchLearningMaterials(lowerQuery, gradeNum));
+        results.addAll(await _searchSemanticPdfContent(query, gradeNum));
+        results.addAll(
+          await _searchMasterKeywordIndex(lowerQuery, gradeNum),
+        );
       }
+
+      // Rank all result types consistently while retaining every existing
+      // search source (lessons, sub-lessons, games and learning materials).
+      results = _rankResults(query, _mergeDuplicateResults(results));
 
       print('✅ Total results: ${results.length}');
 
@@ -88,7 +110,8 @@ class SimpleSearchService {
     if (category == 'All' || category == 'Lesson') {
       for (var lesson in lessons) {
         final title = (lesson['title'] as String? ?? '').toLowerCase();
-        final description = (lesson['description'] as String? ?? '').toLowerCase();
+        final description =
+            (lesson['description'] as String? ?? '').toLowerCase();
         final tag = (lesson['tag'] as String? ?? '').toLowerCase();
 
         if (title.contains(lowerQuery) ||
@@ -135,7 +158,8 @@ class SimpleSearchService {
             }).toList();
 
             _subLessonsCache[lessonId] = subLessons;
-            print('📥 Fetched ${subLessons.length} sub-lessons for ${lesson['title']}');
+            print(
+                '📥 Fetched ${subLessons.length} sub-lessons for ${lesson['title']}');
           } catch (e) {
             print('⚠️ Error fetching sub-lessons for ${lesson['title']}: $e');
           }
@@ -185,7 +209,8 @@ class SimpleSearchService {
         };
       }).toList();
 
-      print('🎮 Found ${games.length} games for $gradeStr matching "$lowerQuery"');
+      print(
+          '🎮 Found ${games.length} games for $gradeStr matching "$lowerQuery"');
       return games;
     } catch (e) {
       print('⚠️ Error searching games: $e');
@@ -202,6 +227,52 @@ class SimpleSearchService {
       List<Map<String, dynamic>> materials = [];
       final String gradeStr = 'Grade $gradeNum';
 
+      // Search indexes created from the actual text extracted from uploaded
+      // PDFs by the FastAPI RAG ingestion task.
+      try {
+        // Lessons in this project store grade as an integer. Querying by the
+        // signed-in student's exact grade also satisfies the Firestore rule.
+        final indexSnapshot = await _firestore
+            .collection('pdf_keywords')
+            .where('grade', isEqualTo: gradeNum)
+            .get();
+
+        final seenIndexes = <String>{};
+        for (final doc in indexSnapshot.docs) {
+          if (!seenIndexes.add(doc.id)) continue;
+          final data = doc.data();
+          final keywords =
+              List<String>.from(data['keywords'] as List? ?? const []);
+          final searchable = [
+            data['materialName'],
+            data['lessonTitle'],
+            data['description'],
+            data['category'],
+            ...keywords,
+          ].whereType<String>().join(' ').toLowerCase();
+
+          if (!searchable.contains(lowerQuery)) continue;
+          materials.add({
+            'id': doc.id,
+            'title':
+                data['materialName'] ?? data['lessonTitle'] ?? 'PDF Material',
+            'description': data['description'] ??
+                'Matches content inside ${data['lessonTitle'] ?? 'this lesson'}',
+            'type': 'Learning Materials',
+            'subtype': data['materialType'] ?? 'PDF',
+            'lessonId': data['lessonId'] ?? '',
+            'lessonTitle': data['lessonTitle'] ?? 'Materials',
+            'grade': gradeStr,
+            'keywords': keywords,
+            'source': 'PDF content',
+          });
+        }
+      } catch (e) {
+        // Keep legacy material, lesson and game search usable if the new index
+        // has not been deployed or the current user cannot read it yet.
+        print('Error searching PDF keyword indexes: $e');
+      }
+
       // Search lesson_materials
       try {
         final materialsSnap = await _firestore
@@ -212,11 +283,18 @@ class SimpleSearchService {
         final lessonMaterials = materialsSnap.docs.where((doc) {
           final data = doc.data();
           final title = (data['materialName'] as String? ?? '').toLowerCase();
-          final description = (data['description'] as String? ?? '').toLowerCase();
-          final lessonTitle = (data['lessonTitle'] as String? ?? '').toLowerCase();
-          return title.contains(lowerQuery) || 
-                 description.contains(lowerQuery) ||
-                 lessonTitle.contains(lowerQuery);
+          final description =
+              (data['description'] as String? ?? '').toLowerCase();
+          final lessonTitle =
+              (data['lessonTitle'] as String? ?? '').toLowerCase();
+          final keywords =
+              List<String>.from(data['keywords'] as List? ?? const []);
+          return title.contains(lowerQuery) ||
+              description.contains(lowerQuery) ||
+              lessonTitle.contains(lowerQuery) ||
+              keywords.any(
+                (keyword) => keyword.toLowerCase().contains(lowerQuery),
+              );
         }).map((doc) {
           final data = doc.data();
           return {
@@ -229,6 +307,11 @@ class SimpleSearchService {
             'lessonId': data['lessonId'] ?? '',
             'lessonTitle': data['lessonTitle'] ?? '',
             'grade': gradeStr,
+            'keywords':
+                List<String>.from(data['keywords'] as List? ?? const []),
+            'source': data['keywordIndexStatus'] == 'indexed'
+                ? 'PDF content'
+                : 'Material metadata',
           };
         }).toList();
 
@@ -245,7 +328,8 @@ class SimpleSearchService {
         final experiments = experimentsSnap.docs.where((doc) {
           final data = doc.data();
           final title = (data['title'] as String? ?? '').toLowerCase();
-          final description = (data['description'] as String? ?? '').toLowerCase();
+          final description =
+              (data['description'] as String? ?? '').toLowerCase();
           return title.contains(lowerQuery) || description.contains(lowerQuery);
         }).map((doc) {
           final data = doc.data();
@@ -265,13 +349,13 @@ class SimpleSearchService {
 
       // Search learning paths
       try {
-        final pathsSnap =
-            await _firestore.collection('learning_paths').get();
+        final pathsSnap = await _firestore.collection('learning_paths').get();
 
         final paths = pathsSnap.docs.where((doc) {
           final data = doc.data();
           final title = (data['title'] as String? ?? '').toLowerCase();
-          final description = (data['description'] as String? ?? '').toLowerCase();
+          final description =
+              (data['description'] as String? ?? '').toLowerCase();
           return title.contains(lowerQuery) || description.contains(lowerQuery);
         }).map((doc) {
           final data = doc.data();
@@ -295,6 +379,228 @@ class SimpleSearchService {
       print('❌ Error searching learning materials: $e');
       return [];
     }
+  }
+
+  Future<List<Map<String, dynamic>>> _searchSemanticPdfContent(
+    String query,
+    int gradeNum,
+  ) async {
+    try {
+      final response = await _apiClient.post(
+        '/search/semantic',
+        body: {'query': query, 'grade': gradeNum, 'limit': 10},
+      );
+      if (response is! Map || response['results'] is! List) {
+        print('Semantic PDF search returned an invalid response.');
+        return [];
+      }
+      final results = (response['results'] as List)
+          .whereType<Map>()
+          .map((item) => Map<String, dynamic>.from(item))
+          .toList();
+      print(
+        'Semantic PDF search returned ${results.length} result(s) '
+        '(backend grade: ${response['grade']}).',
+      );
+      return results;
+    } catch (error) {
+      // Semantic search is an accuracy enhancement. Exact lesson, keyword,
+      // game and material search remain available while FastAPI is offline.
+      print('Semantic PDF search unavailable: $error');
+      return [];
+    }
+  }
+
+  /// Loads the live, moderated master keyword set (search_keyword_index) —
+  /// see backend/app/rag/keyword_aggregate.py. Approved/auto_approved docs
+  /// only; a rejected keyword must never recommend anything.
+  Future<List<Map<String, dynamic>>> _getCachedMasterKeywords() async {
+    if (_masterKeywordCache != null && _masterKeywordCacheTime != null) {
+      if (DateTime.now().difference(_masterKeywordCacheTime!) <
+          _cacheDuration) {
+        return _masterKeywordCache!;
+      }
+    }
+
+    try {
+      final snap = await _firestore
+          .collection('search_keyword_index')
+          .where('status', whereIn: ['approved', 'auto_approved']).get();
+
+      final keywords = snap.docs.map((doc) {
+        final data = doc.data();
+        return {
+          'keyword': data['keyword'] ?? doc.id,
+          'materialRefs':
+              List<Map<String, dynamic>>.from(data['materialRefs'] ?? []),
+        };
+      }).toList();
+
+      _masterKeywordCache = keywords;
+      _masterKeywordCacheTime = DateTime.now();
+      return keywords;
+    } catch (e) {
+      print('⚠️ Error loading master keyword index: $e');
+      return _masterKeywordCache ?? [];
+    }
+  }
+
+  /// Smart recommendation lookup: if the query (or a word within it) exactly
+  /// matches an approved keyword, or is a 1-2 character typo away from one,
+  /// surface everything that keyword is linked to — filtered to the
+  /// student's own grade, so a Grade 10 student never sees a Grade 9 PDF
+  /// recommended just because the keyword happens to be shared.
+  Future<List<Map<String, dynamic>>> _searchMasterKeywordIndex(
+    String lowerQuery,
+    int gradeNum,
+  ) async {
+    final trimmed = lowerQuery.trim();
+    if (trimmed.isEmpty) return [];
+
+    final masterKeywords = await _getCachedMasterKeywords();
+    if (masterKeywords.isEmpty) return [];
+
+    final queryWords = [
+      trimmed,
+      ...trimmed.split(RegExp(r'\s+')).where((w) => w.length >= 3),
+    ].toSet();
+
+    Map<String, dynamic>? matched;
+    var isFuzzyMatch = false;
+
+    // Exact match first — cheap, and always preferred over a fuzzy guess.
+    for (final entry in masterKeywords) {
+      final keyword = (entry['keyword'] as String).toLowerCase();
+      if (queryWords.contains(keyword)) {
+        matched = entry;
+        break;
+      }
+    }
+
+    // Typo-tolerant fallback, only if nothing matched exactly. Skipped for
+    // long queries — a short curated keyword is never a near-miss of a long
+    // free-text search, so it would just waste cycles.
+    if (matched == null && trimmed.length <= 20) {
+      var bestDistance = text_utils.fuzzyMaxDistance + 1;
+      for (final entry in masterKeywords) {
+        final keyword = (entry['keyword'] as String).toLowerCase();
+        for (final word in queryWords) {
+          final distance = text_utils.levenshteinDistance(word, keyword);
+          if (distance > 0 &&
+              distance <= text_utils.fuzzyMaxDistance &&
+              distance < bestDistance) {
+            bestDistance = distance;
+            matched = entry;
+            isFuzzyMatch = true;
+          }
+        }
+      }
+    }
+
+    if (matched == null) return [];
+
+    final gradeStr = 'Grade $gradeNum';
+    final matchedKeyword = matched['keyword'] as String;
+    final refs = List<Map<String, dynamic>>.from(matched['materialRefs']);
+
+    return refs
+        .where((ref) => ref['grade'] == gradeStr)
+        .map((ref) => {
+              'id': ref['materialId'],
+              'title': ref['lessonTitle'] ?? matchedKeyword,
+              'description': isFuzzyMatch
+                  ? 'Matched "$trimmed" to "$matchedKeyword"'
+                  : 'Recommended based on "$matchedKeyword"',
+              'type': 'Learning Materials',
+              'lessonId': ref['lessonId'] ?? '',
+              'lessonTitle': ref['lessonTitle'] ?? '',
+              'grade': gradeStr,
+              'source': 'Smart recommendation',
+              'isMasterKeywordMatch': true,
+              'matchedMasterKeyword': matchedKeyword,
+              'isFuzzyMatch': isFuzzyMatch,
+            })
+        .toList();
+  }
+
+  List<Map<String, dynamic>> _mergeDuplicateResults(
+    List<Map<String, dynamic>> results,
+  ) {
+    final merged = <String, Map<String, dynamic>>{};
+    for (final result in results) {
+      final type = result['type']?.toString() ?? '';
+      final id = result['id']?.toString() ?? '';
+      final lessonId = result['lessonId']?.toString() ?? '';
+      final title = result['title']?.toString().toLowerCase() ?? '';
+      final key = type == 'Learning Materials'
+          ? 'material:${id.isNotEmpty ? id : '$lessonId:$title'}'
+          : '$type:$id:$title';
+
+      final existing = merged[key];
+      if (existing == null) {
+        merged[key] = Map<String, dynamic>.from(result);
+        continue;
+      }
+
+      final currentSemantic =
+          (existing['semanticScore'] as num?)?.toDouble() ?? 0;
+      final newSemantic = (result['semanticScore'] as num?)?.toDouble() ?? 0;
+      existing['semanticScore'] =
+          currentSemantic > newSemantic ? currentSemantic : newSemantic;
+      final keywords = <String>{
+        ...List<String>.from(existing['keywords'] as List? ?? const []),
+        ...List<String>.from(result['keywords'] as List? ?? const []),
+      };
+      existing['keywords'] = keywords.toList();
+      if (newSemantic > 0) existing['source'] = 'Hybrid PDF search';
+
+      if (result['isMasterKeywordMatch'] == true) {
+        existing['isMasterKeywordMatch'] = true;
+        existing['matchedMasterKeyword'] = result['matchedMasterKeyword'];
+        existing['isFuzzyMatch'] = result['isFuzzyMatch'] ?? false;
+      }
+    }
+    return merged.values.toList();
+  }
+
+  List<Map<String, dynamic>> _rankResults(
+    String query,
+    List<Map<String, dynamic>> results,
+  ) {
+    final scored = results.map((result) {
+      final searchResult = SearchResult(
+        id: result['id']?.toString() ?? '',
+        title: result['title']?.toString() ?? '',
+        type: result['type']?.toString() ?? '',
+        category:
+            result['topic']?.toString() ?? result['subtype']?.toString() ?? '',
+        description: result['description']?.toString() ?? '',
+        relevanceScore: 0,
+        matchedKeywords: List<String>.from(
+          result['keywords'] as List? ?? const <String>[],
+        ),
+        source: result['source']?.toString() ?? 'Search',
+      );
+      // Exact keyword-index match is a stronger signal than a corrected
+      // (fuzzy) one, so it scores slightly higher — both still rank well
+      // above a plain single-keyword overlap (+3 in AdvancedRankingEngine)
+      // but below an exact title match (+100).
+      final masterKeywordBonus = result['isMasterKeywordMatch'] == true
+          ? (result['isFuzzyMatch'] == true ? 8.0 : 12.0)
+          : 0.0;
+      final score = _rankingEngine.calculateRelevanceScore(
+            query: query,
+            item: searchResult,
+            searchCount: 0,
+            totalSearches: 0,
+          ) +
+          ((result['semanticScore'] as num?)?.toDouble() ?? 0) * 25 +
+          masterKeywordBonus;
+      return MapEntry({...result, 'relevanceScore': score}, score);
+    }).toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    return scored.map((entry) => entry.key).toList();
   }
 
   /// Get lessons from cache, or fetch from Firestore if expired
@@ -563,12 +869,12 @@ class SimpleSearchService {
 
       for (var term in _physicsTerms) {
         final distance = _levenshteinDistance(lowerQuery, term);
-        final maxLen = lowerQuery.length > term.length
-            ? lowerQuery.length
-            : term.length;
+        final maxLen =
+            lowerQuery.length > term.length ? lowerQuery.length : term.length;
         final score = 1 - (distance / maxLen);
 
-        print('   "$lowerQuery" vs "$term" = ${(score * 100).toStringAsFixed(0)}%');
+        print(
+            '   "$lowerQuery" vs "$term" = ${(score * 100).toStringAsFixed(0)}%');
 
         if (score > bestScore && score > 0.5) {
           bestScore = score;
@@ -577,7 +883,8 @@ class SimpleSearchService {
       }
 
       if (bestMatch != null) {
-        print('✅ Typo detected (dictionary)! "$query" → "$bestMatch" (similarity: ${(bestScore * 100).toStringAsFixed(0)}%)');
+        print(
+            '✅ Typo detected (dictionary)! "$query" → "$bestMatch" (similarity: ${(bestScore * 100).toStringAsFixed(0)}%)');
         return bestMatch;
       }
 

@@ -1,0 +1,20 @@
+public enum LeverExperimentStep
+{
+    Introduction,
+    SelectEquipment,
+    PlacePivot,
+    PlaceWoodenStrip,
+    PlaceBook,
+    MeasureDistanceA,
+    AttachSpringBalance,
+    SelectDistanceX,
+    PullBalance,
+    ObserveLift,
+    RecordReading,
+    NextXOrCompare,
+    CompareResults,
+    Conclusion,
+    Conclusion2,
+    Challenge,
+    Complete
+}

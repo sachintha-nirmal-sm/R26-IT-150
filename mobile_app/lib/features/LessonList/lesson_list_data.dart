@@ -5,12 +5,16 @@ class LessonItem {
   final String grade;
   final String duration;
   final String subtitle;
+  final String? practicalId;
+  final String? lessonId;
 
   const LessonItem({
     required this.title,
     required this.grade,
     required this.duration,
     this.subtitle = 'Start Lesson',
+    this.practicalId,
+    this.lessonId,
   });
 }
 
@@ -21,30 +25,40 @@ const Map<String, List<LessonItem>> gradeLessons = {
       grade: 'Grade 9',
       duration: '20 mins',
       subtitle: 'Start Lesson',
+      lessonId: 'phy-g9-force-doc',
+      practicalId: 'grade9_force_basic',
     ),
     LessonItem(
       title: 'Pressure Exerted by Solid',
       grade: 'Grade 9',
       duration: '18 mins',
       subtitle: 'Start Lesson',
+      lessonId: 'phy-g9-pressure-solid-doc',
+      practicalId: 'grade9_pressure_solid',
     ),
     LessonItem(
       title: 'Density',
       grade: 'Grade 9',
       duration: '15 mins',
       subtitle: 'Start Lesson',
+      lessonId: 'phy-g9-density-doc',
+      practicalId: 'grade9_density_water',
     ),
     LessonItem(
       title: 'Reflection and Refraction of Waves',
       grade: 'Grade 9',
       duration: '22 mins',
       subtitle: 'Start Lesson',
+      lessonId: 'phy-g9-reflection-doc',
+      practicalId: 'grade9_reflection_prism',
     ),
     LessonItem(
       title: 'Simple Machines',
       grade: 'Grade 9',
       duration: '20 mins',
       subtitle: 'Start Lesson',
+      lessonId: 'phy-g9-lever-doc',
+      practicalId: 'grade9_lever_15_1',
     ),
     LessonItem(
       title: 'Nanotechnology and its Applications',
@@ -55,58 +69,82 @@ const Map<String, List<LessonItem>> gradeLessons = {
   ],
   'Grade 10': [
     LessonItem(
+      title: 'Density',
+      grade: 'Grade 10',
+      duration: '15 mins',
+      subtitle: 'Start Lesson',
+    ),
+    LessonItem(
       title: 'Motion in a straight line',
       grade: 'Grade 10',
       duration: '25 mins',
       subtitle: 'Start Lesson',
+      lessonId: 'phy-g10-motion-straight-doc',
+      practicalId: 'grade10_motion_straight_line',
     ),
     LessonItem(
       title: "Newton's laws of motion",
       grade: 'Grade 10',
       duration: '22 mins',
       subtitle: 'Start Lesson',
+      lessonId: 'phy-g10-newtons-laws-doc',
+      practicalId: 'grade10_newtons_laws',
     ),
     LessonItem(
       title: 'Friction',
       grade: 'Grade 10',
       duration: '20 mins',
       subtitle: 'Start Lesson',
+      lessonId: 'phy-g10-friction-doc',
+      practicalId: 'grade10_friction',
     ),
     LessonItem(
       title: 'Resultant force',
       grade: 'Grade 10',
       duration: '18 mins',
       subtitle: 'Start Lesson',
+      lessonId: 'phy-g10-resultant-force-doc',
+      practicalId: 'grade10_resultant_force',
     ),
     LessonItem(
       title: 'Turning effect of a force',
       grade: 'Grade 10',
       duration: '20 mins',
       subtitle: 'Start Lesson',
+      lessonId: 'phy-g10-turning-effect-doc',
+      practicalId: 'grade10_turning_effect',
     ),
     LessonItem(
       title: 'Equilibrium of Forces',
       grade: 'Grade 10',
       duration: '18 mins',
       subtitle: 'Start Lesson',
+      lessonId: 'phy-g10-equilibrium-doc',
+      practicalId: 'grade10_equilibrium',
     ),
     LessonItem(
       title: 'Hydrostatic pressure and its applications',
       grade: 'Grade 10',
       duration: '22 mins',
       subtitle: 'Start Lesson',
+      lessonId: 'phy-g10-hydrostatic-doc',
+      practicalId: 'grade10_hydrostatic_pressure',
     ),
     LessonItem(
       title: 'Work, energy and power',
       grade: 'Grade 10',
       duration: '20 mins',
       subtitle: 'Start Lesson',
+      lessonId: 'phy-g10-work-energy-doc',
+      practicalId: 'grade10_work_energy_power',
     ),
     LessonItem(
       title: 'Current electricity',
       grade: 'Grade 10',
       duration: '25 mins',
       subtitle: 'Start Lesson',
+      lessonId: 'phy-g10-current-electricity-doc',
+      practicalId: 'grade10_current_electricity',
     ),
   ],
   'Grade 11': [
@@ -115,30 +153,40 @@ const Map<String, List<LessonItem>> gradeLessons = {
       grade: 'Grade 11',
       duration: '22 mins',
       subtitle: 'Start Lesson',
+      lessonId: 'phy-g11-waves-doc',
+      practicalId: 'grade11_waves',
     ),
     LessonItem(
       title: 'Geometrical Optics',
       grade: 'Grade 11',
       duration: '20 mins',
       subtitle: 'Start Lesson',
+      lessonId: 'phy-g11-optics-doc',
+      practicalId: 'grade11_geometrical_optics',
     ),
     LessonItem(
       title: 'Heat',
       grade: 'Grade 11',
       duration: '18 mins',
       subtitle: 'Start Lesson',
+      lessonId: 'phy-g11-heat-doc',
+      practicalId: 'grade11_heat',
     ),
     LessonItem(
       title: 'Power and Energy of Electric Appliances',
       grade: 'Grade 11',
       duration: '20 mins',
       subtitle: 'Start Lesson',
+      lessonId: 'phy-g11-power-appliances-doc',
+      practicalId: 'grade11_power_appliances',
     ),
     LessonItem(
       title: 'Electronics',
       grade: 'Grade 11',
       duration: '22 mins',
       subtitle: 'Start Lesson',
+      lessonId: 'phy-g11-electronics-doc',
+      practicalId: 'grade11_electronics',
     ),
     LessonItem(
       title: 'Electromagnetism and Electromagnetic Induction',

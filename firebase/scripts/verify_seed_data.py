@@ -1,9 +1,10 @@
 """
-verify_seed_data.py — Read back and verify seed data across Tasks 3 to 12.
+verify_seed_data.py — Read back and verify seed data across Tasks 3 to 16.
 
 This script uses the Firebase Admin SDK to inspect all Firestore collections
-and Auth records created by the seed scripts (Tasks 3–12) to confirm data
-structure integrity before backend development begins.
+and Auth records created by the seed scripts (Tasks 3–12 quiz/RAG module,
+Tasks 13–16 practicals module) to confirm data structure integrity before
+backend development begins.
 
 Usage:
     python verify_seed_data.py
@@ -19,7 +20,7 @@ from firebase_init import db, auth
 
 def run_verification():
     print("=" * 70)
-    print("  FIREBASE SEED DATA VERIFICATION (TASKS 3 - 12)")
+    print("  FIREBASE SEED DATA VERIFICATION (TASKS 3 - 16)")
     print("=" * 70)
 
     passed_tests = 0
@@ -237,6 +238,112 @@ def run_verification():
             report_status(12, "Analytics Rollups", False, f"Missing stats subcollections: {', '.join(missing)}")
     except Exception as e:
         report_status(12, "Analytics Rollups", False, str(e))
+
+    # -------------------------------------------------------------------------
+    # Task 13: Topics (topics/{topicId})
+    # -------------------------------------------------------------------------
+    try:
+        topic_ids = [
+            "topic-g9-force",
+            "topic-g9-density",
+            "topic-g10-forces",
+            "topic-g11-waves",
+        ]
+        missing = [tid for tid in topic_ids if not db.collection("topics").document(tid).get().exists]
+        if not missing:
+            report_status(13, "Practical Topics", True, f"Verified {len(topic_ids)} topics across grades 9–11")
+        else:
+            report_status(13, "Practical Topics", False, f"Missing topics: {', '.join(missing)}")
+    except Exception as e:
+        report_status(13, "Practical Topics", False, str(e))
+
+    # -------------------------------------------------------------------------
+    # Task 14: Practicals (practicals/{practicalId})
+    # -------------------------------------------------------------------------
+    try:
+        practical_id = "grade10_newtons_laws"
+        snap = db.collection("practicals").document(practical_id).get()
+        if snap.exists:
+            data = snap.to_dict()
+            limits_ok = (
+                data.get("demoMaxAttempts") == 1
+                and data.get("practicalMaxAttempts") == 1
+                and data.get("demoAllowed") is True
+                and data.get("isActive") is True
+            )
+            if limits_ok:
+                report_status(14, "Practicals Config", True, f"{practical_id} (Grade {data.get('grade')}, maxScore={data.get('maxScore')})")
+            else:
+                report_status(14, "Practicals Config", False, f"{practical_id} has incorrect attempt/timer config")
+        else:
+            report_status(14, "Practicals Config", False, f"Document practicals/{practical_id} not found")
+    except Exception as e:
+        report_status(14, "Practicals Config", False, str(e))
+
+    # -------------------------------------------------------------------------
+    # Task 15: Practical Results (practicalResults/{resultId})
+    # -------------------------------------------------------------------------
+    try:
+        demo = db.collection("practicalResults").document("result-newtons-demo-1").get()
+        official = db.collection("practicalResults").document("result-newtons-practical-1").get()
+        if demo.exists and official.exists:
+            demo_data = demo.to_dict()
+            official_data = official.to_dict()
+            shape_ok = (
+                demo_data.get("attemptType") == "demo"
+                and official_data.get("attemptType") == "practical"
+                and official_data.get("score") == 8
+                and official_data.get("percentage") == 80
+                and isinstance(official_data.get("measurements"), dict)
+                and isinstance(official_data.get("calculations"), dict)
+                and isinstance(official_data.get("evaluation"), dict)
+            )
+            if shape_ok:
+                report_status(15, "Practical Results", True, "Demo + official Newton's Laws results stored")
+            else:
+                report_status(15, "Practical Results", False, "Result documents exist but fields do not match schema")
+        else:
+            report_status(15, "Practical Results", False, "Missing result-newtons-demo-1 or result-newtons-practical-1")
+    except Exception as e:
+        report_status(15, "Practical Results", False, str(e))
+
+    # -------------------------------------------------------------------------
+    # Task 16: Student Practical Progress (studentPracticals + studentProgress)
+    # -------------------------------------------------------------------------
+    try:
+        students = db.collection("users").where("role", "==", "student").limit(1).get()
+        if students:
+            st_uid = students[0].id
+            sp_id = f"{st_uid}_grade10_newtons_laws"
+            sp_snap = db.collection("studentPracticals").document(sp_id).get()
+            progress_snap = db.collection("studentProgress").document(st_uid).get()
+            if sp_snap.exists and progress_snap.exists:
+                sp = sp_snap.to_dict()
+                progress = progress_snap.to_dict()
+                ok = (
+                    sp.get("completed") is True
+                    and sp.get("currentState") == "SUBMITTED"
+                    and sp.get("demoCompleted") is True
+                    and sp.get("bestScore") == 8
+                    and progress.get("completedPracticals") == 1
+                    and progress.get("averagePercentage") == 80
+                    and "10" in (progress.get("gradeProgress") or {})
+                )
+                if ok:
+                    report_status(16, "Student Practical Progress", True, f"studentPracticals + studentProgress verified for {st_uid}")
+                else:
+                    report_status(16, "Student Practical Progress", False, "Progress docs exist but rollup fields are incorrect")
+            else:
+                missing = []
+                if not sp_snap.exists:
+                    missing.append(f"studentPracticals/{sp_id}")
+                if not progress_snap.exists:
+                    missing.append(f"studentProgress/{st_uid}")
+                report_status(16, "Student Practical Progress", False, f"Missing: {', '.join(missing)}")
+        else:
+            report_status(16, "Student Practical Progress", False, "No student user found")
+    except Exception as e:
+        report_status(16, "Student Practical Progress", False, str(e))
 
     print("=" * 70)
     print(f"  VERIFICATION SUMMARY: {passed_tests} PASSED | {failed_tests} FAILED")

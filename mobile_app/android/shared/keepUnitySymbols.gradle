@@ -1,0 +1,28 @@
+// Keeps symbols in runtime binaries, enabling stacktrace resolving at runtime.
+// Don't use it for publishing, because it increases the size of deployable package.
+
+androidComponents {
+    onVariants(selector().all()) { variant ->
+        // libil2cpp.usym.so is produced by il2cpp and is not an ELF binary.
+        // If Gradle strips it, llvm-strip fails with:
+        // llvm-strip.exe: error: '...libil2cpp.usym.so': The file was not recognized as a valid object file
+        variant.packaging.jniLibs.keepDebugSymbols.add("**/libil2cpp.usym.so")
+
+        if (variant.name.toLowerCase().contains("release")) {
+            println "Variant '${variant.name}', symbols will be stripped from binaries."
+            return
+        }
+
+        def files = [
+            "libunity.so",
+            "libil2cpp.so",
+            "libmain.so"
+        ]
+
+        println "Variant '${variant.name}', will keep symbols in binaries for:"
+        files.each { symbolToKeep ->
+            println "  '${symbolToKeep}'"
+            variant.packaging.jniLibs.keepDebugSymbols.add("**/${symbolToKeep}")
+        }
+    }
+}

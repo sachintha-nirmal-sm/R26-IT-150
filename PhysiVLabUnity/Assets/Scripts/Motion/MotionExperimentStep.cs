@@ -1,0 +1,23 @@
+public enum MotionExperimentStep
+{
+    Introduction,
+    Objective,
+    SelectEquipment,
+    SetupTrack,
+    SetupRuler,
+    PlaceCar,
+    PlaceMarkers,
+    SetDirection,
+    MotionTrials,
+    DistanceVsDisplacement,
+    SpeedCalculation,
+    VelocityCalculation,
+    AccelerationExperiment,
+    Deceleration,
+    ObservationTable,
+    Graphs,
+    CompareDistanceDisplacement,
+    Questions,
+    Conclusion,
+    Complete
+}

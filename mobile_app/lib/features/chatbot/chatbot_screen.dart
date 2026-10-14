@@ -1,5 +1,7 @@
 import "package:flutter/material.dart";
 
+import "rag_chat_service.dart";
+
 class ChatbotScreen extends StatefulWidget {
   const ChatbotScreen({super.key});
 
@@ -8,9 +10,14 @@ class ChatbotScreen extends StatefulWidget {
 }
 
 class _ChatbotScreenState extends State<ChatbotScreen> {
+  final RagChatService _chatService = RagChatService();
+  final TextEditingController _inputController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+
   final List<_ChatMessage> _messages = [
     const _ChatMessage(
-      text: "Hello, Alex! How can I help you today?",
+      text:
+          "Hi! Ask a physics question. I will answer from your syllabus notes for the selected grade.",
       isUser: false,
     ),
   ];
@@ -22,14 +29,71 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     "Define kinetic energy",
   ];
 
-  void _sendQuickQuestion(String question) {
+  int _grade = 10;
+  String? _sessionId;
+  bool _sending = false;
+
+  @override
+  void dispose() {
+    _inputController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _send(String question) async {
+    final text = question.trim();
+    if (text.isEmpty || _sending) {
+      return;
+    }
+
     setState(() {
-      _messages.add(_ChatMessage(text: question, isUser: true));
-      _messages.add(
-        _ChatMessage(
-          text: "Got it. Here's a quick explanation for: $question",
-          isUser: false,
-        ),
+      _sending = true;
+      _messages.add(_ChatMessage(text: text, isUser: true));
+      _inputController.clear();
+    });
+    _scrollToEnd();
+
+    try {
+      final result = await _chatService.send(
+        message: text,
+        grade: _grade,
+        sessionId: _sessionId,
+      );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _sessionId = result.sessionId;
+        _messages.add(_ChatMessage(text: result.answer, isUser: false));
+        _sending = false;
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _messages.add(
+          _ChatMessage(
+            text:
+                "Could not reach the RAG chatbot. Start the backend (uvicorn) and check your connection.\n$error",
+            isUser: false,
+          ),
+        );
+        _sending = false;
+      });
+    }
+    _scrollToEnd();
+  }
+
+  void _scrollToEnd() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_scrollController.hasClients) {
+        return;
+      }
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
       );
     });
   }
@@ -53,6 +117,27 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         ),
         actions: [
           Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<int>(
+                value: _grade,
+                items: [
+                  for (final g in [6, 7, 8, 9, 10, 11])
+                    DropdownMenuItem(value: g, child: Text("G$g")),
+                ],
+                onChanged: (value) {
+                  if (value == null) {
+                    return;
+                  }
+                  setState(() {
+                    _grade = value;
+                    _sessionId = null;
+                  });
+                },
+              ),
+            ),
+          ),
+          Padding(
             padding: const EdgeInsets.only(right: 12),
             child: GestureDetector(
               onTap: () => Navigator.pushNamed(context, "/profile"),
@@ -74,7 +159,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                     .map(
                       (question) => ActionChip(
                         label: Text(question),
-                        onPressed: () => _sendQuickQuestion(question),
+                        onPressed: _sending ? null : () => _send(question),
                       ),
                     )
                     .toList(),
@@ -83,15 +168,24 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
           ),
           Expanded(
             child: ListView.builder(
+              controller: _scrollController,
               padding: const EdgeInsets.all(16),
-              itemCount: _messages.length,
+              itemCount: _messages.length + (_sending ? 1 : 0),
               itemBuilder: (context, index) {
-                final message = _messages[index];
-                return _ChatBubble(message: message);
+                if (index >= _messages.length) {
+                  return const _ChatBubble(
+                    message: _ChatMessage(text: "Thinking…", isUser: false),
+                  );
+                }
+                return _ChatBubble(message: _messages[index]);
               },
             ),
           ),
-          const _InputBar(),
+          _InputBar(
+            controller: _inputController,
+            enabled: !_sending,
+            onSend: () => _send(_inputController.text),
+          ),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
@@ -203,7 +297,15 @@ class _ChatBubble extends StatelessWidget {
 }
 
 class _InputBar extends StatelessWidget {
-  const _InputBar();
+  const _InputBar({
+    required this.controller,
+    required this.onSend,
+    required this.enabled,
+  });
+
+  final TextEditingController controller;
+  final VoidCallback onSend;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
@@ -214,21 +316,28 @@ class _InputBar extends StatelessWidget {
         children: [
           const Icon(Icons.add),
           const SizedBox(width: 8),
-          const Expanded(
+          Expanded(
             child: TextField(
-              decoration: InputDecoration(
+              controller: controller,
+              enabled: enabled,
+              textInputAction: TextInputAction.send,
+              onSubmitted: enabled ? (_) => onSend() : null,
+              decoration: const InputDecoration(
                 hintText: "TYPE YOUR PHYSICS QUERY...",
                 border: InputBorder.none,
               ),
             ),
           ),
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.blue,
-              borderRadius: BorderRadius.circular(8),
+          GestureDetector(
+            onTap: enabled ? onSend : null,
+            child: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: enabled ? Colors.blue : Colors.blue.shade200,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.send, color: Colors.white),
             ),
-            child: const Icon(Icons.send, color: Colors.white),
           ),
         ],
       ),

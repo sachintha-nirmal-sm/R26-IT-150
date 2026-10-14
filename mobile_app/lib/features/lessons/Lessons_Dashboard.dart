@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../LessonList/lesson_list_page.dart';
 import '../quizzes/student_quiz_screen.dart';
+import '../experiments/data/practical.dart';
 import '../experiments/presentation/screens/experiment_execution_screen.dart';
 import '../games/vector_quest/presentation/pages/vector_quest_game_screen.dart';
 import '../games/lesson_games_screen.dart';
@@ -13,6 +14,7 @@ class LessonsDashboard extends StatefulWidget {
   final String lessonTitle;
   final String grade;
   final String? lessonDescription;
+  final String? practicalId;
 
   const LessonsDashboard({
     super.key,
@@ -20,6 +22,7 @@ class LessonsDashboard extends StatefulWidget {
     this.lessonTitle = 'Linear Motion',
     this.grade = 'Grade 9 Physics',
     this.lessonDescription,
+    this.practicalId,
   });
 
   @override
@@ -88,15 +91,46 @@ class _LessonsDashboardState extends State<LessonsDashboard> {
       'Linear Motion': 'Master the fundamental concepts of push, pull, and the laws governing motion.',
       "Forces and Newton's Laws": 'Understand the three laws of motion and how forces affect objects.',
       'Work, Energy, and Power': 'Discover the concepts of work, energy transformation, and power in physical systems.',
-      'Waves and Sound': 'Explore the properties of waves and how sound travels through different media.',
+      'Density': 'Measure mass and volume to calculate the density of water.',
+      'Basic Concepts Associated with Force': 'See how a push changes the motion of an object and check a = F / m.',
+      'Pressure Exerted by Solid': 'Hang sandbags on a thin wire and time how fast it cuts through soap.',
     };
     return descriptions[title] ?? 'Master the fundamental concepts of this lesson.';
+  }
+
+  void _openLinkedPractical() {
+    final mapped = LocalPracticals.forTopic(
+      practicalId: widget.practicalId,
+      lessonId: widget.lessonId,
+      title: widget.lessonTitle,
+      grade: LocalPracticals.parseGrade(widget.grade),
+    );
+    if (mapped == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('This lesson does not have its own virtual lab yet.'),
+        ),
+      );
+      return;
+    }
+    Navigator.pushNamed(
+      context,
+      '/practical-home',
+      arguments: {
+        'practicalId': mapped.id,
+        'lessonId': mapped.lessonId,
+        'lessonTitle': mapped.title,
+        'grade': mapped.grade,
+      },
+    );
   }
 
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
     });
+    if (index == 0) Navigator.pushNamed(context, '/home');
+    if (index == 2) _openLinkedPractical();
     if (index == 3) {
       Navigator.pushNamed(context, '/profile');
     }
@@ -223,15 +257,7 @@ class _LessonsDashboardState extends State<LessonsDashboard> {
                     ),
                   ),
                   GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              const ExperimentExecutionScreen(),
-                        ),
-                      );
-                    },
+                    onTap: _openLinkedPractical,
                     child: _buildGridCard(
                       icon: Icons.science_outlined,
                       label: 'Practicals',
