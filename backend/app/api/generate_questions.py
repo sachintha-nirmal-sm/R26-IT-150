@@ -522,7 +522,16 @@ def _publish_student_quiz(lesson_id: str) -> dict:
         if d.id == ADMIN_QUIZ_ID or d.id.startswith(SUB_LESSON_QUIZ_PREFIX)
     ]
 
-    if not settings.get("isPublished"):
+    # The Settings tab hides its Publish switch when a lesson has sections —
+    # each section then has its own isPublished flag — so for those lessons
+    # a published section is what makes the quizzes live.
+    sub_docs = [(d.id, d.to_dict() or {}) for d in lesson_ref.collection("subLessons").stream()]
+    if sub_docs:
+        is_live = any(data.get("isPublished") for _, data in sub_docs)
+    else:
+        is_live = bool(settings.get("isPublished"))
+
+    if not is_live:
         for quiz_id in admin_quiz_ids:
             quizzes.document(quiz_id).update({
                 "status": "unpublished", "updatedAt": firestore.SERVER_TIMESTAMP,
@@ -555,17 +564,18 @@ def _publish_student_quiz(lesson_id: str) -> dict:
 
     live_ids = {ADMIN_QUIZ_ID}
     sub_quizzes = 0
-    for sub in lesson_ref.collection("subLessons").stream():
-        data = sub.to_dict() or {}
-        items = {qid: q for qid, q in converted.items() if q.get("subLessonId") == sub.id}
+    for sub_id, data in sub_docs:
+        if not data.get("isPublished"):
+            continue
+        items = {qid: q for qid, q in converted.items() if q.get("subLessonId") == sub_id}
         if not items:
             continue
-        quiz_id = f"{SUB_LESSON_QUIZ_PREFIX}{sub.id}"
+        quiz_id = f"{SUB_LESSON_QUIZ_PREFIX}{sub_id}"
         _write_quiz(
             lesson_ref, quiz_id,
             f"{data.get('number', '')} {data.get('title', 'Section')}".strip(),
             items, int(data.get("quizCount") or lesson_count),
-            extra={"subLessonId": sub.id},
+            extra={"subLessonId": sub_id},
         )
         live_ids.add(quiz_id)
         sub_quizzes += 1
