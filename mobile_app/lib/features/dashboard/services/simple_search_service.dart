@@ -619,6 +619,7 @@ class SimpleSearchService {
       final lessonsSnap = await _firestore
           .collection('lessons')
           .where('grade', isEqualTo: grade)
+          .where('status', isEqualTo: 'published')
           .get();
 
       final lessons = lessonsSnap.docs.map((doc) {
