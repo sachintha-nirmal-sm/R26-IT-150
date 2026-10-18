@@ -87,26 +87,27 @@ class _StudentQuizScreenState extends State<StudentQuizScreen> {
       _currentIndex = 0;
     });
 
-    if (_isSubLesson) {
-      setState(() {
-        _isLoading = false;
-        _errorMessage =
-            "Quizzes for individual sections aren't available yet — "
-            "try the full lesson quiz instead.";
-      });
-      return;
-    }
-
     try {
       final quizzes = await _repo.listQuizzesForLesson(widget.lessonId);
+      // A section opens its own quiz (published as admin-sl-<sectionId>);
+      // the lesson-level quiz is the first ready one that isn't a section's.
+      const sectionPrefix = 'admin-sl-';
       final quiz = quizzes.cast<Map<String, dynamic>?>().firstWhere(
-            (q) => q?['status'] == 'bankReady',
+            (q) {
+              if (q?['status'] != 'bankReady') return false;
+              final id = q?['id'] as String? ?? '';
+              return _isSubLesson
+                  ? id == '$sectionPrefix${widget.subLessonId}'
+                  : !id.startsWith(sectionPrefix);
+            },
             orElse: () => null,
           );
       if (quiz == null) {
         setState(() {
           _isLoading = false;
-          _errorMessage = 'No quiz is available for this lesson yet.';
+          _errorMessage = _isSubLesson
+              ? 'No quiz is available for this section yet.'
+              : 'No quiz is available for this lesson yet.';
         });
         return;
       }

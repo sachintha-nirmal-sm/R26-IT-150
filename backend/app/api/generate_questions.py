@@ -462,16 +462,72 @@ def _to_student_question(data: dict, lesson_tag: str) -> dict | None:
     }
 
 
+SUB_LESSON_QUIZ_PREFIX = "admin-sl-"
+
+
+def _write_quiz(lesson_ref, quiz_id: str, title: str, items: dict[str, dict],
+                per_attempt: int, extra: dict | None = None) -> None:
+    """Writes one student-visible quiz (bank version v1 + the quiz doc)."""
+    quiz_ref = lesson_ref.collection("quizzes").document(quiz_id)
+    version_ref = quiz_ref.collection("questionBankVersions").document("v1")
+
+    writes: list[tuple] = []  # (ref, data | None) — None means delete
+    for old in version_ref.collection("questions").stream():
+        writes.append((old.reference, None))
+    for qid, item in items.items():
+        writes.append((version_ref.collection("questions").document(qid),
+                       {**item, "createdAt": firestore.SERVER_TIMESTAMP}))
+    writes.append((version_ref, {
+        "versionNumber": 1,
+        "status": "active",
+        "totalQuestions": len(items),
+        "generatedBy": "admin",
+        "createdAt": firestore.SERVER_TIMESTAMP,
+        "archivedAt": None,
+    }))
+    writes.append((quiz_ref, {
+        "title": title,
+        "quizId": quiz_id,
+        "lessonId": lesson_ref.id,
+        # Generous: the earlier direct-Firestore quiz had no attempt limit.
+        "maxAttempts": 10,
+        "questionsPerAttempt": max(1, min(per_attempt, len(items))),
+        "activeQuestionBankVersionId": "v1",
+        "status": "bankReady",
+        "updatedAt": firestore.SERVER_TIMESTAMP,
+        **(extra or {}),
+    }))
+
+    # Firestore batches hold at most 500 writes.
+    for i in range(0, len(writes), 400):
+        batch = db.batch()
+        for ref, data in writes[i : i + 400]:
+            if data is None:
+                batch.delete(ref)
+            else:
+                batch.set(ref, data, merge=ref.parent.id == "quizzes")
+        batch.commit()
+
+
 def _publish_student_quiz(lesson_id: str) -> dict:
+    """Publishes the lesson-level quiz plus one quiz per sub-lesson (the app
+    opens a sub-lesson's quiz from the lesson's sections list)."""
     lesson_ref = db.collection("lessons").document(lesson_id)
     lesson = lesson_ref.get().to_dict() or {}
     settings = lesson_ref.collection("quizSettings").document("config").get().to_dict() or {}
-    quiz_ref = lesson_ref.collection("quizzes").document(ADMIN_QUIZ_ID)
+    quizzes = lesson_ref.collection("quizzes")
+
+    admin_quiz_ids = [
+        d.id for d in quizzes.stream()
+        if d.id == ADMIN_QUIZ_ID or d.id.startswith(SUB_LESSON_QUIZ_PREFIX)
+    ]
 
     if not settings.get("isPublished"):
-        if quiz_ref.get().exists:
-            quiz_ref.update({"status": "unpublished", "updatedAt": firestore.SERVER_TIMESTAMP})
-        return {"published": False, "questions": 0}
+        for quiz_id in admin_quiz_ids:
+            quizzes.document(quiz_id).update({
+                "status": "unpublished", "updatedAt": firestore.SERVER_TIMESTAMP,
+            })
+        return {"published": False, "questions": 0, "subLessonQuizzes": 0}
 
     docs = {d.id: d.to_dict() or {} for d in lesson_ref.collection("questions").stream()}
     selected = set(settings.get("selectedQuestionIds") or [])
@@ -481,10 +537,11 @@ def _publish_student_quiz(lesson_id: str) -> dict:
         ids = list(docs)
 
     lesson_tag = lesson.get("lessonTag") or lesson.get("title") or lesson_id
-    converted = {}
+    converted: dict[str, dict] = {}
     for qid in ids:
         item = _to_student_question(docs[qid], lesson_tag)
         if item:
+            item["subLessonId"] = docs[qid].get("subLessonId")
             converted[qid] = item
     if not converted:
         raise HTTPException(
@@ -492,36 +549,40 @@ def _publish_student_quiz(lesson_id: str) -> dict:
             detail="There are no usable questions to publish. Generate questions first.",
         )
 
-    version_ref = quiz_ref.collection("questionBankVersions").document("v1")
-    batch = db.batch()
-    for old in version_ref.collection("questions").stream():
-        batch.delete(old.reference)
-    for qid, item in converted.items():
-        batch.set(version_ref.collection("questions").document(qid), {
-            **item, "createdAt": firestore.SERVER_TIMESTAMP,
-        })
-    batch.set(version_ref, {
-        "versionNumber": 1,
-        "status": "active",
-        "totalQuestions": len(converted),
-        "generatedBy": "admin",
-        "createdAt": firestore.SERVER_TIMESTAMP,
-        "archivedAt": None,
-    })
-    per_attempt = max(1, min(int(settings.get("questionCount") or 10), len(converted)))
-    batch.set(quiz_ref, {
-        "title": f"{lesson.get('title', 'Lesson')} Quiz",
-        "quizId": ADMIN_QUIZ_ID,
-        "lessonId": lesson_id,
-        # Generous: the earlier direct-Firestore quiz had no attempt limit.
-        "maxAttempts": 10,
-        "questionsPerAttempt": per_attempt,
-        "activeQuestionBankVersionId": "v1",
-        "status": "bankReady",
-        "updatedAt": firestore.SERVER_TIMESTAMP,
-    }, merge=True)
-    batch.commit()
-    return {"published": True, "questions": len(converted), "questionsPerAttempt": per_attempt}
+    lesson_count = int(settings.get("questionCount") or 10)
+    _write_quiz(lesson_ref, ADMIN_QUIZ_ID, f"{lesson.get('title', 'Lesson')} Quiz",
+                converted, lesson_count)
+
+    live_ids = {ADMIN_QUIZ_ID}
+    sub_quizzes = 0
+    for sub in lesson_ref.collection("subLessons").stream():
+        data = sub.to_dict() or {}
+        items = {qid: q for qid, q in converted.items() if q.get("subLessonId") == sub.id}
+        if not items:
+            continue
+        quiz_id = f"{SUB_LESSON_QUIZ_PREFIX}{sub.id}"
+        _write_quiz(
+            lesson_ref, quiz_id,
+            f"{data.get('number', '')} {data.get('title', 'Section')}".strip(),
+            items, int(data.get("quizCount") or lesson_count),
+            extra={"subLessonId": sub.id},
+        )
+        live_ids.add(quiz_id)
+        sub_quizzes += 1
+
+    # Sections that no longer have questions shouldn't keep an old quiz.
+    for quiz_id in admin_quiz_ids:
+        if quiz_id not in live_ids:
+            quizzes.document(quiz_id).update({
+                "status": "unpublished", "updatedAt": firestore.SERVER_TIMESTAMP,
+            })
+
+    return {
+        "published": True,
+        "questions": len(converted),
+        "questionsPerAttempt": max(1, min(lesson_count, len(converted))),
+        "subLessonQuizzes": sub_quizzes,
+    }
 
 
 @router.post("/{lesson_id}/publish-quiz")

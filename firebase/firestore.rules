@@ -137,6 +137,12 @@ service cloud.firestore {
         allow write: if isAdmin();
       }
 
+      // Which sections of a lesson the student has completed (unlocks the
+      // next one). Written by the student's own app after a section quiz.
+      match /subLessonProgress/{id} {
+        allow read, write: if isOwner(uid) || isAdmin();
+      }
+
       match /lessonEngagement/{lessonId} {
         allow read: if isOwner(uid) || isAdmin();
         allow write: if isAdmin();
