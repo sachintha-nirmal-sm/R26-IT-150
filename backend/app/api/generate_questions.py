@@ -406,6 +406,132 @@ async def _verify_accuracy(content: str, questions: list[dict], call_model) -> l
 # Endpoint
 # ---------------------------------------------------------------------------
 
+
+# ---------------------------------------------------------------------------
+# Publish admin-generated questions to the student quiz flow
+# ---------------------------------------------------------------------------
+# The admin "Generate" tab stores questions in lessons/{id}/questions and the
+# "Settings" tab in lessons/{id}/quizSettings/config, but students take
+# quizzes through quiz_service, which only reads lessons/{id}/quizzes/{quiz}
+# with an active question-bank version. This copies one into the other.
+
+ADMIN_QUIZ_ID = "admin-generated"
+_DIFFICULTY_MARKS = {"easy": 1, "medium": 1, "hard": 2}
+
+
+def _to_student_question(data: dict, lesson_tag: str) -> dict | None:
+    """Admin format ({label,text} options, correct = "A") -> student format
+    (plain option strings, correctAnswer = the option's text)."""
+    raw_options = data.get("options") or []
+    texts: list[str] = []
+    labelled: dict[str, str] = {}
+    for option in raw_options:
+        if isinstance(option, dict):
+            text = str(option.get("text", "")).strip()
+            label = str(option.get("label", "")).strip().upper()
+            if label:
+                labelled[label] = text
+        else:
+            text = str(option).strip()
+        if text:
+            texts.append(text)
+    if len(texts) < 2:
+        return None
+
+    correct = str(data.get("correct", "")).strip()
+    answer = labelled.get(correct.upper()) or next(
+        (t for t in texts if t.lower() == correct.lower()), None
+    )
+    question = str(data.get("question", "")).strip()
+    if not answer or not question:
+        return None
+
+    difficulty = str(data.get("difficulty", "Medium")).lower()
+    if difficulty not in _DIFFICULTY_MARKS:
+        difficulty = "medium"
+    return {
+        "questionText": question,
+        "questionType": "Theory",
+        "options": texts,
+        "correctAnswer": answer,
+        "explanation": data.get("explanation", ""),
+        "lessonTag": data.get("subLessonTitle") or lesson_tag,
+        "difficulty": difficulty,
+        "marks": _DIFFICULTY_MARKS[difficulty],
+        "generatedBy": data.get("generatedBy", "admin"),
+    }
+
+
+def _publish_student_quiz(lesson_id: str) -> dict:
+    lesson_ref = db.collection("lessons").document(lesson_id)
+    lesson = lesson_ref.get().to_dict() or {}
+    settings = lesson_ref.collection("quizSettings").document("config").get().to_dict() or {}
+    quiz_ref = lesson_ref.collection("quizzes").document(ADMIN_QUIZ_ID)
+
+    if not settings.get("isPublished"):
+        if quiz_ref.get().exists:
+            quiz_ref.update({"status": "unpublished", "updatedAt": firestore.SERVER_TIMESTAMP})
+        return {"published": False, "questions": 0}
+
+    docs = {d.id: d.to_dict() or {} for d in lesson_ref.collection("questions").stream()}
+    selected = set(settings.get("selectedQuestionIds") or [])
+    if settings.get("mode") == "manual" and selected:
+        ids = [qid for qid in docs if qid in selected]
+    else:
+        ids = list(docs)
+
+    lesson_tag = lesson.get("lessonTag") or lesson.get("title") or lesson_id
+    converted = {}
+    for qid in ids:
+        item = _to_student_question(docs[qid], lesson_tag)
+        if item:
+            converted[qid] = item
+    if not converted:
+        raise HTTPException(
+            status_code=409,
+            detail="There are no usable questions to publish. Generate questions first.",
+        )
+
+    version_ref = quiz_ref.collection("questionBankVersions").document("v1")
+    batch = db.batch()
+    for old in version_ref.collection("questions").stream():
+        batch.delete(old.reference)
+    for qid, item in converted.items():
+        batch.set(version_ref.collection("questions").document(qid), {
+            **item, "createdAt": firestore.SERVER_TIMESTAMP,
+        })
+    batch.set(version_ref, {
+        "versionNumber": 1,
+        "status": "active",
+        "totalQuestions": len(converted),
+        "generatedBy": "admin",
+        "createdAt": firestore.SERVER_TIMESTAMP,
+        "archivedAt": None,
+    })
+    per_attempt = max(1, min(int(settings.get("questionCount") or 10), len(converted)))
+    batch.set(quiz_ref, {
+        "title": f"{lesson.get('title', 'Lesson')} Quiz",
+        "quizId": ADMIN_QUIZ_ID,
+        "lessonId": lesson_id,
+        # Generous: the earlier direct-Firestore quiz had no attempt limit.
+        "maxAttempts": 10,
+        "questionsPerAttempt": per_attempt,
+        "activeQuestionBankVersionId": "v1",
+        "status": "bankReady",
+        "updatedAt": firestore.SERVER_TIMESTAMP,
+    }, merge=True)
+    batch.commit()
+    return {"published": True, "questions": len(converted), "questionsPerAttempt": per_attempt}
+
+
+@router.post("/{lesson_id}/publish-quiz")
+def publish_quiz(lesson_id: str, admin: VerifiedUser = Depends(require_admin)) -> dict:
+    """Make the generated questions + saved settings visible to students."""
+    if not db.collection("lessons").document(lesson_id).get().exists:
+        raise HTTPException(status_code=404, detail="Lesson not found.")
+    return _publish_student_quiz(lesson_id)
+
+
 @router.post("/{lesson_id}/generate-questions", status_code=status.HTTP_201_CREATED)
 async def generate_questions(
     lesson_id: str,
@@ -539,7 +665,17 @@ async def generate_questions(
         "createdAt": firestore.SERVER_TIMESTAMP,
     })
 
+    # If the quiz is already published to students, refresh what they see.
+    republished = None
+    try:
+        settings = db.collection("lessons").document(lesson_id).collection("quizSettings").document("config").get().to_dict() or {}
+        if settings.get("isPublished"):
+            republished = _publish_student_quiz(lesson_id)
+    except Exception as exc:  # noqa: BLE001
+        print(f"[generate_questions] republish failed: {exc}")
+
     return {
+        "republished": republished,
         "generated": count,
         "subLessonCount": len(sub_lessons),
         "avgAccuracyScore": avg_score,

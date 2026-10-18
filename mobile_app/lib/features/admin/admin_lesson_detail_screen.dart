@@ -397,8 +397,26 @@ class _AdminLessonDetailScreenState extends State<AdminLessonDetailScreen>
         'selectedQuestionIds': _selectedQuestionIds.toList(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
+      // Students take quizzes through the backend, which only sees quizzes
+      // that have been published — so push the saved settings + questions
+      // there too.
+      final token = await _getToken();
+      final res = await http.post(
+        Uri.parse('$_backendUrl/admin/lessons/${widget.lessonId}/publish-quiz'),
+        headers: {'Authorization': 'Bearer $token'},
+      ).timeout(const Duration(seconds: 60));
       if (mounted) {
-        _showSnack('Settings saved!', Colors.green);
+        if (res.statusCode == 200) {
+          final data = jsonDecode(res.body) as Map<String, dynamic>;
+          _showSnack(
+            data['published'] == true
+                ? 'Settings saved — ${data['questions']} questions are now live for students.'
+                : 'Settings saved. The quiz is hidden from students (turn on Publish to show it).',
+            Colors.green,
+          );
+        } else {
+          _showSnack('Settings saved, but publishing to students failed: ${res.body}', Colors.orange);
+        }
       }
     } catch (e) {
       if (mounted) _showSnack('Error: $e', Colors.red);
