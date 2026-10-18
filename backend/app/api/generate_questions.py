@@ -426,6 +426,7 @@ async def generate_questions(
         else:
             return await _call_mistral(prompt)
 
+    skipped: list[dict] = []
     try:
         if sub_lessons:
             sub_lesson_tasks = [
@@ -434,19 +435,36 @@ async def generate_questions(
                 if (body.sub_lesson_counts.get(sl["id"], body.count) if body.sub_lesson_counts else body.count) > 0
             ]
             questions: list[dict] = []
+            # A sub-lesson the model can't write questions for (e.g. its title
+            # doesn't match the PDF) is skipped and reported, instead of
+            # failing the sub-lessons that did work.
+
+            def _note_skip(sl: dict, reason: object) -> None:
+                skipped.append({
+                    "subLesson": f"{sl['number']} {sl['title']}",
+                    "reason": str(reason),
+                })
+
             if body.model == "groq":
                 # Groq free tier has strict rate limits — run sequentially with a delay
                 for sl, sl_count in sub_lesson_tasks:
-                    result = await _generate_for_sub_lesson(content, sl, sl_count, call_model)
-                    questions.extend(result)
+                    try:
+                        result = await _generate_for_sub_lesson(content, sl, sl_count, call_model)
+                        questions.extend(result)
+                    except Exception as exc:  # noqa: BLE001
+                        _note_skip(sl, exc)
                     await asyncio.sleep(1.0)
             else:
                 # Other models handle parallel calls fine
                 tasks = [_generate_for_sub_lesson(content, sl, sl_count, call_model) for sl, sl_count in sub_lesson_tasks]
                 results = await asyncio.gather(*tasks, return_exceptions=True)
-                for r in results:
+                for (sl, _), r in zip(sub_lesson_tasks, results):
                     if isinstance(r, list):
                         questions.extend(r)
+                    else:
+                        _note_skip(sl, r)
+            if not questions and skipped:
+                raise ValueError("; ".join(f"{x['subLesson']}: {x['reason']}" for x in skipped))
         else:
             # Original behaviour — single call, no sub-lesson tags
             prompt = _PROMPT.format(count=body.count, content=content[:8000])
@@ -527,4 +545,5 @@ async def generate_questions(
         "avgAccuracyScore": avg_score,
         "verifiedCount": len(verified),
         "flaggedCount": flagged,
+        "skipped": skipped,
     }

@@ -338,7 +338,15 @@ class _AdminLessonDetailScreenState extends State<AdminLessonDetailScreen>
             _selectedSubLessonFilter = null; // reset filter to show all
           });
           _loadSessionHistory();
-          _showSnack('Generated $count questions — accuracy verified!', Colors.green);
+          final skipped = (data['skipped'] as List? ?? const [])
+              .map((e) => (e as Map)['subLesson'])
+              .join(', ');
+          _showSnack(
+            skipped.isEmpty
+                ? 'Generated $count questions — accuracy verified!'
+                : 'Generated $count questions. Skipped (no matching content in the PDF): $skipped',
+            skipped.isEmpty ? Colors.green : Colors.orange,
+          );
           _tabController.animateTo(1); // go to Questions tab
         }
       } else {
