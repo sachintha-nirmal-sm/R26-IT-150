@@ -335,6 +335,12 @@ async def delete_lesson_pdf(
 
     doc_ref.delete()
 
+    # Remove the student-visible mirror written at upload time (same id).
+    try:
+        db.collection("lesson_materials").document(pdf_id).delete()
+    except Exception as exc:  # noqa: BLE001
+        print(f"[admin_lessons] mirror delete failed: {exc}")
+
 
 # ---------------------------------------------------------------------------
 # PDF Upload — Cloudinary
@@ -389,6 +395,17 @@ async def upload_lesson_pdf(
         }
     )
 
+    # Students never read lessons/{id}/pdfs — the search screen reads
+    # lesson_materials. Mirror the PDF there (same shape the Materials tab
+    # writes) and index it, so a PDF uploaded from the Lessons tab is
+    # visible to students of that grade. Never fails the upload itself.
+    try:
+        await _publish_pdf_to_student_materials(
+            lesson_id, pdf_id, file.filename, url, result, contents, admin.uid,
+        )
+    except Exception as exc:  # noqa: BLE001
+        print(f"[admin_lessons] student-material publish failed: {exc}")
+
     return {
         "id": pdf_id,
         "fileName": file.filename,
@@ -396,39 +413,60 @@ async def upload_lesson_pdf(
     }
 
 
+async def _publish_pdf_to_student_materials(
+    lesson_id: str,
+    material_id: str,
+    file_name: str | None,
+    url: str,
+    cloudinary_result: dict,
+    contents: bytes,
+    uploaded_by: str,
+) -> None:
+    lesson = db.collection("lessons").document(lesson_id).get().to_dict() or {}
+    grade_raw = str(lesson.get("grade", "")).strip()
+    grade = grade_raw if grade_raw.lower().startswith("grade") else f"Grade {grade_raw}"
+    title = lesson.get("title") or lesson_id
+
+    material = {
+        "lessonId": lesson_id,
+        "lessonTitle": title,
+        "materialName": file_name or "lesson.pdf",
+        "materialType": "pdf",
+        "grade": grade,
+        "topic": title,
+        "cloudinaryUrl": url,
+        "cloudinaryPublicId": cloudinary_result.get("public_id", ""),
+        "fileSizeBytes": len(contents),
+        "uploadedBy": uploaded_by,
+        "uploadedAt": firestore.SERVER_TIMESTAMP,
+        "description": "",
+        "downloadCount": 0,
+    }
+    db.collection("lesson_materials").document(material_id).set(material)
+
+    if (file_name or "").lower().endswith(".pdf"):
+        await _index_material_for_search(
+            lesson_id, material_id, material, contents, file_name,
+        )
+
+
 # ---------------------------------------------------------------------------
 # Materials — local storage + background RAG ingestion
 # ---------------------------------------------------------------------------
 
-@router.post(
-    "/{lesson_id}/materials/{material_id}/search-index",
-    response_model=SearchIndexResponse,
-    summary="Extract PDF keywords into an existing lesson_materials document",
-)
-async def index_lesson_material_for_search(
+async def _index_material_for_search(
     lesson_id: str,
     material_id: str,
-    file: UploadFile = File(...),
-    admin: VerifiedUser = Depends(require_admin),
+    material: dict,
+    file_bytes: bytes,
+    filename: str | None,
 ) -> SearchIndexResponse:
+    """Extracts keywords/chunks from a PDF and folds them into the search
+    indexes for an existing lesson_materials document. Shared by the
+    Materials tab (search-index endpoint) and the Lessons tab PDF upload."""
     material_ref = db.collection("lesson_materials").document(material_id)
-    material_snapshot = material_ref.get()
-    if not material_snapshot.exists:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Learning material not found.",
-        )
-
-    material = material_snapshot.to_dict() or {}
-    if material.get("lessonId") != lesson_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Material does not belong to this lesson.",
-        )
-
     try:
-        file_bytes = await file.read()
-        text = extract_text(file_bytes, file.filename)
+        text = extract_text(file_bytes, filename)
         keywords = extract_keywords(text)
         if not keywords:
             raise ValueError("No searchable text could be extracted from this PDF.")
@@ -442,7 +480,7 @@ async def index_lesson_material_for_search(
                 "lessonId": lesson_id,
                 "materialId": material_id,
                 "materialType": material.get("materialType") or "pdf",
-                "fileName": material.get("materialName") or file.filename or "",
+                "fileName": material.get("materialName") or filename or "",
                 "text": piece,
                 "sourceReference": f"{material_id}#chunk={index}",
                 "grade_level": lesson.get("grade"),
@@ -496,6 +534,38 @@ async def index_lesson_material_for_search(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=str(exc),
         ) from exc
+
+
+@router.post(
+    "/{lesson_id}/materials/{material_id}/search-index",
+    response_model=SearchIndexResponse,
+    summary="Extract PDF keywords into an existing lesson_materials document",
+)
+async def index_lesson_material_for_search(
+    lesson_id: str,
+    material_id: str,
+    file: UploadFile = File(...),
+    admin: VerifiedUser = Depends(require_admin),
+) -> SearchIndexResponse:
+    material_ref = db.collection("lesson_materials").document(material_id)
+    material_snapshot = material_ref.get()
+    if not material_snapshot.exists:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Learning material not found.",
+        )
+
+    material = material_snapshot.to_dict() or {}
+    if material.get("lessonId") != lesson_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Material does not belong to this lesson.",
+        )
+
+    file_bytes = await file.read()
+    return await _index_material_for_search(
+        lesson_id, material_id, material, file_bytes, file.filename
+    )
 
 @router.post(
     "/{lesson_id}/materials",
