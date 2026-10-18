@@ -191,13 +191,45 @@ def _fetch_sub_lessons(lesson_id: str) -> list[dict]:
     return result
 
 
-def _extract_json(raw: str) -> list[dict]:
-    raw = re.sub(r"```(?:json)?\s*", "", raw).strip()
-    start = raw.find("[")
-    end = raw.rfind("]")
-    if start == -1 or end == -1:
-        raise ValueError("No JSON array found")
-    return json.loads(raw[start : end + 1])
+def _extract_json(raw: str | None) -> list[dict]:
+    if not raw or not raw.strip():
+        raise ValueError("the model returned an empty response")
+    cleaned = re.sub(r"```(?:json)?\s*", "", raw).strip()
+    start = cleaned.find("[")
+    end = cleaned.rfind("]")
+    if start == -1 or end == -1 or end < start:
+        raise ValueError(f"no JSON array in the model response: {cleaned[:150]!r}")
+    return json.loads(cleaned[start : end + 1])
+
+
+async def _ask_for_questions(call_model, prompt: str, attempts: int = 3) -> list[dict]:
+    """Calls the model and parses its JSON, retrying when the reply is empty
+    or isn't valid JSON — reasoning models occasionally spend their whole
+    token budget thinking, or wrap the answer in prose."""
+    last_error: Exception | None = None
+    for attempt in range(attempts):
+        try:
+            questions = _extract_json(await call_model(prompt))
+            if questions:
+                return questions
+            last_error = ValueError("the model returned an empty list")
+        except (ValueError, json.JSONDecodeError) as exc:
+            last_error = exc
+        await asyncio.sleep(1.0 + attempt)
+    raise ValueError(f"{last_error} (after {attempts} attempts)")
+
+
+def _relevant_content(content: str, title: str, limit: int = 8000) -> str:
+    """The slice of the lesson text to send for one sub-topic: a window
+    around where the sub-topic is first mentioned, instead of always the
+    first 8000 characters (which may not cover it at all)."""
+    if len(content) <= limit:
+        return content
+    index = content.lower().find((title or "").lower())
+    if index == -1:
+        return content[:limit]
+    start = max(0, index - limit // 4)
+    return content[start : start + limit]
 
 
 # ---------------------------------------------------------------------------
@@ -227,9 +259,17 @@ async def _call_groq(prompt: str) -> str:
             model="openai/gpt-oss-20b",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.3,
-            max_tokens=2500,
+            # gpt-oss is a reasoning model: its thinking counts against this
+            # budget, so a small limit can leave the visible answer empty.
+            max_tokens=8000,
+            reasoning_effort="low",
         )
-        return resp.choices[0].message.content
+        choice = resp.choices[0]
+        if not (choice.message.content or "").strip():
+            raise ValueError(
+                f"Groq returned no answer (finish_reason={choice.finish_reason})"
+            )
+        return choice.message.content
     except Exception as e:
         print(f"[Groq] API error: {type(e).__name__}: {e}")
         raise
@@ -286,11 +326,10 @@ async def _generate_for_sub_lesson(
         count=count,
         sub_lesson_number=sub_lesson["number"],
         sub_lesson_title=sub_lesson["title"],
-        content=content[:8000],
+        content=_relevant_content(content, sub_lesson["title"]),
     )
     # Let exceptions propagate — caller surfaces the real error message
-    raw = await call_model(prompt)
-    questions = _extract_json(raw)
+    questions = await _ask_for_questions(call_model, prompt)
 
     for q in questions:
         q["subLessonId"] = sub_lesson["id"]
@@ -407,8 +446,7 @@ async def generate_questions(
         else:
             # Original behaviour — single call, no sub-lesson tags
             prompt = _PROMPT.format(count=body.count, content=content[:8000])
-            raw = await call_model(prompt)
-            questions = _extract_json(raw)
+            questions = await _ask_for_questions(call_model, prompt)
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"{body.model} error: {e}")
