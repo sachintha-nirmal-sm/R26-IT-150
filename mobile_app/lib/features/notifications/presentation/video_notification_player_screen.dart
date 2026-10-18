@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
+import '../../../core/backend_url.dart';
+
 /// Plays a generated personalized video notification. Fetches the
 /// notifications/{id} doc for its videoUrl, marks it opened on first play.
 class VideoNotificationPlayerScreen extends StatefulWidget {
@@ -13,6 +15,19 @@ class VideoNotificationPlayerScreen extends StatefulWidget {
   @override
   State<VideoNotificationPlayerScreen> createState() =>
       _VideoNotificationPlayerScreenState();
+}
+
+/// The video link is saved when the admin sends the notification, with
+/// whatever host the sender's backend was configured with (localhost for
+/// Chrome, 10.0.2.2 for the Android emulator). The device playing it may be
+/// a different one, so swap a loopback host for the one this device uses
+/// to reach the backend. Real hostnames are left alone.
+Uri _reachableUri(String raw) {
+  final uri = Uri.parse(raw);
+  const loopback = {'localhost', '127.0.0.1', '10.0.2.2'};
+  if (!loopback.contains(uri.host)) return uri;
+  final base = Uri.parse(backendUrl);
+  return uri.replace(scheme: base.scheme, host: base.host, port: base.port);
 }
 
 class _VideoNotificationPlayerScreenState
@@ -43,7 +58,7 @@ class _VideoNotificationPlayerScreenState
       _body = data['body'] as String?;
 
       final controller =
-          VideoPlayerController.networkUrl(Uri.parse(data['videoUrl']));
+          VideoPlayerController.networkUrl(_reachableUri(data['videoUrl'] as String));
       await controller.initialize();
       controller.play();
       if (!mounted) return;
