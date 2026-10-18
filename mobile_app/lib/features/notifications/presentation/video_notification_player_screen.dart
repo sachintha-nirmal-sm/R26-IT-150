@@ -1,5 +1,9 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:video_player/video_player.dart';
 
 import '../../../core/backend_url.dart';
@@ -28,6 +32,24 @@ Uri _reachableUri(String raw) {
   if (!loopback.contains(uri.host)) return uri;
   final base = Uri.parse(backendUrl);
   return uri.replace(scheme: base.scheme, host: base.host, port: base.port);
+}
+
+Future<({VideoPlayerController? controller, Object? error})> _playFromDownload(
+    Uri uri) async {
+  try {
+    final response = await http.get(uri).timeout(const Duration(seconds: 60));
+    if (response.statusCode != 200) {
+      return (controller: null, error: 'HTTP ${response.statusCode} for $uri');
+    }
+    final file = File(
+        '${Directory.systemTemp.path}/notification_${uri.pathSegments.last}');
+    await file.writeAsBytes(response.bodyBytes, flush: true);
+    final controller = VideoPlayerController.file(file);
+    await controller.initialize();
+    return (controller: controller, error: null);
+  } catch (e) {
+    return (controller: null, error: e);
+  }
 }
 
 class _VideoNotificationPlayerScreenState
@@ -76,6 +98,17 @@ class _VideoNotificationPlayerScreenState
         } catch (e) {
           lastError = e;
           await attempt.dispose();
+        }
+      }
+      // Last resort on Android/iOS: fetch the file with Dart's own HTTP
+      // client (the same one the API calls use) and play it from disk, in
+      // case the native player's streaming can't open the URL.
+      if (controller == null && !kIsWeb) {
+        final fileAttempt = await _playFromDownload(candidates.first);
+        if (fileAttempt.controller != null) {
+          controller = fileAttempt.controller;
+        } else {
+          lastError = '$lastError; download fallback: ${fileAttempt.error}';
         }
       }
       if (controller == null) {
