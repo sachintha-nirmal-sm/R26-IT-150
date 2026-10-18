@@ -161,10 +161,15 @@ async def run_personalized_notification(doc_id: str) -> None:
         try:
             from app.services import notification_video
 
+            from app.services import notification_topic_visuals
+
             weak_topic = (profile.get("weakTopic") or {}).get("lessonTag")
+            visual_topic = notification_topic_visuals.pick_visual_topic(
+                weak_topic, profile.get("currentGrade")
+            )
             video = await notification_video.generate_video(
                 uid, doc_id, script["title"], script["body"], selected_mood,
-                topic=weak_topic, student_name=profile.get("fullName"),
+                topic=visual_topic, student_name=profile.get("fullName"),
             )
             video_url = video["videoUrl"]
             thumb_url = video["thumbUrl"]

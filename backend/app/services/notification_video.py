@@ -286,7 +286,8 @@ async def generate_video(
             from app.services import notification_topic_visuals
 
             topic_clip = notification_topic_visuals.ensure_topic_background(topic)
-        except Exception:
+        except Exception as exc:  # noqa: BLE001
+            print(f"[notification_video] topic background failed for {topic!r}: {exc}")
             topic_clip = None
 
     duration = compose_video(

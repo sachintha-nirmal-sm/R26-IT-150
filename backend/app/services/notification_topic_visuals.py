@@ -10,6 +10,7 @@ falls back to the mood-colored gradient.
 
 from __future__ import annotations
 
+import random
 import re
 from pathlib import Path
 from typing import Callable
@@ -22,6 +23,7 @@ import numpy as np  # noqa: E402
 from matplotlib.animation import FFMpegWriter, FuncAnimation  # noqa: E402
 from matplotlib.patches import Circle, Rectangle  # noqa: E402
 
+from app.core.firebase import db
 from app.services.notification_video import CLIPS_DIR
 
 FIGSIZE = (4.5, 8)  # 9:16-ish; compose_video's scale+crop handles exact sizing
@@ -378,6 +380,33 @@ def normalize_topic(topic: str) -> str | None:
         if any(kw in text for kw in keywords):
             return key
     return None
+
+
+def pick_visual_topic(weak_topic: str | None, grade) -> str:
+    """Topic to animate in the video background. The student's weakest topic
+    when it has a template; otherwise a random published lesson of their
+    grade that does; otherwise any template — so the video always shows a
+    physics diagram rather than the plain mood gradient."""
+    if weak_topic and normalize_topic(weak_topic):
+        return weak_topic
+
+    candidates: list[str] = []
+    try:
+        grade_num = int(re.sub(r"[^0-9]", "", str(grade)) or 0)
+        for doc in db.collection("lessons").where("grade", "==", grade_num).stream():
+            data = doc.to_dict() or {}
+            if data.get("status") != "published":
+                continue
+            for text in (data.get("lessonTag"), data.get("title")):
+                if text and normalize_topic(text):
+                    candidates.append(text)
+                    break
+    except Exception as exc:  # noqa: BLE001
+        print(f"[topic_visuals] lesson lookup failed: {exc}")
+
+    if candidates:
+        return random.choice(candidates)
+    return random.choice([keywords[0] for _, keywords, _ in _TEMPLATES])
 
 
 def ensure_topic_background(topic: str) -> Path | None:
