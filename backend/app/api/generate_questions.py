@@ -240,7 +240,7 @@ async def _call_gemini(prompt: str) -> str:
     api_key = os.getenv("GEMINI_API_KEY", "")
     async with httpx.AsyncClient(timeout=60) as client:
         resp = await client.post(
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent",
             headers={"x-goog-api-key": api_key, "Content-Type": "application/json"},
             json={"contents": [{"parts": [{"text": prompt}]}]},
         )
@@ -303,7 +303,8 @@ async def _call_mistral(prompt: str) -> str:
                 "Content-Type": "application/json",
             },
             json={
-                "model": "mistral-large-latest",
+                # mistral-large-latest is rejected (403) on free-tier keys.
+                "model": "open-mistral-nemo",
                 "messages": [{"role": "user", "content": prompt}],
                 "temperature": 0.3,
             },
