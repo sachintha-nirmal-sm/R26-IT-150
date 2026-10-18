@@ -59,7 +59,13 @@ class ApiClient {
         : await ApiConfig.liveCandidateBaseUrls();
     Object? lastError;
 
-    for (final base in bases) {
+    for (var i = 0; i < bases.length; i++) {
+      final base = bases[i];
+      // The first address is the last one that worked (or the default), so
+      // it gets the normal request timeout. Only the fallback addresses use
+      // the short probe timeout — a blanket 3s made any slow-but-working
+      // call (e.g. the study plan) look like "backend unreachable".
+      final isPrimary = i == 0;
       try {
         return await _sendTo(
           base,
@@ -69,10 +75,14 @@ class ApiClient {
           body: body,
           retried: retried,
           requireAuth: requireAuth,
-          timeout: const Duration(seconds: 3),
+          timeout: isPrimary ? null : const Duration(seconds: 3),
         );
       } on ApiException catch (error) {
         if (!_isUnreachable(error)) rethrow;
+        // A timeout on the primary address means the server is up but slow;
+        // trying other ports would only replace it with a misleading
+        // "cannot reach 127.0.0.1:8000" error.
+        if (isPrimary && error.message.contains('timed out')) rethrow;
         lastError = error;
       }
     }
