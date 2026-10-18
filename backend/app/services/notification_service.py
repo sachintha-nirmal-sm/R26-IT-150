@@ -172,7 +172,7 @@ async def run_personalized_notification(doc_id: str) -> None:
         except Exception as exc:
             # Video is a nice-to-have on top of the already-proven text push —
             # never let a video failure stop the notification from sending.
-            doc_ref.update({"videoError": str(exc)[:500]})
+            doc_ref.update({"videoError": str(exc)[-500:]})
 
         data = {"notificationId": doc_id}
         data["type"] = "motivation_video" if video_url else "personalized_notification"

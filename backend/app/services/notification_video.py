@@ -163,6 +163,14 @@ def _measure_premix_loudness(voice_path: Path, music_path: Path, total_duration:
         return None
 
 
+def _ffmpeg_filter_path(path: Path) -> str:
+    """Path as drawtext's fontfile= option needs it. Inside an ffmpeg filter
+    string a Windows path like D:\\x\\y.ttf breaks parsing (the drive colon
+    separates filter options, backslashes are escapes) — use forward slashes,
+    escape the colon, and quote the whole value (also covers spaces)."""
+    return "'" + path.as_posix().replace(":", "\\:") + "'"
+
+
 def _escape_drawtext(text: str) -> str:
     text = text.replace("\\", "\\\\")
     text = text.replace(":", "\\:")
@@ -192,7 +200,7 @@ def compose_video(
     total_duration = round(voice_duration + 0.5, 2)
 
     title_drawtext = (
-        f"drawtext=fontfile={FONT_PATH}:text='{_escape_drawtext(overlay_text)}'"
+        f"drawtext=fontfile={_ffmpeg_filter_path(FONT_PATH)}:text='{_escape_drawtext(overlay_text)}'"
         ":fontcolor=white:fontsize=56:line_spacing=10"
         ":x=(w-text_w)/2:y=h-500:box=1:boxcolor=black@0.45:boxborderw=24"
     )
@@ -201,7 +209,7 @@ def compose_video(
     if student_name:
         greeting = _escape_drawtext(f"Hi {student_name}!")
         name_drawtext = (
-            f",drawtext=fontfile={FONT_PATH}:text='{greeting}'"
+            f",drawtext=fontfile={_ffmpeg_filter_path(FONT_PATH)}:text='{greeting}'"
             ":fontcolor=0xffd166:fontsize=68:y=140:x=(w-text_w)/2"
             ":box=1:boxcolor=black@0.35:boxborderw=20"
         )
