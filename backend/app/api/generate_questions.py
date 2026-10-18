@@ -212,7 +212,10 @@ async def _ask_for_questions(call_model, prompt: str, attempts: int = 3) -> list
             questions = _extract_json(await call_model(prompt))
             if questions:
                 return questions
-            last_error = ValueError("the model returned an empty list")
+            last_error = ValueError(
+                "the model returned no questions — the lesson's PDF may not "
+                "cover this sub-topic, check the sub-lessons match the PDF"
+            )
         except (ValueError, json.JSONDecodeError) as exc:
             last_error = exc
         await asyncio.sleep(1.0 + attempt)
