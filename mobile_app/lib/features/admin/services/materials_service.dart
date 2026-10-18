@@ -29,31 +29,12 @@ class MaterialsService {
     try {
       final docsMap = <String, LessonMaterial>{};
 
-      // 1. Check by exact lessonId
-      if (lessonId.isNotEmpty) {
-        final snap1 = await _firestore
-            .collection(materialsCollection)
-            .where('lessonId', isEqualTo: lessonId)
-            .get();
-        for (final doc in snap1.docs) {
-          docsMap[doc.id] = LessonMaterial.fromMap(doc.id, doc.data());
-        }
-      }
-
-      // 2. Check by lessonTitle if provided
-      if (lessonTitle != null && lessonTitle.isNotEmpty) {
-        final snap2 = await _firestore
-            .collection(materialsCollection)
-            .where('lessonTitle', isEqualTo: lessonTitle)
-            .get();
-        for (final doc in snap2.docs) {
-          docsMap[doc.id] = LessonMaterial.fromMap(doc.id, doc.data());
-        }
-      }
-
-      // 3. Fallback: if no materials found for this specific lesson, retrieve all materials for this grade
-      if (docsMap.isEmpty && grade != null && grade.isNotEmpty) {
-        String cleanGrade = grade;
+      // Firestore rules only let a student read materials of their own
+      // grade, and a query is rejected outright unless it is constrained to
+      // that grade — so every query below filters on grade when one is known.
+      String? cleanGrade;
+      if (grade != null && grade.isNotEmpty) {
+        cleanGrade = grade;
         if (grade.contains('Grade 9')) {
           cleanGrade = 'Grade 9';
         } else if (grade.contains('Grade 10')) {
@@ -61,11 +42,35 @@ class MaterialsService {
         } else if (grade.contains('Grade 11')) {
           cleanGrade = 'Grade 11';
         }
+      }
 
-        final snap3 = await _firestore
-            .collection(materialsCollection)
-            .where('grade', isEqualTo: cleanGrade)
-            .get();
+      Query<Map<String, dynamic>> base() {
+        Query<Map<String, dynamic>> q =
+            _firestore.collection(materialsCollection);
+        if (cleanGrade != null) q = q.where('grade', isEqualTo: cleanGrade);
+        return q;
+      }
+
+      // 1. Check by exact lessonId
+      if (lessonId.isNotEmpty) {
+        final snap1 = await base().where('lessonId', isEqualTo: lessonId).get();
+        for (final doc in snap1.docs) {
+          docsMap[doc.id] = LessonMaterial.fromMap(doc.id, doc.data());
+        }
+      }
+
+      // 2. Check by lessonTitle if provided
+      if (lessonTitle != null && lessonTitle.isNotEmpty) {
+        final snap2 =
+            await base().where('lessonTitle', isEqualTo: lessonTitle).get();
+        for (final doc in snap2.docs) {
+          docsMap[doc.id] = LessonMaterial.fromMap(doc.id, doc.data());
+        }
+      }
+
+      // 3. Fallback: if no materials found for this specific lesson, retrieve all materials for this grade
+      if (docsMap.isEmpty && cleanGrade != null) {
+        final snap3 = await base().get();
         for (final doc in snap3.docs) {
           docsMap[doc.id] = LessonMaterial.fromMap(doc.id, doc.data());
         }
