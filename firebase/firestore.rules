@@ -196,6 +196,22 @@ service cloud.firestore {
         allow write: if isAdmin();
       }
 
+      // AI-generated question pool, generation history and quiz settings —
+      // all managed from the admin lesson screen via the client SDK. Never
+      // readable by students: `questions` holds the answer keys, and the
+      // student quiz flow goes through FastAPI instead.
+      match /questions/{questionId} {
+        allow read, write: if isAdmin();
+      }
+
+      match /generationSessions/{sessionId} {
+        allow read, write: if isAdmin();
+      }
+
+      match /quizSettings/{settingId} {
+        allow read, write: if isAdmin();
+      }
+
       // quizzes — same grade-check as the parent lesson.
       // The client only reads quiz metadata (title, status, maxAttempts,
       // activeQuestionBankVersionId). Questions are never served from here.
