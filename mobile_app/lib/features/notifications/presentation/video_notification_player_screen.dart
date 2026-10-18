@@ -57,11 +57,36 @@ class _VideoNotificationPlayerScreenState
       _title = data['title'] as String?;
       _body = data['body'] as String?;
 
-      final controller =
-          VideoPlayerController.networkUrl(_reachableUri(data['videoUrl'] as String));
-      await controller.initialize();
-      controller.play();
-      if (!mounted) return;
+      // Try the address this device can reach first, then the stored one,
+      // and report which address failed so a network problem is obvious.
+      final stored = data['videoUrl'] as String;
+      final candidates = <Uri>[_reachableUri(stored), Uri.parse(stored)];
+      VideoPlayerController? controller;
+      Object? lastError;
+      Uri? lastTried;
+      final seen = <String>{};
+      for (final uri in candidates) {
+        if (!seen.add(uri.toString())) continue;
+        lastTried = uri;
+        final attempt = VideoPlayerController.networkUrl(uri);
+        try {
+          await attempt.initialize();
+          controller = attempt;
+          break;
+        } catch (e) {
+          lastError = e;
+          await attempt.dispose();
+        }
+      }
+      if (controller == null) {
+        throw 'could not load $lastTried — $lastError';
+      }
+      await controller.setVolume(1.0);
+      await controller.play();
+      if (!mounted) {
+        await controller.dispose();
+        return;
+      }
       setState(() => _controller = controller);
     } catch (e) {
       if (!mounted) return;

@@ -245,7 +245,10 @@ def compose_video(
         # crf 18 + preset medium: visually crisp, worth the extra ~1-2s encode
         # time for a one-shot ~6s video (vs. veryfast's default-quality blur).
         "-c:v", "libx264", "-pix_fmt", "yuv420p", "-preset", "medium", "-crf", "18",
-        "-c:a", "aac", "-b:a", "128k",
+        # loudnorm upsamples to 192 kHz, which ended up as a 96 kHz AAC track
+        # that browsers play but Android's decoder (max 48 kHz) rejects, so
+        # the in-app player failed. Pin the output to a standard rate.
+        "-c:a", "aac", "-b:a", "128k", "-ar", "44100", "-ac", "2",
         "-movflags", "+faststart",
         str(out_path),
     ])
