@@ -79,6 +79,7 @@ class _AdminLessonDetailScreenState extends State<AdminLessonDetailScreen>
     _loadPdfs();
     _loadSessionHistory();
     _loadSubLessons();
+    _syncQuestionPerformance();
   }
 
   @override
@@ -303,6 +304,21 @@ class _AdminLessonDetailScreenState extends State<AdminLessonDetailScreen>
       }
       if (mounted) setState(() => _difficultyStats = stats);
     } catch (_) {}
+  }
+
+  Future<void> _syncQuestionPerformance() async {
+    try {
+      final token = await _getToken();
+      final response = await http.post(
+        Uri.parse(
+            '$_backendUrl/admin/lessons/${widget.lessonId}/sync-question-performance'),
+        headers: {'Authorization': 'Bearer $token'},
+      ).timeout(const Duration(seconds: 60));
+      if (response.statusCode == 200) await _loadDifficultyStats();
+    } catch (_) {
+      // The Questions Firestore stream still works if the one-time repair is
+      // temporarily unavailable; a later screen visit retries it.
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -1126,19 +1142,23 @@ class _AdminLessonDetailScreenState extends State<AdminLessonDetailScreen>
                           const SizedBox(height: 6),
 
                           // Difficulty badge + attempts
-                          Row(children: [
-                            _difficultyBadge(
-                              d['difficulty'] as String?,
-                              d['actualDifficulty'] as String?,
-                              d['difficultyMatch'] as bool?,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              '${d['attempts'] ?? 0} attempt${(d['attempts'] ?? 0) == 1 ? '' : 's'}',
-                              style: TextStyle(
-                                  color: Colors.grey.shade400, fontSize: 10),
-                            ),
-                          ]),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 4,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              _difficultyBadge(
+                                d['difficulty'] as String?,
+                                d['actualDifficulty'] as String?,
+                                d['difficultyMatch'] as bool?,
+                              ),
+                              Text(
+                                '${d['attempts'] ?? 0} attempt${(d['attempts'] ?? 0) == 1 ? '' : 's'}',
+                                style: TextStyle(
+                                    color: Colors.grey.shade400, fontSize: 10),
+                              ),
+                            ],
+                          ),
                           const SizedBox(height: 10),
 
                           // Question text

@@ -254,6 +254,7 @@ def submit_lesson_quiz(
         score += awarded
         graded.append({
             "questionId": qid,
+            "sourceQuestionId": q.get("sourceQuestionId") or qid,
             "studentAnswer": student_answer,
             "isCorrect": is_correct,
             "marksAwarded": awarded,

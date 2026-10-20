@@ -22,6 +22,7 @@ from pydantic import BaseModel, Field
 
 from app.core.dependencies import VerifiedUser, require_admin
 from app.core.firebase import db
+from app.services.analytics_service import backfill_source_question_performance
 
 router = APIRouter(prefix="/admin/lessons", tags=["Admin - Generate"])
 
@@ -550,6 +551,9 @@ def _publish_student_quiz(lesson_id: str) -> dict:
     for qid in ids:
         item = _to_student_question(docs[qid], lesson_tag)
         if item:
+            # Keep the link back to the document shown in the Admin Questions
+            # tab so real student responses can update its ML statistics.
+            item["sourceQuestionId"] = qid
             item["subLessonId"] = docs[qid].get("subLessonId")
             converted[qid] = item
     if not converted:
@@ -601,6 +605,14 @@ def publish_quiz(lesson_id: str, admin: VerifiedUser = Depends(require_admin)) -
     if not db.collection("lessons").document(lesson_id).get().exists:
         raise HTTPException(status_code=404, detail="Lesson not found.")
     return _publish_student_quiz(lesson_id)
+
+
+@router.post("/{lesson_id}/sync-question-performance")
+def sync_question_performance(
+    lesson_id: str, admin: VerifiedUser = Depends(require_admin)
+) -> dict:
+    """Backfill source-question stats from attempts made before live syncing."""
+    return backfill_source_question_performance(lesson_id)
 
 
 @router.post("/{lesson_id}/generate-questions", status_code=status.HTTP_201_CREATED)

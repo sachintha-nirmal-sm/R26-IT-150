@@ -7,9 +7,50 @@ from google.cloud import firestore
 from app.core.firebase import db
 from app.core.utils import QUESTION_TYPES, WEAKNESS_THRESHOLD, empty_type_bucket, weakness_score
 from app.services.feedback_service import build_feedback
+from app.services.difficulty_model_service import (
+    MODEL_VERSION,
+    ability_band,
+    predict_difficulty,
+)
 from app.services.learning_path_service import maybe_write_youtube_recommendation
 
 ANALYTICS_ROOT = db.collection("analytics").document("global")
+MIN_DIFFICULTY_ATTEMPTS = 10
+QUESTION_PERFORMANCE_BACKFILL_VERSION = 2
+
+
+def actual_difficulty(correct_rate: float) -> str:
+    """Safe fallback if the trained model artefact cannot be loaded."""
+    if correct_rate > 0.70:
+        return "Easy"
+    if correct_rate >= 0.40:
+        return "Medium"
+    return "Hard"
+
+
+def _difficulty_evaluation(
+    *, attempts: int, correct_count: int, ability_stats: dict, ai_difficulty: str
+) -> dict:
+    try:
+        inferred, model_name = predict_difficulty(
+            attempts=attempts,
+            correct_count=correct_count,
+            ability_stats=ability_stats,
+            ai_difficulty=ai_difficulty,
+        )
+        method = "ml"
+    except Exception as exc:  # Keep quiz submission available if ML cannot load.
+        inferred = actual_difficulty(correct_count / attempts)
+        model_name = "correct-rate-fallback"
+        method = "fallback"
+        print(f"[difficulty_model] inference failed, using fallback: {exc}")
+    return {
+        "actualDifficulty": inferred,
+        "difficultyMatch": inferred == ai_difficulty,
+        "difficultyEvaluationMethod": method,
+        "difficultyModel": model_name,
+        "difficultyModelVersion": MODEL_VERSION if method == "ml" else None,
+    }
 
 
 def _user_ref(uid: str):
@@ -144,7 +185,6 @@ def _bump_analytics(submit_result: dict, answers: list[dict]):
         data["totalAttempts"] = n + 1
         data["lastUpdated"] = firestore.SERVER_TIMESTAMP
         ref.set(data)
-
     if quiz_id:
         ref = ANALYTICS_ROOT.collection("quizStats").document(quiz_id)
         snap = ref.get()
@@ -178,6 +218,228 @@ def _bump_analytics(submit_result: dict, answers: list[dict]):
         data["incorrectRate"] = round(prev_incorrect / n, 4)
         data["lastUpdated"] = firestore.SERVER_TIMESTAMP
         ref.set(data)
+
+
+def _update_source_question_performance(
+    submit_result: dict, answers: list[dict], student_ability_band: str
+) -> None:
+    """Sync real quiz responses to the admin-generated source questions.
+
+    Student quizzes use a published question-bank copy, while the Admin
+    Questions tab reads lessons/{lessonId}/questions. Question IDs are
+    preserved when publishing, so update the source documents after every
+    successfully submitted admin-generated quiz. A transaction prevents two
+    simultaneous student submissions from losing an increment.
+    """
+    lesson_id = submit_result.get("lessonId")
+    quiz_id = str(submit_result.get("quizId") or "")
+    if not lesson_id or not (
+        quiz_id == "admin-generated" or quiz_id.startswith("admin-sl-")
+    ):
+        return
+
+    # One answer per question is expected, but de-duplicate defensively.
+    outcomes: dict[str, bool] = {}
+    for answer in answers:
+        question_id = answer.get("sourceQuestionId") or answer.get("questionId")
+        if question_id:
+            outcomes[str(question_id)] = bool(answer.get("isCorrect"))
+    if not outcomes:
+        return
+
+    lesson_ref = db.collection("lessons").document(lesson_id)
+
+    @firestore.transactional
+    def _commit(transaction):
+        pending = []
+        # Firestore transactions require every read to happen before writes.
+        for question_id, is_correct in outcomes.items():
+            ref = lesson_ref.collection("questions").document(question_id)
+            snap = ref.get(transaction=transaction)
+            if not snap.exists:
+                continue
+            data = snap.to_dict() or {}
+            attempts = int(data.get("attempts") or 0) + 1
+            correct_count = int(data.get("correctCount") or 0) + int(is_correct)
+            real_attempts = int(data.get("realAttempts") or 0) + 1
+            real_correct = int(data.get("realCorrectCount") or 0) + int(is_correct)
+            ability_stats = {
+                key: dict(value)
+                for key, value in (data.get("abilityBandStats") or {}).items()
+            }
+            band_stats = ability_stats.setdefault(
+                student_ability_band, {"attempts": 0, "correct": 0}
+            )
+            band_stats["attempts"] = int(band_stats.get("attempts") or 0) + 1
+            band_stats["correct"] = int(band_stats.get("correct") or 0) + int(
+                is_correct
+            )
+            pending.append(
+                (
+                    ref,
+                    data,
+                    attempts,
+                    correct_count,
+                    real_attempts,
+                    real_correct,
+                    ability_stats,
+                )
+            )
+
+        for (
+            ref,
+            data,
+            attempts,
+            correct_count,
+            real_attempts,
+            real_correct,
+            ability_stats,
+        ) in pending:
+            update = {
+                "attempts": attempts,
+                "correctCount": correct_count,
+                "realAttempts": real_attempts,
+                "realCorrectCount": real_correct,
+                "abilityBandStats": ability_stats,
+                "lastAttemptAt": firestore.SERVER_TIMESTAMP,
+            }
+            if attempts >= MIN_DIFFICULTY_ATTEMPTS:
+                ai_difficulty = str(data.get("difficulty") or "Medium").title()
+                update.update(
+                    _difficulty_evaluation(
+                        attempts=attempts,
+                        correct_count=correct_count,
+                        ability_stats=ability_stats,
+                        ai_difficulty=ai_difficulty,
+                    )
+                )
+            transaction.update(ref, update)
+
+    _commit(db.transaction())
+
+
+def backfill_source_question_performance(lesson_id: str) -> dict:
+    """Repair pre-fix submissions once without double-counting on later runs."""
+    lesson_ref = db.collection("lessons").document(lesson_id)
+    lesson_snap = lesson_ref.get()
+    if not lesson_snap.exists:
+        return {"updated": 0, "attempts": 0, "alreadySynced": False}
+    lesson_data = lesson_snap.to_dict() or {}
+    if int(lesson_data.get("questionPerformanceBackfillVersion") or 0) >= (
+        QUESTION_PERFORMANCE_BACKFILL_VERSION
+    ):
+        return {"updated": 0, "attempts": 0, "alreadySynced": True}
+
+    aggregated: dict[str, dict] = {}
+    user_bands: dict[str, str] = {}
+    # Walk each user's nested collection instead of using collection_group.
+    # Some Firestore projects disable the required collection-group index;
+    # this repair runs only once per lesson, so the index-free scan is safer.
+    for user_doc in db.collection("users").stream():
+        user_id = user_doc.id
+        for attempt_doc in user_doc.reference.collection("quizAttempts").stream():
+            attempt = attempt_doc.to_dict() or {}
+            quiz_id = str(attempt.get("quizId") or "")
+            if attempt.get("lessonId") != lesson_id or (
+                attempt.get("status") != "completed"
+            ) or not (
+                quiz_id == "admin-generated" or quiz_id.startswith("admin-sl-")
+            ):
+                continue
+            if user_id not in user_bands:
+                summary_snap = (
+                    user_doc.reference
+                    .collection("performanceSummary")
+                    .document("summary")
+                    .get()
+                )
+                summary = summary_snap.to_dict() if summary_snap.exists else {}
+                user_bands[user_id] = ability_band(
+                    float((summary or {}).get("overallAccuracy") or 0.0)
+                )
+            band = user_bands[user_id]
+            for answer in attempt.get("answers") or []:
+                question_id = answer.get("sourceQuestionId") or answer.get(
+                    "questionId"
+                )
+                if not question_id:
+                    continue
+                counts = aggregated.setdefault(
+                    str(question_id),
+                    {"attempts": 0, "correct": 0, "bands": {}},
+                )
+                is_correct = int(bool(answer.get("isCorrect")))
+                counts["attempts"] += 1
+                counts["correct"] += is_correct
+                band_counts = counts["bands"].setdefault(
+                    band, {"attempts": 0, "correct": 0}
+                )
+                band_counts["attempts"] += 1
+                band_counts["correct"] += is_correct
+
+    writes = []
+    total_historical_attempts = 0
+    for question_id, counts in aggregated.items():
+        real_attempts = counts["attempts"]
+        real_correct = counts["correct"]
+        ability_stats = counts["bands"]
+        ref = lesson_ref.collection("questions").document(question_id)
+        snap = ref.get()
+        if not snap.exists:
+            continue
+        data = snap.to_dict() or {}
+        # Remove any real responses already tracked by the fixed live path,
+        # leaving legacy simulated counts intact, then add the full history.
+        base_attempts = max(
+            0, int(data.get("attempts") or 0) - int(data.get("realAttempts") or 0)
+        )
+        base_correct = max(
+            0,
+            int(data.get("correctCount") or 0)
+            - int(data.get("realCorrectCount") or 0),
+        )
+        attempts = base_attempts + real_attempts
+        correct_count = base_correct + real_correct
+        update = {
+            "attempts": attempts,
+            "correctCount": correct_count,
+            "realAttempts": real_attempts,
+            "realCorrectCount": real_correct,
+            "abilityBandStats": ability_stats,
+        }
+        if attempts >= MIN_DIFFICULTY_ATTEMPTS:
+            ai_difficulty = str(data.get("difficulty") or "Medium").title()
+            update.update(
+                _difficulty_evaluation(
+                    attempts=attempts,
+                    correct_count=correct_count,
+                    ability_stats=ability_stats,
+                    ai_difficulty=ai_difficulty,
+                )
+            )
+        writes.append((ref, update))
+        total_historical_attempts += real_attempts
+
+    for offset in range(0, len(writes), 400):
+        batch = db.batch()
+        for ref, update in writes[offset : offset + 400]:
+            batch.update(ref, update)
+        batch.commit()
+
+    lesson_ref.set(
+        {
+            "questionPerformanceBackfillVersion": (
+                QUESTION_PERFORMANCE_BACKFILL_VERSION
+            ),
+            "questionPerformanceBackfilledAt": firestore.SERVER_TIMESTAMP,
+        },
+        merge=True,
+    )
+    return {
+        "updated": len(writes),
+        "attempts": total_historical_attempts,
+        "alreadySynced": False,
+    }
 
 
 def process_submission(uid: str, submit_result: dict) -> dict:
@@ -230,6 +492,8 @@ def process_submission(uid: str, submit_result: dict) -> dict:
 
     summary = _update_performance_summary(uid, answers)
     _bump_analytics(submit_result, answers)
+    student_band = ability_band(float(summary.get("overallAccuracy") or 0.0))
+    _update_source_question_performance(submit_result, answers, student_band)
 
     feedback_payload = build_feedback(submit_result)
     feedback_ref = _user_ref(uid).collection("feedback").document()
