@@ -169,11 +169,6 @@ def start_lesson_quiz(uid: str, lesson_id: str, quiz_id: str) -> dict:
         snap = progress_ref.get(transaction=transaction)
         data = snap.to_dict() if snap.exists else {}
         used = int(data.get("attemptsUsed") or 0)
-        if data.get("isLocked") or used >= max_attempts:
-            raise HTTPException(
-                status.HTTP_403_FORBIDDEN,
-                f"Attempt limit reached ({max_attempts}). This quiz is locked.",
-            )
         return data
 
     progress = _check_limit(db.transaction())
@@ -290,7 +285,7 @@ def submit_lesson_quiz(
         if score >= best:
             best = score
             best_id = attempt_id
-        locked = used >= max_attempts
+        locked = False
         transaction.set(progress_ref, {
             "quizId": quiz_id,
             "lessonId": lesson_id,
@@ -383,11 +378,6 @@ def start_final_quiz(uid: str) -> dict:
         snap = progress_ref.get(transaction=transaction)
         data = snap.to_dict() if snap.exists else {}
         used = int(data.get("attemptsUsed") or 0)
-        if data.get("isLocked") or used >= max_attempts:
-            raise HTTPException(
-                status.HTTP_403_FORBIDDEN,
-                f"Final quiz attempt limit reached ({max_attempts}).",
-            )
         return data
 
     progress = _check(db.transaction())
@@ -497,7 +487,7 @@ def submit_final_quiz(uid: str, attempt_id: str, answers: list[dict], time_taken
             **data,
             "quizId": final_quiz_id,
             "attemptsUsed": used,
-            "isLocked": used >= max_attempts,
+            "isLocked": False,
             "bestScore": best,
             "bestAttemptId": best_id,
             "usedQuestionIds": list(dict.fromkeys((data.get("usedQuestionIds") or []) + served)),
@@ -513,7 +503,7 @@ def submit_final_quiz(uid: str, attempt_id: str, answers: list[dict], time_taken
             "status": "completed",
             "answerCheckingModel": "rule-based",
         })
-        return used, used >= max_attempts, best
+        return used, False, best
 
     attempts_used, is_locked, best_score = _commit(db.transaction())
     percent = round((score / total_marks) * 100, 2) if total_marks else 0.0

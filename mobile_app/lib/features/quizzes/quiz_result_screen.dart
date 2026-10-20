@@ -44,6 +44,7 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
 
   late final int _score;
   late final bool _passed; // 70% threshold
+  Future<void>? _progressSave;
 
   bool get _isSubLesson => widget.subLessonId != null;
 
@@ -55,7 +56,7 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
     _passed = _score >= 70; // sub-lessons require 70%
 
     // Save sub-lesson progress whenever a sub-lesson quiz is submitted
-    if (_isSubLesson) _saveSubLessonProgress();
+    if (_isSubLesson) _progressSave = _saveSubLessonProgress();
 
     // Passing this lesson's quiz is the clearest "this lesson is done"
     // signal available — reuse it instead of a separate completion hook.
@@ -454,7 +455,10 @@ class _QuizResultScreenState extends State<QuizResultScreen> {
           label: const Text('Done',
               style:
                   TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          onPressed: () {
+          onPressed: () async {
+            // Ensure the unlock record reaches Firestore before the list page
+            // reloads its progress data.
+            await _progressSave;
             Navigator.pop(context); // close result screen
             Navigator.pop(
                 context); // close quiz screen → back to SubLessonsScreen

@@ -221,6 +221,9 @@ class _StudentQuizScreenState extends State<StudentQuizScreen> {
             correct: correct,
             total: _questions.length,
             onRetry: _start,
+            subLessonId: widget.subLessonId,
+            subLessonNumber: widget.subLessonNumber,
+            subLessonTitle: widget.subLessonTitle,
           ),
         ),
       );

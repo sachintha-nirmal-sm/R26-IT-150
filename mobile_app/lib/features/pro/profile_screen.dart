@@ -115,6 +115,19 @@ class _ProfileScreenState extends State<ProfileScreen>
       final attempts =
           snap.docs.map((d) => Map<String, dynamic>.from(d.data())).toList();
 
+      // Sub-lesson quiz results are stored separately from backend quizAttempts.
+      // Include them so profile totals and recent results reflect the quizzes
+      // used by the lesson unlock flow.
+      final subProgressSnap = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .collection('subLessonProgress')
+          .get()
+          .timeout(const Duration(seconds: 8));
+      final subProgress = subProgressSnap.docs
+          .map((d) => Map<String, dynamic>.from(d.data()))
+          .toList();
+
       final Map<String, int> bestScores = {};
       final Map<String, String> quizTitles = {};
 
@@ -128,6 +141,20 @@ class _ProfileScreenState extends State<ProfileScreen>
         if (!bestScores.containsKey(qid) || score > bestScores[qid]!) {
           bestScores[qid] = score;
           quizTitles[qid] = title;
+        }
+      }
+
+      for (final p in subProgress) {
+        final qid = p['subLessonId'] as String? ?? '';
+        if (qid.isEmpty) continue;
+        final score = (p['bestScore'] as num?)?.round() ?? 0;
+        final title = [p['subLessonNumber'], p['subLessonTitle']]
+            .where((v) => v != null && '$v'.trim().isNotEmpty)
+            .join(' ')
+            .trim();
+        if (!bestScores.containsKey(qid) || score > bestScores[qid]!) {
+          bestScores[qid] = score;
+          quizTitles[qid] = title.isEmpty ? qid : title;
         }
       }
 

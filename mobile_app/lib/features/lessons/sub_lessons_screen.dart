@@ -47,6 +47,13 @@ class _SubLessonsScreenState extends State<SubLessonsScreen> {
         return data;
       }).toList();
 
+      // Unlock order follows the numeric lesson number, not Firestore order.
+      subLessons.sort((a, b) {
+        final aNumber = double.tryParse('${a['number'] ?? ''}') ?? double.maxFinite;
+        final bNumber = double.tryParse('${b['number'] ?? ''}') ?? double.maxFinite;
+        return aNumber.compareTo(bNumber);
+      });
+
       final uid = FirebaseAuth.instance.currentUser?.uid;
       final Map<String, Map<String, dynamic>> progress = {};
 
@@ -81,8 +88,8 @@ class _SubLessonsScreenState extends State<SubLessonsScreen> {
     final prev = _subLessons[index - 1];
     final p = _progress[prev['id'] as String];
     if (p == null) return false;
-    return (p['isCompleted'] as bool? ?? false) &&
-        (p['bestScore'] as int? ?? 0) >= 70;
+    final bestScore = (p['bestScore'] as num?)?.toDouble() ?? 0;
+    return (p['isCompleted'] as bool? ?? false) && bestScore >= 70;
   }
 
   bool _isCompleted(String subLessonId) {
@@ -91,7 +98,7 @@ class _SubLessonsScreenState extends State<SubLessonsScreen> {
   }
 
   int _bestScore(String subLessonId) =>
-      (_progress[subLessonId]?['bestScore'] as int?) ?? 0;
+      ((_progress[subLessonId]?['bestScore'] as num?)?.round()) ?? 0;
 
   bool _isPublished(Map<String, dynamic> sl) =>
       sl['isPublished'] as bool? ?? false;
